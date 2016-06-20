@@ -49,6 +49,7 @@
 #include "admin_device.h"
 #include "led_device.h"
 #include "servo_device.h"
+#include "accel_device.h"
 
 
 /*
@@ -104,6 +105,7 @@ void main(void) {
         AdminTask();
         LedTask();
         ServoTask();
+        AccelTask();
         /* int i;
          for (i = 0; i < 24; i++) {
              EUSART1_Write(65 + i);

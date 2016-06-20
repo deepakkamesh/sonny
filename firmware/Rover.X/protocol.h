@@ -17,15 +17,19 @@ extern "C" {
     // Device Definitions.
 #define DEV_ADMIN 0x0
 #define DEV_LED1 0x1
-#define DEV_SERVO 0x2
+#define DEV_SERVO 0x2 
+#define DEV_ACCEL 0x3
 
     // Command definitions.    
 #define CMD_ON 0x1
 #define CMD_PING 0x2
 #define CMD_VERSION 0x3
 #define CMD_OFF 0x4
-#define CMD_BLINK 0x5
-#define CMD_ROTATE 0x6
+#define CMD_BLINK 0x5 // param1 - MSB, param2 - LSB of blink duration in ms.
+// CMD_ROTATE.
+// param1 - MSB, param2 - LSB of pwn high duration in cycles.
+#define CMD_ROTATE 0x6 
+#define CMD_STATE 0x7
 
     // Error Codes.
 #define ERR_CHECKSUM_FAILURE 0x1

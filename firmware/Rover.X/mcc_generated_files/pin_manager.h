@@ -123,6 +123,38 @@
 #define LED1_SetDigitalMode()   do { ANSA0 = 0; } while(0)
 
 
+// get/set LED1 aliases
+#define LED1_TRIS               TRISA0
+#define LED1_LAT                LATA0
+#define LED1_PORT               RA0
+#define LED1_ANS                ANSA0
+#define LED1_SetHigh()    do { LATA0 = 1; } while(0)
+#define LED1_SetLow()   do { LATA0 = 0; } while(0)
+#define LED1_Toggle()   do { LATA0 = ~LATA0; } while(0)
+#define LED1_GetValue()         PORTAbits.RA0
+#define LED1_SetDigitalInput()    do { TRISA0 = 1; } while(0)
+#define LED1_SetDigitalOutput()   do { TRISA0 = 0; } while(0)
+
+#define LED1_SetAnalogMode()   do { ANSA0 = 1; } while(0)
+#define LED1_SetDigitalMode()   do { ANSA0 = 0; } while(0)
+
+
+// get/set LED1 aliases
+#define LED1_TRIS               TRISA0
+#define LED1_LAT                LATA0
+#define LED1_PORT               RA0
+#define LED1_ANS                ANSA0
+#define LED1_SetHigh()    do { LATA0 = 1; } while(0)
+#define LED1_SetLow()   do { LATA0 = 0; } while(0)
+#define LED1_Toggle()   do { LATA0 = ~LATA0; } while(0)
+#define LED1_GetValue()         PORTAbits.RA0
+#define LED1_SetDigitalInput()    do { TRISA0 = 1; } while(0)
+#define LED1_SetDigitalOutput()   do { TRISA0 = 0; } while(0)
+
+#define LED1_SetAnalogMode()   do { ANSA0 = 1; } while(0)
+#define LED1_SetDigitalMode()   do { ANSA0 = 0; } while(0)
+
+
 
 /**
  * @Param
