@@ -58,6 +58,8 @@ void  INTERRUPT_Initialize (void)
     // TMRI
     INTCON2bits.TMR0IP = 0;
     // CCPI
+    IPR4bits.CCP5IP = 0;
+    // CCPI
     IPR4bits.CCP4IP = 0;
 }
 
@@ -67,6 +69,10 @@ void interrupt INTERRUPT_InterruptManager (void)
     if(INTCONbits.TMR0IE == 1 && INTCONbits.TMR0IF == 1)
     {
         TMR0_ISR();
+    }
+    else if(PIE4bits.CCP5IE == 1 && PIR4bits.CCP5IF == 1)
+    {
+        CCP5_CompareISR();
     }
     else if(PIE4bits.CCP4IE == 1 && PIR4bits.CCP4IF == 1)
     {

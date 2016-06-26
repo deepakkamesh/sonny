@@ -47,7 +47,7 @@
 
 // CONFIG1H
 #pragma config FOSC = INTIO67    // Oscillator Selection bits->Internal oscillator block
-#pragma config PLLCFG = ON    // 4X PLL Enable->Oscillator multiplied by 4
+#pragma config PLLCFG = OFF    // 4X PLL Enable->Oscillator used directly
 #pragma config PRICLKEN = ON    // Primary clock enable bit->Primary clock enabled
 #pragma config FCMEN = OFF    // Fail-Safe Clock Monitor Enable bit->Fail-Safe Clock Monitor disabled
 #pragma config IESO = OFF    // Internal/External Oscillator Switchover bit->Oscillator Switchover mode disabled
@@ -115,8 +115,10 @@ void SYSTEM_Initialize(void)
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
     ADC_Initialize();
+    CCP5_Initialize();
     CCP4_Initialize();
-    TMR1_Initialize();
+    TMR3_Initialize();
+    TMR5_Initialize();
     TMR0_Initialize();
     EUSART1_Initialize();
 }

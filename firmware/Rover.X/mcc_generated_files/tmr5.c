@@ -1,17 +1,17 @@
 /**
-  TMR1 Generated Driver File
+  TMR5 Generated Driver File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    tmr1.c
+    tmr5.c
 
   @Summary
-    This is the generated driver implementation file for the TMR1 driver using MPLAB(c) Code Configurator
+    This is the generated driver implementation file for the TMR5 driver using MPLAB(c) Code Configurator
 
   @Description
-    This source file provides APIs for TMR1.
+    This source file provides APIs for TMR5.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
         Device            :  PIC18F26K22
@@ -48,112 +48,112 @@
 */
 
 #include <xc.h>
-#include "tmr1.h"
+#include "tmr5.h"
 
 /**
   Section: Global Variable Definitions
 */
-volatile uint16_t timer1ReloadVal;
+volatile uint16_t timer5ReloadVal;
 
 /**
-  Section: TMR1 APIs
+  Section: TMR5 APIs
 */
 
-void TMR1_Initialize(void)
+void TMR5_Initialize(void)
 {
     //Set the Timer to the options selected in the GUI
 
-    //T1CKPS 1:8; T1OSCEN disabled; T1SYNC synchronize; TMR1CS FOSC/4; TMR1ON enabled; T1RD16 disabled; 
-    T1CON = 0x30;
+    //T5CKPS 1:8; T5SOSCEN disabled; T5SYNC synchronize; TMR5CS FOSC/4; TMR5ON enabled; T5RD16 disabled; 
+    T5CON = 0x30;
 
-    //T1GSS T1G; TMR1GE disabled; T1GTM disabled; T1GPOL low; T1GGO done; T1GSPM disabled; 
-    T1GCON = 0x00;
+    //T5GSS T5G; TMR5GE disabled; T5GTM disabled; T5GPOL low; T5GGO done; T5GSPM disabled; 
+    T5GCON = 0x00;
 
-    //TMR1H 0; 
-    TMR1H = 0x00;
+    //TMR5H 0; 
+    TMR5H = 0x00;
 
-    //TMR1L 0; 
-    TMR1L = 0x00;
+    //TMR5L 0; 
+    TMR5L = 0x00;
 
     // Load the TMR value to reload variable
-    timer1ReloadVal=TMR1;
+    timer5ReloadVal=TMR5;
 
     // Clearing IF flag.
-    PIR1bits.TMR1IF = 0;
+    PIR5bits.TMR5IF = 0;
 
-    // Start TMR1
-    TMR1_StartTimer();
+    // Start TMR5
+    TMR5_StartTimer();
 }
 
-void TMR1_StartTimer(void)
+void TMR5_StartTimer(void)
 {
     // Start the Timer by writing to TMRxON bit
-    T1CONbits.TMR1ON = 1;
+    T5CONbits.TMR5ON = 1;
 }
 
-void TMR1_StopTimer(void)
+void TMR5_StopTimer(void)
 {
     // Stop the Timer by writing to TMRxON bit
-    T1CONbits.TMR1ON = 0;
+    T5CONbits.TMR5ON = 0;
 }
 
-uint16_t TMR1_ReadTimer(void)
+uint16_t TMR5_ReadTimer(void)
 {
     uint16_t readVal;
     uint8_t readValHigh;
     uint8_t readValLow;
     
-    readValLow = TMR1L;
-    readValHigh = TMR1H;
+    readValLow = TMR5L;
+    readValHigh = TMR5H;
     
     readVal = ((uint16_t)readValHigh << 8) | readValLow;
 
     return readVal;
 }
 
-void TMR1_WriteTimer(uint16_t timerVal)
+void TMR5_WriteTimer(uint16_t timerVal)
 {
-    if (T1CONbits.T1SYNC == 1)
+    if (T5CONbits.T5SYNC == 1)
     {
         // Stop the Timer by writing to TMRxON bit
-        T1CONbits.TMR1ON = 0;
+        T5CONbits.TMR5ON = 0;
 
-        // Write to the Timer1 register
-        TMR1H = (timerVal >> 8);
-        TMR1L = (uint8_t) timerVal;
+        // Write to the Timer5 register
+        TMR5H = (timerVal >> 8);
+        TMR5L = (uint8_t) timerVal;
 
         // Start the Timer after writing to the register
-        T1CONbits.TMR1ON =1;
+        T5CONbits.TMR5ON =1;
     }
     else
     {
-        // Write to the Timer1 register
-        TMR1H = (timerVal >> 8);
-        TMR1L = (uint8_t) timerVal;
+        // Write to the Timer5 register
+        TMR5H = (timerVal >> 8);
+        TMR5L = (uint8_t) timerVal;
     }
 }
 
-void TMR1_Reload(void)
+void TMR5_Reload(void)
 {
-    // Write to the Timer1 register
-    TMR1H = (timer1ReloadVal >> 8);
-    TMR1L = (uint8_t) timer1ReloadVal;
+    // Write to the Timer5 register
+    TMR5H = (timer5ReloadVal >> 8);
+    TMR5L = (uint8_t) timer5ReloadVal;
 }
 
-void TMR1_StartSinglePulseAcquisition(void)
+void TMR5_StartSinglePulseAcquisition(void)
 {
-    T1GCONbits.T1GGO = 1;
+    T5GCONbits.T5GGO = 1;
 }
 
-uint8_t TMR1_CheckGateValueStatus(void)
+uint8_t TMR5_CheckGateValueStatus(void)
 {
-    return T1GCONbits.T1GVAL;
+    return T5GCONbits.T5GVAL;
 }
 
-bool TMR1_HasOverflowOccured(void)
+bool TMR5_HasOverflowOccured(void)
 {
     // check if  overflow has occurred by checking the TMRIF bit
-    return(PIR1bits.TMR1IF);
+    return(PIR5bits.TMR5IF);
 }
 
 /**

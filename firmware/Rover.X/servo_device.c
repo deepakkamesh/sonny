@@ -8,11 +8,11 @@
 extern Queue CmdQ[MAX_DEVICES];
 
 void ServoTask(void) {
-     if (CmdQ[DEV_SERVO].free) {
+    if (CmdQ[DEV_SERVO].free) {
         // nothing to do
         return;
     }
-    uint8_t command;
+    uint8_t command, servo;
     command = GetCommand(CmdQ[DEV_SERVO].packet[0]);
     uint16_t on;
     switch (command) {
@@ -20,11 +20,22 @@ void ServoTask(void) {
         case CMD_ROTATE:
             on = 1000; //default duration. Center.
             // Load on time. TODO set limits.
-            if (CmdQ[DEV_SERVO].size == 3) {
-                on = CmdQ[DEV_SERVO].packet[1];
-                on = on << 8 | CmdQ[DEV_SERVO].packet[2];
+            if (CmdQ[DEV_SERVO].size != 4) {
+                // Send insufficient param error 
+                SendError(DEV_SERVO, ERR_INSUFFICENT_PARAMS);
+                break;
             }
-            CCP4_SetOnOff(on, 10000 - on);
+            on = CmdQ[DEV_SERVO].packet[1];
+            on = on << 8 | CmdQ[DEV_SERVO].packet[2];
+            servo = CmdQ[DEV_SERVO].packet[3]; // Servo Select.
+            switch (servo) {
+                case 0x1:
+                    CCP4_SetOnOff(on, 10000 - on);
+                    break;
+                case 0x2:
+                    CCP5_SetOnOff(on, 10000 - on);
+                    break;
+            }
             SendAckDone(DEV_SERVO);
             break;
 

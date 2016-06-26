@@ -1,17 +1,17 @@
 /**
-  CCP4 Generated Driver File
+  CCP5 Generated Driver File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    ccp4.c
+    ccp5.c
 
   @Summary
-    This is the generated driver implementation file for the CCP4 driver using MPLAB(c) Code Configurator
+    This is the generated driver implementation file for the CCP5 driver using MPLAB(c) Code Configurator
 
   @Description
-    This header file provides implementations for driver APIs for CCP4.
+    This header file provides implementations for driver APIs for CCP5.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
         Device            :  PIC18F26K22
@@ -48,69 +48,69 @@
 */
 
 #include <xc.h>
-#include "ccp4.h"
-#include "pin_manager.h"
-#include "tmr3.h"
+#include "ccp5.h"
+#include "tmr5.h"
 
 /**
   Section: COMPARE Module APIs
 */
 static volatile  uint16_t pwm_on, pwm_off;
 
-void CCP4_Initialize(void)
+void CCP5_Initialize(void)
 {
-    // Set the CCP4 to the options selected in the User Interface
+    // Set the CCP5 to the options selected in the User Interface
     
-    // CCP4M Setoutput; DC4B 0; 
-    CCP4CON = 0x08;
+    // CCP5M Setoutput; DC5B 0; 
+    CCP5CON = 0x08;
     
-    // CCPR4L 0; 
-    CCPR4L = 0x00;
+    // CCPR5L 0; 
+    CCPR5L = 0x00;
     
-    // CCPR4H 0; 
-    CCPR4H = 0x00;
+    // CCPR5H 0; 
+    CCPR5H = 0x00;
     
-    // Selecting Timer 3
-    CCPTMRS1bits.C4TSEL = 0x1;
+    // Selecting Timer 5
+    CCPTMRS1bits.C5TSEL = 0x2;
 
-    // Clear the CCP4 interrupt flag
-    PIR4bits.CCP4IF = 0;
+    // Clear the CCP5 interrupt flag
+    PIR4bits.CCP5IF = 0;
 	
-    // Enable the CCP4 interrupt
-    PIE4bits.CCP4IE = 1;
+    // Enable the CCP5 interrupt
+    PIE4bits.CCP5IE = 1;
     
     // Sane defaults for pwm.
     pwm_on = 1000;
     pwm_off = 9000;
 }
 
-void CCP4_SetCompareCount(uint16_t compareCount)
+void CCP5_SetCompareCount(uint16_t compareCount)
 {
     CCP_PERIOD_REG_T module;
     
     // Write the 16-bit compare value
-    module.ccpr4_16Bit = compareCount;
+    module.ccpr5_16Bit = compareCount;
     
-    CCPR4L = module.ccpr4l;
-    CCPR4H = module.ccpr4h;
+    CCPR5L = module.ccpr5l;
+    CCPR5H = module.ccpr5h;
 }
 
-void CCP4_CompareISR(void)
+void CCP5_CompareISR(void)
 {
-    // Clear the CCP4 interrupt flag
-    PIR4bits.CCP4IF = 0;
-    // Reload timer with 0.
-    TMR3_WriteTimer(0);
-    if(CCP4CON == 8) {
-        CCP4CON = 9;
-        CCP4_SetCompareCount(pwm_on);
+    // Clear the CCP5 interrupt flag
+    PIR4bits.CCP5IF = 0;
+    
+        // Reload timer with 0.
+    TMR5_WriteTimer(0);
+    if(CCP5CON == 8) {
+        CCP5CON = 9;
+        CCP5_SetCompareCount(pwm_on);
     }else {
-        CCP4CON = 8;
-        CCP4_SetCompareCount(pwm_off);
+        CCP5CON = 8;
+        CCP5_SetCompareCount(pwm_off);
     }
 }
 
-void CCP4_SetOnOff(uint16_t on, uint16_t off) {
+void CCP5_SetOnOff(uint16_t on, uint16_t off) {
     pwm_on = on;
     pwm_off = off;
 }

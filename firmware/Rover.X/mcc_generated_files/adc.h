@@ -84,7 +84,8 @@ typedef uint16_t adc_result_t;
 
 typedef enum
 {
-    AX =  0x1,
+    AX =  0x0,
+    AY =  0x1,
     AZ =  0x2,
     channel_CTMU =  0x1D,
     channel_DAC =  0x1E,

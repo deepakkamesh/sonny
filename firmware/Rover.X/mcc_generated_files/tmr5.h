@@ -1,17 +1,17 @@
 /**
-  TMR1 Generated Driver API Header File
+  TMR5 Generated Driver API Header File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    tmr1.h
+    tmr5.h
 
   @Summary
-    This is the generated header file for the TMR1 driver using MPLAB(c) Code Configurator
+    This is the generated header file for the TMR5 driver using MPLAB(c) Code Configurator
 
   @Description
-    This header file provides APIs for driver for TMR1.
+    This header file provides APIs for driver for TMR5.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
         Device            :  PIC18F26K22
@@ -43,8 +43,8 @@
     TERMS.
 */
 
-#ifndef _TMR1_H
-#define _TMR1_H
+#ifndef _TMR5_H
+#define _TMR5_H
 
 /**
   Section: Included Files
@@ -61,16 +61,16 @@
 
 
 /**
-  Section: TMR1 APIs
+  Section: TMR5 APIs
 */
 
 /**
   @Summary
-    Initializes the TMR1
+    Initializes the TMR5
 
   @Description
-    This routine initializes the TMR1.
-    This routine must be called before any other TMR1 routine is called.
+    This routine initializes the TMR5.
+    This routine must be called before any other TMR5 routine is called.
     This routine should only be called once during system initialization.
 
   @Preconditions
@@ -87,20 +87,20 @@
 
   @Example
     <code>
-    TMR1_Initialize();
+    TMR5_Initialize();
     </code>
 */
-void TMR1_Initialize(void);
+void TMR5_Initialize(void);
 
 /**
   @Summary
-    Start TMR1
+    Start TMR5
 
   @Description
-    This routine is used to  Start TMR1.
+    This routine is used to  Start TMR5.
 
   @Preconditions
-    The TMR1_Initialize() routine should be called
+    The TMR5_Initialize() routine should be called
     prior to use this routine.
 
   @Param
@@ -111,27 +111,27 @@ void TMR1_Initialize(void);
 
   @Example
     <code>
-    // Initialize TMR1 module
+    // Initialize TMR5 module
 
-    // Start TMR1
-    TMR1_StartTimer();
+    // Start TMR5
+    TMR5_StartTimer();
 
     while(1)
     {
     }
     </code>
  */
-void TMR1_StartTimer(void);
+void TMR5_StartTimer(void);
 
 /**
   @Summary
-    Stop TMR1
+    Stop TMR5
 
   @Description
-    This routine is used to  Stop TMR1.
+    This routine is used to  Stop TMR5.
 
   @Preconditions
-    The TMR1_Initialize() routine should be called
+    The TMR5_Initialize() routine should be called
     prior to use this routine.
 
   @Param
@@ -142,60 +142,60 @@ void TMR1_StartTimer(void);
 
   @Example
     </code>
-    TMR1_Initialize();
+    TMR5_Initialize();
 
-    TMR1_StartTimer();
-    if(TMR1_HasOverflowOccured())
+    TMR5_StartTimer();
+    if(TMR5_HasOverflowOccured())
     {
-        TMR1_StopTimer();
+        TMR5_StopTimer();
     }
     <code>
  */
-void TMR1_StopTimer(void);
+void TMR5_StopTimer(void);
 
 /**
   @Summary
-    Read TMR1 register.
+    Read TMR5 register.
 
   @Description
-    This routine is used to  Read TMR1 register.
+    This routine is used to  Read TMR5 register.
 
   @Preconditions
-    The TMR1_Initialize() routine should be called
+    The TMR5_Initialize() routine should be called
     prior to use this routine.
 
   @Param
     None
 
   @Returns
-    TMR1 value at the time of the function call read as a 16-bit value
+    TMR5 value at the time of the function call read as a 16-bit value
 
   @Example
     <code>
     uint16_t timerVal=0;
 
-    TMR1_Initialize();
+    TMR5_Initialize();
 
-    TMR1_StartTimer();
+    TMR5_StartTimer();
 
     // some delay or code
 
-    TMR1_StopTimer();
+    TMR5_StopTimer();
 
-    timerVal=TMR1_ReadTimer();
+    timerVal=TMR5_ReadTimer();
     </code>
  */
-uint16_t TMR1_ReadTimer(void);
+uint16_t TMR5_ReadTimer(void);
 
 /**
   @Summary
-    Write TMR1 register.
+    Write TMR5 register.
 
   @Description
-    This routine is used to Write TMR1 register.
+    This routine is used to Write TMR5 register.
 
   @Preconditions
-    The TMR1_Initialize() routine should be called
+    The TMR5_Initialize() routine should be called
     prior to use this routine.
 
   @Param
@@ -206,22 +206,22 @@ uint16_t TMR1_ReadTimer(void);
 
   @Example
     <code>
-    TMR1_Initialize();
-    TMR1_WriteTimer(0x055);
-    TMR1_StartTimer();
+    TMR5_Initialize();
+    TMR5_WriteTimer(0x055);
+    TMR5_StartTimer();
     </code>
  */
-void TMR1_WriteTimer(uint16_t timerVal);
+void TMR5_WriteTimer(uint16_t timerVal);
 
 /**
   @Summary
-    Reload TMR1 register.
+    Reload TMR5 register.
 
   @Description
-    This routine is used to reload TMR1 register.
+    This routine is used to reload TMR5 register.
 
   @Preconditions
-    The TMR1_Initialize() routine should be called
+    The TMR5_Initialize() routine should be called
     prior to use this routine.
 
   @Param
@@ -232,29 +232,29 @@ void TMR1_WriteTimer(uint16_t timerVal);
 
   @Example
     <code>
-    TMR1_Initialize();
-    TMR1_StartTimer();
+    TMR5_Initialize();
+    TMR5_StartTimer();
 
-    if(TMR1_HasOverflowOccured())
+    if(TMR5_HasOverflowOccured())
     {
-        TMR1_StopTimer();
+        TMR5_StopTimer();
     }
 
-    TMR1_Reload();}
+    TMR5_Reload();}
     </code>
 */
-void TMR1_Reload(void);
+void TMR5_Reload(void);
 
 /**
   @Summary
-    Starts the single pulse acquisition in TMR1 gate operation.
+    Starts the single pulse acquisition in TMR5 gate operation.
 
   @Description
-    This function starts the single pulse acquisition in TMR1 gate operation.
-    This function must be used when the TMR1 gate is enabled.
+    This function starts the single pulse acquisition in TMR5 gate operation.
+    This function must be used when the TMR5 gate is enabled.
 
   @Preconditions
-    Initialize  the TMR1 with gate enable before calling this function.
+    Initialize  the TMR5 with gate enable before calling this function.
 
   @Param
     None
@@ -267,35 +267,35 @@ void TMR1_Reload(void);
     uint16_t xVal;
     uint16_t yVal;
 
-    //enable TMR1 singlepulse mode
-    TMR1_StartSinglePulseAcquistion();
+    //enable TMR5 singlepulse mode
+    TMR5_StartSinglePulseAcquistion();
 
-    //check TMR1 gate status
-    if(TMR1_CheckGateValueStatus()== 0)
+    //check TMR5 gate status
+    if(TMR5_CheckGateValueStatus()== 0)
     {
-        xVal = TMR1_ReadTimer();
+        xVal = TMR5_ReadTimer();
     }
 
     // wait untill gate interrupt occured
-    while(TMR1GIF == 0)
+    while(TMR5GIF == 0)
     {
     }
 
-    yVal = TMR1_ReadTimer();
+    yVal = TMR5_ReadTimer();
     </code>
 */
-void TMR1_StartSinglePulseAcquisition(void);
+void TMR5_StartSinglePulseAcquisition(void);
 
 /**
   @Summary
     Check the current state of Timer1 gate.
 
   @Description
-    This function reads the TMR1 gate value and return it.
-    This function must be used when the TMR1 gate is enabled.
+    This function reads the TMR5 gate value and return it.
+    This function must be used when the TMR5 gate is enabled.
 
   @Preconditions
-    Initialize  the TMR1 with gate enable before calling this function.
+    Initialize  the TMR5 with gate enable before calling this function.
 
   @Param
     None
@@ -308,34 +308,34 @@ void TMR1_StartSinglePulseAcquisition(void);
     uint16_t xVal;
     uint16_t yVal;
 
-    //enable TMR1 singlepulse mode
-    TMR1_StartSinglePulseAcquistion();
+    //enable TMR5 singlepulse mode
+    TMR5_StartSinglePulseAcquistion();
 
-    //check TMR1 gate status
-    if(TMR1_CheckGateValueStatus()== 0)
+    //check TMR5 gate status
+    if(TMR5_CheckGateValueStatus()== 0)
     {
-        xVal = TMR1_ReadTimer();
+        xVal = TMR5_ReadTimer();
     }
 
     //wait untill gate interrupt occured
-    while(TMR1IF == 0)
+    while(TMR5IF == 0)
     {
     }
 
-    yVal = TMR1_ReadTimer();
+    yVal = TMR5_ReadTimer();
     </code>
 */
-uint8_t TMR1_CheckGateValueStatus(void);
+uint8_t TMR5_CheckGateValueStatus(void);
 
 /**
   @Summary
-    Get the TMR1 overflow status.
+    Get the TMR5 overflow status.
 
   @Description
-    This routine get the TMR1 overflow status.
+    This routine get the TMR5 overflow status.
 
   @Preconditions
-    The TMR1_Initialize() routine should be called
+    The TMR5_Initialize() routine should be called
     prior to use this routine.
 
   @Param
@@ -350,20 +350,20 @@ uint8_t TMR1_CheckGateValueStatus(void);
 
   @Example
      <code>
-     TMR1_Initialize();
+     TMR5_Initialize();
 
-     TMR1_StartTimer();
+     TMR5_StartTimer();
 
     while(1)
     {
-        if(TMR1_HasOverflowOccured())
+        if(TMR5_HasOverflowOccured())
         {
-            TMR1_StopTimer();
+            TMR5_StopTimer();
         }
     }
     </code>
 */
-bool TMR1_HasOverflowOccured(void);
+bool TMR5_HasOverflowOccured(void);
 
 
 #ifdef __cplusplus  // Provide C++ Compatibility
@@ -372,7 +372,7 @@ bool TMR1_HasOverflowOccured(void);
 
 #endif
 
-#endif // _TMR1_H
+#endif // _TMR5_H
 /**
  End of File
 */
