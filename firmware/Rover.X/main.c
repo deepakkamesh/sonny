@@ -50,6 +50,7 @@
 #include "led_device.h"
 #include "servo_device.h"
 #include "accel_device.h"
+#include "edge_sensor.h"
 
 
 /*
@@ -106,6 +107,7 @@ void main(void) {
         LedTask();
         ServoTask();
         AccelTask();
+        EdgeSensorTask();
         /* int i;
          for (i = 0; i < 24; i++) {
              EUSART1_Write(65 + i);

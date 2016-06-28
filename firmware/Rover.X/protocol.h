@@ -25,7 +25,8 @@ extern "C" {
      * defaut - 1 sec
      */
 #define DEV_SERVO 0x2
-    /* Additional Parameters
+    /* Servo Motors
+     * Additional Parameters
      * CMD_ROTATE
      * Request:
      * param1 - MSB of pwn high duration in cycles.
@@ -34,7 +35,8 @@ extern "C" {
      * defaut - ?
      */
 #define DEV_ACCEL 0x3
-    /* Additional Parameters
+    /* Accelerometer
+     * Additional Parameters
      * CMD_STATE
      * Return:
      * Param1 - MSB of X Axis 
@@ -44,7 +46,11 @@ extern "C" {
      * Param5 - MSB of Z Axis
      * Param6 - LSB of Z Axis
      */
-
+#define DEV_EDGE_SENSOR 0x4
+    /* Edge Sensor
+     * 
+     */
+    
     // Command definitions.    
 #define CMD_ON 0x1
 #define CMD_PING 0x2
@@ -59,6 +65,7 @@ extern "C" {
 #define ERR_DEVICE_BUSY 0x2    
 #define ERR_UNIMPLEMENTED 0x3
 #define ERR_INSUFFICENT_PARAMS 0x4
+#define ERR_EDGE_DETECTED 0x5
 
     // Helper Functions.
 #define GetDeviceID(data) (data & 0xF)
