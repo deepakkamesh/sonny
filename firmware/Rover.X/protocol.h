@@ -31,7 +31,9 @@ extern "C" {
      * Request:
      * param1 - MSB of pwn high duration in cycles.
      * param2 - LSB of pwn high duration in cycles.
-     * param3 - Servo select 0x1 - Servo1 0x2 - Servo2
+     * param3 - MSB of pwn total period in cycles.
+     * param4 - LSB of pwn total period in cycles.
+     * param5 - Servo select 0x1 - Servo1 0x2 - Servo2
      * defaut - ?
      */
 #define DEV_ACCEL 0x3

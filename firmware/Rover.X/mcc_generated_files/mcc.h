@@ -54,13 +54,13 @@
 #include "epwm1.h"
 #include "tmr0.h"
 #include "ccp5.h"
-#include "tmr5.h"
 #include "ccp4.h"
+#include "tmr5.h"
 #include "eusart1.h"
 #include "tmr3.h"
 #include "tmr2.h"
 
-#define _XTAL_FREQ  16000000
+#define _XTAL_FREQ  64000000
 
 /**
  * @Param

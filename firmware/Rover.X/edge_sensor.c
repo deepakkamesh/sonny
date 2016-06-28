@@ -7,18 +7,19 @@
 extern Queue CmdQ[MAX_DEVICES];
 
 void EdgeSensorTask(void) {
-    uint8_t state, now;
-    static uint8_t timer = 0;
+    uint8_t state;
+    uint32_t now;
+    static uint32_t timer = 0;
 
     state = IR1_GetValue();
     
 
     if (!state) {
-        now = GetTicks();
+        now = TickGet();
         if (!timer) {
             timer = now;
         } else {
-            if (abs(now - timer) > 1) {
+            if ((now - timer)/TICK_MILLISECOND > 1) {
                 SendError(DEV_EDGE_SENSOR, ERR_EDGE_DETECTED);
                 timer = 0;
                 return;

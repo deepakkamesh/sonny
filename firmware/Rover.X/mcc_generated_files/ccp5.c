@@ -78,9 +78,10 @@ void CCP5_Initialize(void)
     // Enable the CCP5 interrupt
     PIE4bits.CCP5IE = 1;
     
-    // Sane defaults for pwm.
-    pwm_on = 1000;
-    pwm_off = 9000;
+    // Sane defaults for pwm. Mid point for servo on 1.5 ms off 18.5 ms
+
+    pwm_on = 3000;
+    pwm_off = 37000;
 }
 
 void CCP5_SetCompareCount(uint16_t compareCount)

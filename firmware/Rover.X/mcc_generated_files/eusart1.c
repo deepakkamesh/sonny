@@ -66,7 +66,7 @@ void EUSART1_Initialize(void)
     TXSTA1 = 0x24;
 
     // Baud Rate = 115200; 
-    SPBRG1 = 0x22;
+    SPBRG1 = 0x8A;
 
     // Baud Rate = 115200; 
     SPBRGH1 = 0x00;
@@ -99,7 +99,7 @@ void EUSART1_Write(uint8_t txData)
     while(0 == PIR1bits.TX1IF)
     {
     }
-    
+
     TXREG1 = txData;    // Write the data byte to the USART.
 }
 /**

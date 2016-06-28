@@ -8,15 +8,15 @@
 extern Queue CmdQ[MAX_DEVICES];
 
 void LedTask(void) {
-    static unsigned long long last;
-    unsigned long long now = 0;
+    static uint32_t last;
     static bool blink = false;
-    static uint16_t duration; //default blink duration.
+    static uint16_t duration; //default blink duration in milli secs.
 
     // Do some regular tasks.
     if (blink) {
-       now = GetTicks();
-        if (abs(now - last) >= duration) {
+        uint32_t now = 0;
+        now = TickGet();
+        if ((now - last)/(TICK_MILLISECOND )>= duration) {
             LED1_Toggle();
             last = now;
         }
@@ -50,8 +50,8 @@ void LedTask(void) {
             duration = 1000; //default duration.
             // Load duration if specified.
             if (CmdQ[DEV_LED1].size == 3) {
-               duration = CmdQ[DEV_LED1].packet[1];
-               duration = duration << 8 | CmdQ[DEV_LED1].packet[2];
+                duration = CmdQ[DEV_LED1].packet[1];
+                duration = duration << 8 | CmdQ[DEV_LED1].packet[2];
             }
             SendAckDone(DEV_LED1);
             break;

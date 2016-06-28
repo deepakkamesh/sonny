@@ -131,8 +131,8 @@ void OSCILLATOR_Initialize(void)
     OSCCON = 0x70;
     // PRISD enabled; SOSCGO disabled; MFIOSEL disabled; 
     OSCCON2 = 0x04;
-    // INTSRC disabled; PLLEN disabled; TUN 0; 
-    OSCTUNE = 0x00;
+    // INTSRC disabled; PLLEN enabled; TUN 0; 
+    OSCTUNE = 0x40;
     // Set the secondary oscillator
     
 }
