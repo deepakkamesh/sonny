@@ -20,9 +20,10 @@ extern "C" {
     /* Additional Parameters
      * CMD_BLINK
      * Request:
-     * param1 - MSB of blink duration in ms 
-     * param2 - LSB of blink duration in ms.
-     * defaut - 1 sec
+     * optional param1 - MSB of blink duration in ms 
+     * optional param2 - LSB of blink duration in ms.
+     * optional param3 - number of times to blink.
+     * defaut - 1 sec blink continuous
      */
 #define DEV_SERVO 0x2
     /* Servo Motors
