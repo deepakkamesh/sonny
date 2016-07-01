@@ -3,14 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/mcc_generated_files/ccp4.c</file>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/mcc_generated_files/ccp5.c</file>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/servo_device.c</file>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/mcc_generated_files/tmr0.h</file>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/edge_sensor.c</file>
+            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/ldr_device.c</file>
+            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/ldr_device.h</file>
             <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/main.c</file>
             <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/protocol.h</file>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/mcc_generated_files/tmr0.c</file>
         </group>
     </open-files>
 </project-private>

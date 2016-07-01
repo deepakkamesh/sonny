@@ -52,6 +52,14 @@ extern "C" {
     /* Edge Sensor
      * 
      */
+#define DEV_LDR 0x5
+    /* Light Sensor
+     * Additional Parameters
+     * CMD_STATE
+     * Return:
+     * Param1 - MSB of ADC Value 
+     * Param2 - LSB of ADC Value
+     */
     
     // Command definitions.    
 #define CMD_ON 0x1

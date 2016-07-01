@@ -117,10 +117,8 @@ void SYSTEM_Initialize(void)
     ADC_Initialize();
     CCP5_Initialize();
     CCP4_Initialize();
-    EPWM1_Initialize();
     TMR3_Initialize();
     TMR5_Initialize();
-    TMR2_Initialize();
     TMR0_Initialize();
     EUSART1_Initialize();
 }

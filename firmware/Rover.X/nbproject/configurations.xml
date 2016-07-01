@@ -17,8 +17,6 @@
         <itemPath>mcc_generated_files/ccp5.h</itemPath>
         <itemPath>mcc_generated_files/tmr3.h</itemPath>
         <itemPath>mcc_generated_files/tmr5.h</itemPath>
-        <itemPath>mcc_generated_files/epwm1.h</itemPath>
-        <itemPath>mcc_generated_files/tmr2.h</itemPath>
       </logicalFolder>
       <itemPath>serial_controller.h</itemPath>
       <itemPath>protocol.h</itemPath>
@@ -26,7 +24,8 @@
       <itemPath>led_device.h</itemPath>
       <itemPath>servo_device.h</itemPath>
       <itemPath>accel_device.h</itemPath>
-      <itemPath>edge_sensor.h</itemPath>
+      <itemPath>edge_sensor_device.h</itemPath>
+      <itemPath>ldr_device.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -48,8 +47,6 @@
         <itemPath>mcc_generated_files/ccp5.c</itemPath>
         <itemPath>mcc_generated_files/tmr3.c</itemPath>
         <itemPath>mcc_generated_files/tmr5.c</itemPath>
-        <itemPath>mcc_generated_files/epwm1.c</itemPath>
-        <itemPath>mcc_generated_files/tmr2.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>serial_controller.c</itemPath>
@@ -57,7 +54,8 @@
       <itemPath>led_device.c</itemPath>
       <itemPath>servo_device.c</itemPath>
       <itemPath>accel_device.c</itemPath>
-      <itemPath>edge_sensor.c</itemPath>
+      <itemPath>edge_sensor_device.c</itemPath>
+      <itemPath>ldr_device.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

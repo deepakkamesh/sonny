@@ -78,80 +78,61 @@
 #define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
 
 
-// get/set IR1 aliases
-#define IR1_TRIS               TRISB5
-#define IR1_LAT                LATB5
-#define IR1_PORT               RB5
-#define IR1_WPU                WPUB5
-#define IR1_ANS                ANSB5
-#define IR1_SetHigh()    do { LATB5 = 1; } while(0)
-#define IR1_SetLow()   do { LATB5 = 0; } while(0)
-#define IR1_Toggle()   do { LATB5 = ~LATB5; } while(0)
-#define IR1_GetValue()         PORTBbits.RB5
-#define IR1_SetDigitalInput()    do { TRISB5 = 1; } while(0)
-#define IR1_SetDigitalOutput()   do { TRISB5 = 0; } while(0)
+// get/set LED1 aliases
+#define LED1_TRIS               TRISB1
+#define LED1_LAT                LATB1
+#define LED1_PORT               RB1
+#define LED1_WPU                WPUB1
+#define LED1_ANS                ANSB1
+#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
+#define LED1_SetLow()   do { LATB1 = 0; } while(0)
+#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
+#define LED1_GetValue()         PORTBbits.RB1
+#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
+#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
 
-#define IR1_SetPullup()    do { WPUB5 = 1; } while(0)
-#define IR1_ResetPullup()   do { WPUB5 = 0; } while(0)
-#define IR1_SetAnalogMode()   do { ANSB5 = 1; } while(0)
-#define IR1_SetDigitalMode()   do { ANSB5 = 0; } while(0)
-
-
-// get/set IR1 aliases
-#define IR1_TRIS               TRISB5
-#define IR1_LAT                LATB5
-#define IR1_PORT               RB5
-#define IR1_WPU                WPUB5
-#define IR1_ANS                ANSB5
-#define IR1_SetHigh()    do { LATB5 = 1; } while(0)
-#define IR1_SetLow()   do { LATB5 = 0; } while(0)
-#define IR1_Toggle()   do { LATB5 = ~LATB5; } while(0)
-#define IR1_GetValue()         PORTBbits.RB5
-#define IR1_SetDigitalInput()    do { TRISB5 = 1; } while(0)
-#define IR1_SetDigitalOutput()   do { TRISB5 = 0; } while(0)
-
-#define IR1_SetPullup()    do { WPUB5 = 1; } while(0)
-#define IR1_ResetPullup()   do { WPUB5 = 0; } while(0)
-#define IR1_SetAnalogMode()   do { ANSB5 = 1; } while(0)
-#define IR1_SetDigitalMode()   do { ANSB5 = 0; } while(0)
+#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
+#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
+#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
+#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
 
 
-// get/set IR1 aliases
-#define IR1_TRIS               TRISB5
-#define IR1_LAT                LATB5
-#define IR1_PORT               RB5
-#define IR1_WPU                WPUB5
-#define IR1_ANS                ANSB5
-#define IR1_SetHigh()    do { LATB5 = 1; } while(0)
-#define IR1_SetLow()   do { LATB5 = 0; } while(0)
-#define IR1_Toggle()   do { LATB5 = ~LATB5; } while(0)
-#define IR1_GetValue()         PORTBbits.RB5
-#define IR1_SetDigitalInput()    do { TRISB5 = 1; } while(0)
-#define IR1_SetDigitalOutput()   do { TRISB5 = 0; } while(0)
+// get/set LED1 aliases
+#define LED1_TRIS               TRISB1
+#define LED1_LAT                LATB1
+#define LED1_PORT               RB1
+#define LED1_WPU                WPUB1
+#define LED1_ANS                ANSB1
+#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
+#define LED1_SetLow()   do { LATB1 = 0; } while(0)
+#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
+#define LED1_GetValue()         PORTBbits.RB1
+#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
+#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
 
-#define IR1_SetPullup()    do { WPUB5 = 1; } while(0)
-#define IR1_ResetPullup()   do { WPUB5 = 0; } while(0)
-#define IR1_SetAnalogMode()   do { ANSB5 = 1; } while(0)
-#define IR1_SetDigitalMode()   do { ANSB5 = 0; } while(0)
+#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
+#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
+#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
+#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
 
 
-// get/set IR1 aliases
-#define IR1_TRIS               TRISB5
-#define IR1_LAT                LATB5
-#define IR1_PORT               RB5
-#define IR1_WPU                WPUB5
-#define IR1_ANS                ANSB5
-#define IR1_SetHigh()    do { LATB5 = 1; } while(0)
-#define IR1_SetLow()   do { LATB5 = 0; } while(0)
-#define IR1_Toggle()   do { LATB5 = ~LATB5; } while(0)
-#define IR1_GetValue()         PORTBbits.RB5
-#define IR1_SetDigitalInput()    do { TRISB5 = 1; } while(0)
-#define IR1_SetDigitalOutput()   do { TRISB5 = 0; } while(0)
+// get/set LED1 aliases
+#define LED1_TRIS               TRISB1
+#define LED1_LAT                LATB1
+#define LED1_PORT               RB1
+#define LED1_WPU                WPUB1
+#define LED1_ANS                ANSB1
+#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
+#define LED1_SetLow()   do { LATB1 = 0; } while(0)
+#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
+#define LED1_GetValue()         PORTBbits.RB1
+#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
+#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
 
-#define IR1_SetPullup()    do { WPUB5 = 1; } while(0)
-#define IR1_ResetPullup()   do { WPUB5 = 0; } while(0)
-#define IR1_SetAnalogMode()   do { ANSB5 = 1; } while(0)
-#define IR1_SetDigitalMode()   do { ANSB5 = 0; } while(0)
+#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
+#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
+#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
+#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
 
 
 
