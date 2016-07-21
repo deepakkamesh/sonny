@@ -52,6 +52,7 @@
 #include "accel_device.h"
 #include "edge_sensor_device.h"
 #include "ldr_device.h"
+#include "batt_device.h"
 
 
 /*
@@ -110,6 +111,7 @@ void main(void) {
         AccelTask();
         EdgeSensorTask();
         LDRTask();
+        BattTask();
         /* int i;
          for (i = 0; i < 24; i++) {
              EUSART1_Write(65 + i);

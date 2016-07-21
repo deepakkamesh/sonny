@@ -61,6 +61,14 @@ extern "C" {
      * Param1 - MSB of ADC Value 
      * Param2 - LSB of ADC Value
      */
+#define DEV_BATT 0x6
+    /* Battery Voltage
+     * Additional Parameters
+     * CMD_STATE
+     * Return:
+     * Param1 - MSB of ADC Value 
+     * Param2 - LSB of ADC Value
+     */    
     
     // Command definitions.    
 #define CMD_ON 0x1
@@ -70,6 +78,7 @@ extern "C" {
 #define CMD_BLINK 0x5 
 #define CMD_ROTATE 0x6 
 #define CMD_STATE 0x7
+#define CMD_TEST 0x8
 
     // Error Codes.
 #define ERR_CHECKSUM_FAILURE 0x1
@@ -77,6 +86,7 @@ extern "C" {
 #define ERR_UNIMPLEMENTED 0x3
 #define ERR_INSUFFICENT_PARAMS 0x4
 #define ERR_EDGE_DETECTED 0x5
+#define ERR_BATT_LOW 0x6
 
     // Helper Functions.
 #define GetDeviceID(data) (data & 0xF)
