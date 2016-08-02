@@ -10,23 +10,26 @@ const (
 	MAX_DEVICES = 16
 
 	// Device Definitions.
-	DEV_ADMIN = 0x0
-	DEV_LED   = 0x1
-	DEV_SERVO = 0x2
+	DEV_ADMIN byte = 0x0
+	DEV_LED   byte = 0x1
+	DEV_SERVO byte = 0x2
+
 	// Command definitions.
-	CMD_ON      = 0x1
-	CMD_PING    = 0x2
-	CMD_VERSION = 0x3
-	CMD_ROTATE  = 0x6
+	CMD_ON      byte = 0x1
+	CMD_PING    byte = 0x2
+	CMD_VERSION byte = 0x3
+	CMD_OFF     byte = 0x4
+	CMD_ROTATE  byte = 0x6
 
 	// Error Codes.
-	ERR_CHECKSUM_FAILURE = 0x1
-	ERR_DEVICE_BUSY      = 0x2
+	ERR_CHECKSUM_FAILURE byte = 0x1
+	ERR_DEVICE_BUSY      byte = 0x2
 
-	ACK      = 0x8
-	ACK_DONE = 0xC
-	ERR      = 0x0
-	DONE     = 0x4
+	// Status Codes.
+	ACK      byte = 0x8
+	ACK_DONE byte = 0xC
+	ERR      byte = 0x0
+	DONE     byte = 0x4
 )
 
 func Error(errCode byte) error {

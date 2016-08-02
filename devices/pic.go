@@ -25,15 +25,15 @@ type controller struct {
 }
 
 func NewController(tty string, baud int) *controller {
-	/*
-		c := &serial.Config{Name: tty, Baud: baud}
-		port, err := serial.OpenPort(c)
-		if err != nil {
-			log.Fatalf("Error opening %s", err)
-		}*/
+
+	c := &serial.Config{Name: tty, Baud: baud}
+	port, err := serial.OpenPort(c)
+	if err != nil {
+		log.Fatalf("Error opening tty port %v", err)
+	}
 
 	return &controller{
-		port:   nil,
+		port:   port,
 		in:     make(chan command),
 		out:    make(chan []byte),
 		cmdBuf: make(map[byte]chan retVal),
@@ -49,7 +49,7 @@ func (m *controller) read() {
 
 	for {
 		buf := make([]byte, 16)
-		n, err := ser.Read(buf)
+		_, err := m.port.Read(buf)
 		if err != nil {
 			log.Printf("Error reading from tty %s", err)
 			continue
@@ -58,7 +58,7 @@ func (m *controller) read() {
 			log.Printf("Checksum mismatch, discarding packet %v", buf)
 			continue
 		}
-		m.out <- buf
+		m.out <- buf[1:] // Strip out header after checksum verification.
 	}
 }
 
@@ -69,17 +69,18 @@ func (m *controller) run() {
 		case c := <-m.in:
 			fmt.Printf("Executing Command: %d on device %d\n", c.data, p.DeviceID(c.data[0]))
 			m.cmdBuf[p.DeviceID(c.data[0])] = c.ret
-			h := Header(c.data)
-
-		// TODO: Write cmd to tty
+			h := p.Header(c.data)
+			m.port.Write([]byte{h})
+			m.port.Write(c.data)
 
 		// Process return data from controller.
+		// TODO: Add timeout for command buffer.
 		case data := <-m.out:
 			deviceID := p.DeviceID(data[0])
 			v, ok := m.cmdBuf[deviceID]
 			if !ok {
 				// TODO: add default handler here.
-				log.Printf("Failed to find a handler")
+				log.Printf("Failed to find a handler for device: %d packet: %v", p.DeviceID(data[0]), data)
 				continue
 			}
 
@@ -87,7 +88,6 @@ func (m *controller) run() {
 			case p.ACK:
 				continue
 			case p.ACK_DONE, p.DONE:
-				fmt.Println("got", data)
 				v <- retVal{
 					data: data,
 					err:  nil,
@@ -104,6 +104,21 @@ func (m *controller) run() {
 			}
 		}
 	}
+}
+func (m *controller) LedOn(on bool) error {
+
+	log.Println("LED")
+	cmd := p.CMD_ON
+	if !on {
+		cmd = p.CMD_OFF
+	}
+	data := []byte{cmd<<4 | p.DEV_LED}
+	ret := make(chan retVal)
+	m.in <- command{
+		data: data,
+		ret:  ret,
+	}
+	return (<-ret).err
 }
 
 func (m *controller) Ping() error {
