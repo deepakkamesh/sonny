@@ -41,11 +41,11 @@ func PrettyPrint(packet []byte) (logline string) {
 	for i := 0; i < len(packet); i++ {
 		switch i {
 		case 0:
-			logline = logline + fmt.Sprintf(" header - %08b |", packet[i])
+			logline = logline + fmt.Sprintf("\n header - %08b\n", packet[i])
 		case 1:
-			logline = logline + fmt.Sprintf(" status/cmd - %08b |", packet[i])
+			logline = logline + fmt.Sprintf(" status/cmd - %08b\n", packet[i])
 		default:
-			logline = logline + fmt.Sprintf(" param%02d - 0x%X |", i+1, packet[i])
+			logline = logline + fmt.Sprintf(" param%02d - 0x%X (%d)\n", i-1, packet[i], packet[i])
 		}
 	}
 	return
