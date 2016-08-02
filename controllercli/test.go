@@ -17,6 +17,7 @@ func main() {
 	fmt.Println("Format: <Command Hex Code> <Device Hex Code> <optional params>")
 	log.SetFlags(log.Lmicroseconds)
 	in := bufio.NewReader(os.Stdin)
+	//c := &serial.Config{Name: "/dev/ttyAMA0", Baud: 9600}
 	c := &serial.Config{Name: "/dev/ttyAMA0", Baud: 115200}
 	ser, err := serial.OpenPort(c)
 	if err != nil {
@@ -43,7 +44,7 @@ Start:
 		// Convert string into bytes slice.
 		bytes := []byte{}
 		for i := 0; i < len(inputs); i++ {
-			c, err := strconv.ParseUint(inputs[i], base, 8)
+			c, err := strconv.ParseUint(inputs[i], 16, 8)
 			if err != nil {
 				log.Printf("Error converting input: %v", err)
 				continue Start
@@ -64,7 +65,7 @@ Start:
 			log.Printf("failed to send to serial: %v", err)
 		}
 		log.Printf("%v", packet)
-		log.Printf("Sent %s", p.PrettyPrint(packet))
+		log.Printf("Sent %s\n", p.PrettyPrint(packet))
 	}
 
 }
