@@ -1,17 +1,17 @@
 /**
-  ECCP1 Generated Driver File
+  FVR Generated Driver API Header File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    eccp1.c
+    fvr.h
 
   @Summary
-    This is the generated driver implementation file for the ECCP1 driver using MPLAB(c) Code Configurator
+    This is the generated header file for the FVR driver using MPLAB(c) Code Configurator
 
   @Description
-    This source file provides APIs for ECCP1.
+    This header file provides APIs for driver for FVR.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
         Device            :  PIC18F26K22
@@ -43,58 +43,96 @@
     TERMS.
 */
 
+#ifndef _FVR_H
+#define _FVR_H
+
 /**
   Section: Included Files
 */
 
-#include <xc.h>
-#include "epwm1.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+#ifdef __cplusplus  // Provide C++ Compatibility
+
+    extern "C" {
+
+#endif
 
 /**
-  Section: Macro Declarations
+  Section: FVR APIs
 */
-
-#define PWM1_INITIALIZE_DUTY_VALUE    49
 
 /**
-  Section: EPWM Module APIs
+  @Summary
+    Initializes the FVR
+
+  @Description
+    This routine initializes the FVR.
+    This routine must be called before any other FVR routine is called.
+    This routine should only be called once during system initialization.
+
+  @Preconditions
+    None
+
+  @Param
+    None
+
+  @Returns
+    None
+
+  @Comment
+    
+
+  @Example
+    <code>
+    FVR_Initialize();
+    </code>
 */
+ void FVR_Initialize(void);
 
-void EPWM1_Initialize (void)
-{
-    // Set the PWM to the options selected in MPLAB(c) Code Configurator
-    
-    // CCP1M P1A,P1C: active high; P1B,P1D: active high; DC1B 1; P1M single; 
-    CCP1CON = 0x1C;
-    
-    // CCP1ASE operating; PSS1BD low; PSS1AC low; CCP1AS disabled; 
-    ECCP1AS = 0x00;
-    
-    // P1RSEN automatic_restart; P1DC 0; 
-    PWM1CON = 0x80;
-    
-    // STR1D P1D_to_port; STR1C P1C_to_port; STR1B P1B_to_port; STR1A P1A_to_CCP1M; STR1SYNC start_at_begin; 
-    PSTR1CON = 0x01;
-    
-    // CCPR1L 12; 
-    CCPR1L = 0x0C;
-    
-    // CCPR1H 0; 
-    CCPR1H = 0x00;
-    
-    
-    // Selecting Timer2
-    CCPTMRS0bits.C1TSEL = 0x0;
-}
+/**
+  @Summary
+    Gets the FVR output ready status.
 
-void EPWM1_LoadDutyValue(uint16_t dutyValue)
-{
-   // Writing to 8 MSBs of pwm duty cycle in CCPRL register
-    CCPR1L = ((dutyValue & 0x03FC)>>2);
-    
-   // Writing to 2 LSBs of pwm duty cycle in CCPCON register
-    CCP1CON = (CCP1CON & 0xCF) | ((dutyValue & 0x0003)<<4);
-}
+  @Description
+    This routine gets the FVR output ready status.
+
+  @Preconditions
+    The FVR_Initialize() routine should be called
+    prior to use this routine.
+
+  @Param
+    None
+
+  @Returns
+     true  - FVR module is ready for use.
+     false - FVR module is not ready for use.
+
+  @Example
+    <code>
+    FVR_Initialize();
+
+    if(FVR_IsOutputReady())
+    {
+          //user code
+    }
+    else
+    {
+          //user code
+    }
+    </code>
+*/
+bool FVR_IsOutputReady(void);
+
+#ifdef __cplusplus  // Provide C++ Compatibility
+
+    }
+
+#endif
+
+#endif // _FVR_H
 /**
  End of File
 */
+

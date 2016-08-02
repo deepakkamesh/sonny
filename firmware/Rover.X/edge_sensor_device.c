@@ -7,27 +7,9 @@
 extern Queue CmdQ[MAX_DEVICES];
 
 void EdgeSensorTask(void) {
-    uint8_t state;
+    uint8_t state=0;
     uint32_t now;
     static uint32_t timer = 0;
-
-    state = IR1_GetValue();
-    
-
-    if (!state) {
-        now = TickGet();
-        if (!timer) {
-            timer = now;
-        } else {
-            if ((now - timer)/TICK_MILLISECOND > 1) {
-                SendError(DEV_EDGE_SENSOR, ERR_EDGE_DETECTED);
-                timer = 0;
-                return;
-            }
-        }
-    } else {
-        timer = 0;
-    }
 
 
 
@@ -40,11 +22,6 @@ void EdgeSensorTask(void) {
 
 
     switch (command) {
-        case CMD_STATE:
-            packet[0] = 0xC0 | DEV_EDGE_SENSOR; // Ack & Done.
-            packet[1] = state;
-            SendPacket(packet, 2);
-            break;
 
         default:
             SendError(DEV_EDGE_SENSOR, ERR_UNIMPLEMENTED);

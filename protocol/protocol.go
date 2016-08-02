@@ -1,6 +1,9 @@
 package protocol
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 const (
 	PKT_SZ      = 16
@@ -9,30 +12,57 @@ const (
 	// Device Definitions.
 	DEV_ADMIN = 0x0
 	DEV_LED   = 0x1
-
+	DEV_SERVO = 0x2
 	// Command definitions.
 	CMD_ON      = 0x1
 	CMD_PING    = 0x2
 	CMD_VERSION = 0x3
+	CMD_ROTATE  = 0x6
 
 	// Error Codes.
 	ERR_CHECKSUM_FAILURE = 0x1
 	ERR_DEVICE_BUSY      = 0x2
+
+	ACK      = 0x8
+	ACK_DONE = 0xC
+	ERR      = 0x0
+	DONE     = 0x4
 )
 
-func CalcChecksum(packet []byte) byte {
+func Error(errCode byte) error {
+	err := map[byte]string{
+		0x1: "checksum mismatch",
+		0x2: "device busy",
+		0x3: "unimplemented",
+		0x4: "insufficient parameters",
+	}
+
+	if e, ok := err[errCode]; ok {
+		return errors.New(e)
+	}
+	return errors.New("unknown")
+}
+
+func Checksum(packet []byte) byte {
 	return 0x1
 }
 
-func VerifyChecksum(packet []byte, checksum byte) bool {
+func VerifyChecksum(packet []byte) bool {
 	return true
 }
 
 func Header(packet []byte) byte {
 	header := byte(len(packet) << 4)
-	return header | CalcChecksum(packet)
+	return header | Checksum(packet)
+
+}
+func StatusCode(b byte) byte {
+	return b >> 4
 }
 
+func DeviceID(b byte) byte {
+	return b & 0xF
+}
 func PrettyPrint(packet []byte) (logline string) {
 
 	// Calculate len of packet

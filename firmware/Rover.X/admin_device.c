@@ -13,7 +13,6 @@ void AdminTask(void) {
         return;
     }
     uint8_t deviceID, command, packet[PKT_SZ];
-    unsigned long long now;
 
     command = GetCommand(CmdQ[DEV_ADMIN].packet[0]);
 
@@ -21,7 +20,8 @@ void AdminTask(void) {
         case CMD_PING:
             SendAckDone(DEV_ADMIN);
             break;
-            
+        case CMD_TEST:
+            break;
         default:
             SendError(DEV_ADMIN, ERR_UNIMPLEMENTED);
             break;

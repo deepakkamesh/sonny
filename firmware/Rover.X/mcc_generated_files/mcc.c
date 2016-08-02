@@ -114,13 +114,13 @@ void SYSTEM_Initialize(void)
     INTERRUPT_Initialize();
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
+    I2C1_Initialize();
+    FVR_Initialize();
     ADC_Initialize();
     CCP5_Initialize();
     CCP4_Initialize();
-    EPWM1_Initialize();
     TMR3_Initialize();
     TMR5_Initialize();
-    TMR2_Initialize();
     TMR0_Initialize();
     EUSART1_Initialize();
 }

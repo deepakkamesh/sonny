@@ -1,17 +1,17 @@
 /**
-  TMR2 Generated Driver File
+  FVR Generated Driver File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    tmr2.c
+    fvr.c
 
   @Summary
-    This is the generated driver implementation file for the TMR2 driver using MPLAB(c) Code Configurator
+    This is the generated driver implementation file for the FVR driver using MPLAB(c) Code Configurator
 
   @Description
-    This source file provides APIs for TMR2.
+    This source file provides APIs for FVR.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
         Device            :  PIC18F26K22
@@ -48,75 +48,23 @@
 */
 
 #include <xc.h>
-#include "tmr2.h"
+#include "fvr.h"
 
 /**
-  Section: TMR2 APIs
+  Section: FVR APIs
 */
 
-void TMR2_Initialize(void)
+void FVR_Initialize(void)
 {
-    // Set TMR2 to the options selected in the User Interface
-
-    // T2CKPS 1:16; T2OUTPS 1:1; TMR2ON on; 
-    T2CON = 0x02;
-
-    // PR2 24; 
-    PR2 = 0x18;
-
-    // TMR2 0; 
-    TMR2 = 0x00;
-
-    // Clearing IF flag.
-    PIR1bits.TMR2IF = 0;
-
-    // Start TMR2
-    TMR2_StartTimer();
+    // FVRS 2x; FVREN enabled; 
+    VREFCON0 = 0xA0;
 }
 
-void TMR2_StartTimer(void)
+bool FVR_IsOutputReady(void)
 {
-    // Start the Timer by writing to TMRxON bit
-    T2CONbits.TMR2ON = 1;
-}
-
-void TMR2_StopTimer(void)
-{
-    // Stop the Timer by writing to TMRxON bit
-    T2CONbits.TMR2ON = 0;
-}
-
-uint8_t TMR2_ReadTimer(void)
-{
-    uint8_t readVal;
-
-    readVal = TMR2;
-
-    return readVal;
-}
-
-void TMR2_WriteTimer(uint8_t timerVal)
-{
-    // Write to the Timer2 register
-    TMR2 = timerVal;
-}
-
-void TMR2_LoadPeriodRegister(uint8_t periodVal)
-{
-   PR2 = periodVal;
-}
-
-bool TMR2_HasOverflowOccured(void)
-{
-    // check if  overflow has occurred by checking the TMRIF bit
-    bool status = PIR1bits.TMR2IF;
-    if(status)
-    {
-        // Clearing IF flag.
-        PIR1bits.TMR2IF = 0;
-    }
-    return status;
+    return (VREFCON0bits.FVRST);
 }
 /**
-  End of File
+ End of File
 */
+

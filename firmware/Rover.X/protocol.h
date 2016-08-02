@@ -20,9 +20,10 @@ extern "C" {
     /* Additional Parameters
      * CMD_BLINK
      * Request:
-     * param1 - MSB of blink duration in ms 
-     * param2 - LSB of blink duration in ms.
-     * defaut - 1 sec
+     * optional param1 - MSB of blink duration in ms 
+     * optional param2 - LSB of blink duration in ms.
+     * optional param3 - number of times to blink.
+     * defaut - 1 sec blink continuous
      */
 #define DEV_SERVO 0x2
     /* Servo Motors
@@ -52,6 +53,22 @@ extern "C" {
     /* Edge Sensor
      * 
      */
+#define DEV_LDR 0x5
+    /* Light Sensor
+     * Additional Parameters
+     * CMD_STATE
+     * Return:
+     * Param1 - MSB of ADC Value 
+     * Param2 - LSB of ADC Value
+     */
+#define DEV_BATT 0x6
+    /* Battery Voltage
+     * Additional Parameters
+     * CMD_STATE
+     * Return:
+     * Param1 - MSB of ADC Value 
+     * Param2 - LSB of ADC Value
+     */    
     
     // Command definitions.    
 #define CMD_ON 0x1
@@ -61,6 +78,7 @@ extern "C" {
 #define CMD_BLINK 0x5 
 #define CMD_ROTATE 0x6 
 #define CMD_STATE 0x7
+#define CMD_TEST 0x8
 
     // Error Codes.
 #define ERR_CHECKSUM_FAILURE 0x1
@@ -68,6 +86,7 @@ extern "C" {
 #define ERR_UNIMPLEMENTED 0x3
 #define ERR_INSUFFICENT_PARAMS 0x4
 #define ERR_EDGE_DETECTED 0x5
+#define ERR_BATT_LOW 0x6
 
     // Helper Functions.
 #define GetDeviceID(data) (data & 0xF)
