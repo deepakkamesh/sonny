@@ -1,27 +1,38 @@
 package devices
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	p "github.com/deepakkamesh/sonny/protocol"
 	"github.com/tarm/serial"
 )
 
-type retVal struct {
-	data []byte
-	err  error
+const TIMEOUT = 500 // Controller Response Timeout.
+
+type result struct {
+	pkt []byte
+	err error
 }
-type command struct {
-	data []byte
-	ret  chan retVal
+
+type request struct {
+	pkt []byte
+	ret chan result
+}
+
+type buffer struct {
+	tmstmp time.Time
+	ret    chan result
+	pkt    []byte
 }
 
 type controller struct {
 	port   *serial.Port
-	in     chan command         // Channel to recieve command.
-	out    chan []byte          // Channel to recieve response from controller.
-	cmdBuf map[byte]chan retVal // Command buffer to maintain state of currently executing commands.
+	in     chan request    // Channel to recieve command.
+	out    chan []byte     // Channel to recieve response from controller.
+	cmdBuf map[byte]buffer // Command buffer to maintain state of currently executing commands.
 }
 
 func NewController(tty string, baud int) *controller {
@@ -34,9 +45,9 @@ func NewController(tty string, baud int) *controller {
 
 	return &controller{
 		port:   port,
-		in:     make(chan command),
+		in:     make(chan request),
 		out:    make(chan []byte),
-		cmdBuf: make(map[byte]chan retVal),
+		cmdBuf: make(map[byte]buffer),
 	}
 }
 
@@ -63,18 +74,38 @@ func (m *controller) read() {
 }
 
 func (m *controller) run() {
+
+	tick := time.NewTicker(500 * time.Millisecond)
 	for {
 		select {
 		// Process commands.
 		case c := <-m.in:
-			fmt.Printf("Executing Command: %d on device %d\n", c.data, p.DeviceID(c.data[0]))
-			m.cmdBuf[p.DeviceID(c.data[0])] = c.ret
-			h := p.Header(c.data)
+			fmt.Printf("Executing Command: %d on device %d\n", c.pkt, p.DeviceID(c.pkt[0]))
+			d := p.DeviceID(c.pkt[0])
+			m.cmdBuf[d] = buffer{
+				ret:    c.ret,
+				tmstmp: time.Now(),
+				pkt:    c.pkt,
+			}
+
+			// Send the command to the controller.
+			h := p.Header(c.pkt)
 			m.port.Write([]byte{h})
-			m.port.Write(c.data)
+			m.port.Write(c.pkt)
+
+		// Check for timeouts.
+		case <-tick.C:
+			for _, v := range m.cmdBuf {
+				if time.Since(v.tmstmp) > TIMEOUT*time.Millisecond {
+					v.ret <- result{
+						pkt: nil,
+						err: errors.New("Timeout on device"),
+					}
+					delete(m.cmdBuf, p.DeviceID(v.pkt[0]))
+				}
+			}
 
 		// Process return data from controller.
-		// TODO: Add timeout for command buffer.
 		case data := <-m.out:
 			deviceID := p.DeviceID(data[0])
 			v, ok := m.cmdBuf[deviceID]
@@ -88,20 +119,21 @@ func (m *controller) run() {
 			case p.ACK:
 				continue
 			case p.ACK_DONE, p.DONE:
-				v <- retVal{
-					data: data,
-					err:  nil,
+				v.ret <- result{
+					pkt: data,
+					err: nil,
 				}
-				close(v)
+				close(v.ret)
 				delete(m.cmdBuf, deviceID)
 			case p.ERR:
-				v <- retVal{
-					data: nil,
-					err:  p.Error(data[1]),
+				v.ret <- result{
+					pkt: nil,
+					err: p.Error(data[1]),
 				}
-				close(v)
+				close(v.ret)
 				delete(m.cmdBuf, deviceID)
 			}
+
 		}
 	}
 }
@@ -112,11 +144,11 @@ func (m *controller) LedOn(on bool) error {
 	if !on {
 		cmd = p.CMD_OFF
 	}
-	data := []byte{cmd<<4 | p.DEV_LED}
-	ret := make(chan retVal)
-	m.in <- command{
-		data: data,
-		ret:  ret,
+	pkt := []byte{cmd<<4 | p.DEV_LED}
+	ret := make(chan result)
+	m.in <- request{
+		pkt: pkt,
+		ret: ret,
 	}
 	return (<-ret).err
 }
@@ -124,11 +156,11 @@ func (m *controller) LedOn(on bool) error {
 func (m *controller) Ping() error {
 	log.Println("Pinging controller")
 
-	cmd := []byte{p.CMD_PING<<4 | p.DEV_ADMIN}
-	ret := make(chan retVal)
-	m.in <- command{
-		data: cmd,
-		ret:  ret,
+	pkt := []byte{p.CMD_PING<<4 | p.DEV_ADMIN}
+	ret := make(chan result)
+	m.in <- request{
+		pkt: pkt,
+		ret: ret,
 	}
 	return (<-ret).err
 }
@@ -137,13 +169,13 @@ func (m *controller) RotateServo(angle int) error {
 	fmt.Printf("Rotate angle %d\n", angle)
 
 	// Assemble command data.
-	cmd := []byte{p.CMD_ROTATE<<4 | p.DEV_SERVO, 10}
+	pkt := []byte{p.CMD_ROTATE<<4 | p.DEV_SERVO, 10}
 	// Channel for return value.
-	ret := make(chan retVal)
+	ret := make(chan result)
 
-	m.in <- command{
-		data: cmd,
-		ret:  ret,
+	m.in <- request{
+		pkt: pkt,
+		ret: ret,
 	}
 
 	return (<-ret).err // Wait for response on ack.
