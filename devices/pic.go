@@ -27,15 +27,14 @@ type buffer struct {
 	ret    chan result
 	pkt    []byte
 }
-
-type controller struct {
+type Controller struct {
 	port   *serial.Port
 	in     chan request    // Channel to recieve command.
 	out    chan []byte     // Channel to recieve response from controller.
 	cmdBuf map[byte]buffer // Command buffer to maintain state of currently executing commands.
 }
 
-func NewController(tty string, baud int) *controller {
+func NewController(tty string, baud int) *Controller {
 
 	c := &serial.Config{Name: tty, Baud: baud}
 	port, err := serial.OpenPort(c)
@@ -43,7 +42,7 @@ func NewController(tty string, baud int) *controller {
 		log.Fatalf("Error opening tty port %v", err)
 	}
 
-	return &controller{
+	return &Controller{
 		port:   port,
 		in:     make(chan request),
 		out:    make(chan []byte),
@@ -51,12 +50,12 @@ func NewController(tty string, baud int) *controller {
 	}
 }
 
-func (m *controller) Start() {
+func (m *Controller) Start() {
 	go m.run()
 	go m.read()
 }
 
-func (m *controller) read() {
+func (m *Controller) read() {
 
 	for {
 		buf := make([]byte, 16)
@@ -73,7 +72,7 @@ func (m *controller) read() {
 	}
 }
 
-func (m *controller) run() {
+func (m *Controller) run() {
 
 	tick := time.NewTicker(500 * time.Millisecond)
 	for {
@@ -137,7 +136,7 @@ func (m *controller) run() {
 		}
 	}
 }
-func (m *controller) LedOn(on bool) error {
+func (m *Controller) LedOn(on bool) error {
 
 	log.Println("LED")
 	cmd := p.CMD_ON
@@ -153,7 +152,7 @@ func (m *controller) LedOn(on bool) error {
 	return (<-ret).err
 }
 
-func (m *controller) Ping() error {
+func (m *Controller) Ping() error {
 	log.Println("Pinging controller")
 
 	pkt := []byte{p.CMD_PING<<4 | p.DEV_ADMIN}
@@ -165,7 +164,7 @@ func (m *controller) Ping() error {
 	return (<-ret).err
 }
 
-func (m *controller) RotateServo(angle int) error {
+func (m *Controller) RotateServo(angle int) error {
 	fmt.Printf("Rotate angle %d\n", angle)
 
 	// Assemble command data.
