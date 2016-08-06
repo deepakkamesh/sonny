@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package sonny;
+
+import "empty.proto";
+
+// DevicesRPC service definition.
+service DevicesRPC {
+	// Pings the admin interface
+	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}
+
