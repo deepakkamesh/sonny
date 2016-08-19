@@ -1,3 +1,6 @@
+/* Package devices provides the device driver layer for Sonny.
+*  Currently the package supports the controller and Pi.
+ */
 package devices
 
 import (
@@ -10,8 +13,28 @@ import (
 	"github.com/tarm/serial"
 )
 
-const TIMEOUT = 500 // Controller Response Timeout.
+// Dependency injection for mocks.
+var (
+	serialOpen  = serOpen
+	serialRead  = serRead
+	serialWrite = serWrite
+)
 
+func serOpen(c *serial.Config) (*serial.Port, error) {
+	return serial.OpenPort(c)
+}
+
+func serRead(s *serial.Port, b []byte) (int, error) {
+	return s.Read(b)
+}
+
+func serWrite(s *serial.Port, b []byte) (int, error) {
+	return s.Write(b)
+}
+
+const TIMEOUT = 500 // Controller response timeout in milliseconds.
+
+// result stores the return value from the controller.
 type result struct {
 	pkt []byte
 	err error
@@ -23,10 +46,11 @@ type request struct {
 }
 
 type buffer struct {
-	tmstmp time.Time
-	ret    chan result
-	pkt    []byte
+	tmstmp time.Time   // Time when command was sent.
+	ret    chan result // Channel to return the result.
+	status byte        // Status of command.
 }
+
 type Controller struct {
 	port   *serial.Port
 	in     chan request    // Channel to recieve command.
@@ -34,12 +58,13 @@ type Controller struct {
 	cmdBuf map[byte]buffer // Command buffer to maintain state of currently executing commands.
 }
 
-func NewController(tty string, baud int) *Controller {
+func NewController(tty string, baud int) (*Controller, error) {
 
 	c := &serial.Config{Name: tty, Baud: baud}
-	port, err := serial.OpenPort(c)
+	port, err := serialOpen(c)
+
 	if err != nil {
-		log.Fatalf("Error opening tty port %v", err)
+		return nil, err
 	}
 
 	return &Controller{
@@ -47,7 +72,7 @@ func NewController(tty string, baud int) *Controller {
 		in:     make(chan request),
 		out:    make(chan []byte),
 		cmdBuf: make(map[byte]buffer),
-	}
+	}, nil
 }
 
 func (m *Controller) Start() {
@@ -58,8 +83,9 @@ func (m *Controller) Start() {
 func (m *Controller) read() {
 
 	for {
+		// TODO: This may fail if there are 2 packets within the 16 bytes.
 		buf := make([]byte, 16)
-		_, err := m.port.Read(buf)
+		_, err := serialRead(m.port, buf)
 		if err != nil {
 			log.Printf("Error reading from tty %s", err)
 			continue
@@ -75,39 +101,40 @@ func (m *Controller) read() {
 func (m *Controller) run() {
 
 	tick := time.NewTicker(500 * time.Millisecond)
+
 	for {
 		select {
-		// Process commands.
+		// Send commands to controller.
 		case c := <-m.in:
-			fmt.Printf("Executing Command: %d on device %d\n", c.pkt, p.DeviceID(c.pkt[0]))
 			d := p.DeviceID(c.pkt[0])
+			fmt.Printf("Executing Command: %d on device %d\n", c.pkt, d)
 			m.cmdBuf[d] = buffer{
 				ret:    c.ret,
 				tmstmp: time.Now(),
-				pkt:    c.pkt,
 			}
 
 			// Send the command to the controller.
 			h := p.Header(c.pkt)
-			m.port.Write([]byte{h})
-			m.port.Write(c.pkt)
+			serialWrite(m.port, []byte{h})
+			serialWrite(m.port, c.pkt)
 
 		// Check for timeouts.
 		case <-tick.C:
-			for _, v := range m.cmdBuf {
-				if time.Since(v.tmstmp) > TIMEOUT*time.Millisecond {
-					v.ret <- result{
+			for deviceID, buf := range m.cmdBuf {
+				// timeout after ack is 20x the regular timeout.
+				if (time.Since(buf.tmstmp) > TIMEOUT*time.Millisecond && buf.status != p.ACK) || (time.Since(buf.tmstmp) > 20*TIMEOUT*time.Millisecond && buf.status == p.ACK) {
+					buf.ret <- result{
 						pkt: nil,
 						err: errors.New("Timeout on device"),
 					}
-					delete(m.cmdBuf, p.DeviceID(v.pkt[0]))
+					delete(m.cmdBuf, deviceID)
 				}
 			}
 
 		// Process return data from controller.
 		case data := <-m.out:
 			deviceID := p.DeviceID(data[0])
-			v, ok := m.cmdBuf[deviceID]
+			buf, ok := m.cmdBuf[deviceID]
 			if !ok {
 				// TODO: add default handler here.
 				log.Printf("Failed to find a handler for device: %d packet: %v", p.DeviceID(data[0]), data)
@@ -116,26 +143,26 @@ func (m *Controller) run() {
 
 			switch p.StatusCode(data[0]) {
 			case p.ACK:
-				continue
+				buf.status = p.ACK
 			case p.ACK_DONE, p.DONE:
-				v.ret <- result{
+				buf.ret <- result{
 					pkt: data,
 					err: nil,
 				}
-				close(v.ret)
+				close(buf.ret)
 				delete(m.cmdBuf, deviceID)
 			case p.ERR:
-				v.ret <- result{
+				buf.ret <- result{
 					pkt: nil,
 					err: p.Error(data[1]),
 				}
-				close(v.ret)
+				close(buf.ret)
 				delete(m.cmdBuf, deviceID)
 			}
-
 		}
 	}
 }
+
 func (m *Controller) LedOn(on bool) error {
 
 	log.Println("LED")
