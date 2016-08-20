@@ -83,21 +83,24 @@ func (m *Controller) Start() {
 func (m *Controller) read() {
 	header := make([]byte, 1)
 	for {
-		if _, err = serialRead(m.port, header); err == nil {
-			sz := p.PacketSz(header)
-			pkt := make([]byte, sz)
-			if _, err = serialRead(m.port, pkt); err != nil {
-				log.Printf("Error reading data from tty: %v", err)
-				continue
-			}
-			if !p.VerifyChecksum(pkt, c) {
-				log.Printf("Checksum mismatch, discarding packet: %v", pkt)
-				continue
-			}
-			m.out <- pkt
+		_, err := serialRead(m.port, header)
+		if err != nil {
+			log.Printf("Error reading header from tty: %v", err)
 			continue
 		}
-		log.Printf("Error reading header from tty: %v", err)
+		sz := p.PacketSz(header)
+		c := p.Checksum(header)
+		pkt := make([]byte, sz)
+		if _, err := serialRead(m.port, pkt); err != nil {
+			log.Printf("Error reading data from tty: %v", err)
+			continue
+		}
+		if !p.VerifyChecksum(pkt, c) {
+			log.Printf("Checksum mismatch, discarding packet: %v", pkt)
+			continue
+		}
+		m.out <- pkt
+		continue
 	}
 }
 
@@ -111,7 +114,7 @@ func (m *Controller) readold() {
 			log.Printf("Error reading from tty %s", err)
 			continue
 		}
-		if !p.VerifyChecksum(buf) {
+		if !p.VerifyChecksum(buf, buf[0]) {
 			log.Printf("Checksum mismatch, discarding packet %v", buf)
 			continue
 		}

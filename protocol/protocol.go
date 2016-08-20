@@ -46,11 +46,15 @@ func Error(errCode byte) error {
 	return errors.New("unknown")
 }
 
-func Checksum(packet []byte) byte {
+func CalcChecksum(packet []byte) byte {
 	return 0x1
 }
 
-func VerifyChecksum(packet []byte) bool {
+func Checksum(packet []byte) byte {
+	return packet[0] & 0xF
+}
+
+func VerifyChecksum(packet []byte, checksum byte) bool {
 	return true
 }
 
