@@ -81,6 +81,27 @@ func (m *Controller) Start() {
 }
 
 func (m *Controller) read() {
+	header := make([]byte, 1)
+	for {
+		if _, err = serialRead(m.port, header); err == nil {
+			sz := p.PacketSz(header)
+			pkt := make([]byte, sz)
+			if _, err = serialRead(m.port, pkt); err != nil {
+				log.Printf("Error reading data from tty: %v", err)
+				continue
+			}
+			if !p.VerifyChecksum(pkt, c) {
+				log.Printf("Checksum mismatch, discarding packet: %v", pkt)
+				continue
+			}
+			m.out <- pkt
+			continue
+		}
+		log.Printf("Error reading header from tty: %v", err)
+	}
+}
+
+func (m *Controller) readold() {
 
 	for {
 		// TODO: This may fail if there are 2 packets within the 16 bytes.

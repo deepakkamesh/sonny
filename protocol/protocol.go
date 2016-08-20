@@ -54,6 +54,10 @@ func VerifyChecksum(packet []byte) bool {
 	return true
 }
 
+func PacketSz(packet []byte) byte {
+	return packet[0] >> 4
+}
+
 func Header(packet []byte) byte {
 	header := byte(len(packet) << 4)
 	return header | Checksum(packet)
