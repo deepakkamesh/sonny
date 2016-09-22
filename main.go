@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	ctrl, err := devices.NewController("/dev/ttys000", 115200)
+	ctrl, err := devices.NewController("/dev/ttyAMA0", 115200)
 	if err != nil {
 		log.Fatalf("Error creating new controller %v", err)
 	}
@@ -19,6 +19,9 @@ func main() {
 		fmt.Println("Error", err)
 	}
 
+	if err := ctrl.LedOn(true); err != nil {
+		fmt.Println("Error", err)
+	}
 	/*
 		lis, err := net.Listen("tcp", ":2233")
 		if err != nil {

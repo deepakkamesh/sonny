@@ -64,7 +64,7 @@ func PacketSz(packet []byte) byte {
 
 func Header(packet []byte) byte {
 	header := byte(len(packet) << 4)
-	return header | Checksum(packet)
+	return header | CalcChecksum(packet)
 
 }
 func StatusCode(b byte) byte {

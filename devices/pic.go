@@ -85,44 +85,68 @@ func (m *Controller) read() {
 	for {
 		_, err := serialRead(m.port, header)
 		if err != nil {
-			log.Printf("Error reading header from tty: %v", err)
+			log.Printf("Failed to read header from tty: %v", err)
 			continue
 		}
 		sz := p.PacketSz(header)
-		c := p.Checksum(header)
 		pkt := make([]byte, sz)
-		if _, err := serialRead(m.port, pkt); err != nil {
-			log.Printf("Error reading data from tty: %v", err)
+		n, err := serialRead(m.port, pkt)
+		if err != nil {
+			log.Printf("Failed to read data from tty: %v", err)
 			continue
 		}
+		if n != sz {
+			log.Printf("Expected to recieve %d bytes from tty, got %d", sz, d)
+			continue
+		}
+		c := p.Checksum(header)
 		if !p.VerifyChecksum(pkt, c) {
 			log.Printf("Checksum mismatch, discarding packet: %v", pkt)
 			continue
 		}
+		// Everything looks good. Dump the packet to channel.
 		m.out <- pkt
-		continue
-	}
-}
-
-func (m *Controller) readold() {
-
-	for {
-		// TODO: This may fail if there are 2 packets within the 16 bytes.
-		buf := make([]byte, 16)
-		_, err := serialRead(m.port, buf)
-		if err != nil {
-			log.Printf("Error reading from tty %s", err)
-			continue
-		}
-		if !p.VerifyChecksum(buf, buf[0]) {
-			log.Printf("Checksum mismatch, discarding packet %v", buf)
-			continue
-		}
-		m.out <- buf[1:] // Strip out header after checksum verification.
 	}
 }
 
 func (m *Controller) run() {
+	for {
+		select {
+		case c := <-m.in:
+			fmt.Printf("DEBUG: got command: %v", c.pkt)
+			// Send the command to the controller.
+			h := p.Header(c.pkt)
+			serialWrite(m.port, []byte{h})
+			serialWrite(m.port, c.pkt)
+
+			// Wait for an ACK or ERR.
+			t := time.NewTimer(TIMEOUT * time.Millisecond)
+			var d []byte
+			select {
+			case d = <-m.out:
+			case <-t:
+				log.Printf("Timeout waiting on ack for packet %v", c.pkt)
+				continue
+			}
+
+			switch p.StatusCode(d[0]) {
+			case p.ACK_DONE:
+				c.ret <- result{
+					pkt: d,
+					err: nil,
+				}
+			case p.ERR:
+				c.ret <- result{
+					pkt: nil,
+					err: p.Error(d[1]),
+				}
+			}
+
+		}
+	}
+}
+
+func (m *Controller) runold() {
 
 	tick := time.NewTicker(500 * time.Millisecond)
 
@@ -189,7 +213,6 @@ func (m *Controller) run() {
 
 func (m *Controller) LedOn(on bool) error {
 
-	log.Println("LED")
 	cmd := p.CMD_ON
 	if !on {
 		cmd = p.CMD_OFF
