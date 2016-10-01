@@ -52,7 +52,6 @@ type Controller struct {
 	deviceChan map[byte]chan []byte
 	quit       chan struct{}
 	quitR      chan struct{}
-	done       chan byte
 }
 
 func NewController(tty string, baud int) (*Controller, error) {
@@ -69,7 +68,6 @@ func NewController(tty string, baud int) (*Controller, error) {
 		deviceChan: make(map[byte]chan []byte),
 		quit:       make(chan struct{}),
 		quitR:      make(chan struct{}),
-		done:       make(chan byte),
 	}, nil
 }
 
@@ -88,10 +86,6 @@ func (m *Controller) read() {
 		select {
 		case <-m.quitR:
 			return
-
-		case dev := <-m.done:
-			close(m.deviceChan[dev])
-			delete(m.deviceChan, dev)
 
 		default:
 			header := make([]byte, 1)
@@ -119,14 +113,13 @@ func (m *Controller) read() {
 				log.Printf("Checksum mismatch, discarding packet: %v", pkt)
 				continue
 			}
-			// Everything looks good. Dump the packet to goroutine handling the device.
+			// Send the packet to goroutine handling the device.
 			dev := p.DeviceID(pkt[0])
 			if c, ok := m.deviceChan[dev]; ok {
 				c <- pkt
 				continue
 			}
-			log.Printf("No registered channel found for device %b", dev)
-
+			log.Printf("No registered channel found for device %b, packet:%x", dev, pkt)
 		}
 	}
 }
@@ -144,17 +137,17 @@ func (m *Controller) run() {
 			h := p.Header(c.pkt)
 			serialWrite(m.port, []byte{h})
 			serialWrite(m.port, c.pkt)
-			deviceID := p.DeviceID(c.pkt[0])
+			dev := p.DeviceID(c.pkt[0])
 			// Device is busy. Retry later.
-			if _, ok := m.deviceChan[deviceID]; ok {
+			if _, ok := m.deviceChan[dev]; ok {
 				go func() {
-					log.Printf("Device %v busy. Retrying command", deviceID)
+					log.Printf("Device %v busy. Retrying command", dev)
 					time.Sleep(time.Millisecond * 100)
 					m.in <- c
 				}()
 				continue
 			}
-			m.deviceChan[deviceID] = make(chan []byte, 2)
+			m.deviceChan[dev] = make(chan []byte)
 
 			// Goroutine to process data from controller.
 			go func() {
@@ -167,10 +160,8 @@ func (m *Controller) run() {
 							pkt: nil,
 							err: errors.New("timeout waiting response from controller"),
 						}
-						m.done <- deviceID // Send done to close channel.
-						return
 					// Handle data from controller.
-					case d := <-m.deviceChan[deviceID]:
+					case d := <-m.deviceChan[dev]:
 						switch p.StatusCode(d[0]) {
 						case p.ACK:
 							t.Reset(TIMEOUT * time.Millisecond)
@@ -180,24 +171,22 @@ func (m *Controller) run() {
 								pkt: d,
 								err: nil,
 							}
-							m.done <- deviceID // Send done to close channel.
-							return
 						case p.ERR:
 							c.ret <- result{
 								pkt: nil,
 								err: p.Error(d[1]),
 							}
-							m.done <- deviceID // Send done to close channel.
-							return
 						case p.DONE:
 							c.ret <- result{
 								pkt: d,
 								err: nil,
 							}
-							m.done <- deviceID // Send done to close channel.
-							return
 						}
 					}
+					// Done with this channel.
+					close(m.deviceChan[dev])
+					delete(m.deviceChan, dev)
+					return
 				}
 			}()
 		}

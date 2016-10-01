@@ -177,7 +177,7 @@ func TestController(t *testing.T) {
 					return 1, nil
 
 				case 3:
-					time.Sleep(time.Millisecond * 700)
+					time.Sleep(time.Millisecond * 600)
 					b[0] = 0x11
 					readCnt += 1
 					return 1, nil
