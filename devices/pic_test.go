@@ -10,17 +10,12 @@ import (
 
 func TestController(t *testing.T) {
 
-	m := make(chan struct{})
-	n := make(chan struct{})
+	readCnt := 0
+
 	serialOpen = func(c *serial.Config) (*serial.Port, error) {
 		return &serial.Port{}, nil
 	}
 
-	ctrl, err := NewController("/dev/ttyAMA0", 115211)
-	if err != nil {
-		t.Fatalf("Unable to open tty %v", err)
-	}
-	ctrl.Start()
 	for _, i := range []struct {
 		read    func(s *serial.Port, b []byte) (int, error)
 		write   func(s *serial.Port, b []byte) (int, error)
@@ -28,66 +23,196 @@ func TestController(t *testing.T) {
 		info    string
 	}{
 		{
-
 			func(s *serial.Port, b []byte) (int, error) {
-				<-n
-				b[0] = 0x11
-				b[1] = p.ACK_DONE<<4 | p.DEV_ADMIN
-				return 2, nil
+				// Block till there is a write request.
+				for readCnt == 0 {
+					time.Sleep(time.Millisecond * 50)
+					return 0, nil
+				}
+				switch readCnt {
+				case 1:
+					b[0] = 0x11
+					readCnt += 1
+					return 1, nil
+
+				case 2:
+					b[0] = p.ACK_DONE<<4 | p.DEV_ADMIN
+					readCnt = 0
+					return 1, nil
+				}
+				return 0, nil
 			},
 			func(s *serial.Port, b []byte) (int, error) {
 				for _, i := range b {
 					if i == (p.CMD_PING<<4 | p.DEV_ADMIN) {
-						n <- struct{}{}
+						readCnt = 1
+					}
+				}
+				return 1, nil
+			},
+			false,
+			"ACK_DONE tests",
+		},
+		{
+			func(s *serial.Port, b []byte) (int, error) {
+				// Block till there is a write request.
+				for readCnt == 0 {
+					time.Sleep(time.Millisecond * 50)
+					return 0, nil
+				}
+				switch readCnt {
+				case 1:
+					b[0] = 0x21
+					readCnt += 1
+					return 1, nil
+
+				case 2:
+					b[0] = p.ERR<<4 | p.DEV_ADMIN
+					b[1] = p.ERR_UNIMPLEMENTED
+					readCnt = 0
+					return 2, nil
+				}
+				return 0, nil
+			},
+			func(s *serial.Port, b []byte) (int, error) {
+				for _, i := range b {
+					if i == (p.CMD_PING<<4 | p.DEV_ADMIN) {
+						readCnt = 1
+					}
+				}
+				return 1, nil
+			},
+			true,
+			"device error tests",
+		},
+		{
+			func(s *serial.Port, b []byte) (int, error) {
+				// Block till there is a write request.
+				for readCnt == 0 {
+					time.Sleep(time.Millisecond * 50)
+					return 0, nil
+				}
+				switch readCnt {
+				case 1:
+					b[0] = 0x11
+					readCnt += 1
+					return 1, nil
+
+				case 2:
+					b[0] = p.ACK<<4 | p.DEV_ADMIN
+					readCnt += 1
+					return 1, nil
+
+				case 3:
+					time.Sleep(time.Millisecond * 100)
+					b[0] = 0x11
+					readCnt += 1
+					return 1, nil
+
+				case 4:
+					b[0] = p.DONE<<4 | p.DEV_ADMIN
+					readCnt = 0
+					return 1, nil
+				}
+				return 0, nil
+			},
+			func(s *serial.Port, b []byte) (int, error) {
+				for _, i := range b {
+					if i == (p.CMD_PING<<4 | p.DEV_ADMIN) {
+						readCnt = 1
 					}
 				}
 				return 0, nil
 			},
 			false,
-			"all pass test",
+			"ACK->DONE  tests",
 		},
 		{
 			func(s *serial.Port, b []byte) (int, error) {
-				<-m
-				time.Sleep(700 * time.Millisecond)
-				b[0] = 0x11
-				b[1] = p.ACK_DONE<<4 | p.DEV_ADMIN
-				return 2, nil
+				for readCnt == 0 {
+					time.Sleep(time.Millisecond * 50)
+					return 0, nil
+				}
+				time.Sleep(time.Millisecond * 500)
+
+				switch readCnt {
+				case 1:
+					b[0] = 0x11
+					readCnt += 1
+					return 1, nil
+
+				case 2:
+					b[0] = p.ACK_DONE<<4 | p.DEV_ADMIN
+					readCnt = 0
+					return 1, nil
+				}
+
+				return 0, nil
 			},
 			func(s *serial.Port, b []byte) (int, error) {
 				if b[0] == (p.CMD_PING<<4 | p.DEV_ADMIN) {
-					m <- struct{}{}
+					readCnt = 1
 				}
 				return 0, nil
 			},
 			true,
-			"> 500ms timeout test",
+			"ACK/ACK_DONE timeout test",
 		},
 		{
 			func(s *serial.Port, b []byte) (int, error) {
-				<-m
-				time.Sleep(300 * time.Millisecond)
-				b[0] = 0x11
-				b[1] = p.ACK_DONE<<4 | p.DEV_ADMIN
-				return 2, nil
-			},
-			func(s *serial.Port, b []byte) (int, error) {
-				if b[0] == (p.CMD_PING<<4 | p.DEV_ADMIN) {
-					m <- struct{}{}
+				for readCnt == 0 {
+					time.Sleep(time.Millisecond * 50)
+					return 0, nil
+				}
+
+				switch readCnt {
+				case 1:
+					b[0] = 0x11
+					readCnt += 1
+					return 1, nil
+
+				case 2:
+					b[0] = p.ACK<<4 | p.DEV_ADMIN
+					readCnt += 1
+					return 1, nil
+
+				case 3:
+					time.Sleep(time.Millisecond * 700)
+					b[0] = 0x11
+					readCnt += 1
+					return 1, nil
+
+				case 4:
+					b[0] = p.DONE<<4 | p.DEV_ADMIN
+					readCnt = 0
+					return 1, nil
 				}
 				return 0, nil
 			},
-			false,
-			"< 500ms timeout test",
+			func(s *serial.Port, b []byte) (int, error) {
+				if b[0] == (p.CMD_PING<<4 | p.DEV_ADMIN) {
+					readCnt = 1
+				}
+				return 0, nil
+			},
+			true,
+			"DONE timeout test",
 		},
 	} {
-		t.Logf("Executing %s", i.info)
+		t.Logf("Executing %s\n", i.info)
+
+		ctrl, err := NewController("/dev/ttyAMA0", 115211)
+		if err != nil {
+			t.Fatalf("Unable to open tty %v", err)
+		}
+
 		serialRead = i.read
 		serialWrite = i.write
 		ctrl.Start()
-		err := ctrl.Ping()
-		if i.wantErr && err == nil {
-			t.Errorf("expected error %v got %v", i.wantErr, err)
+		err = ctrl.Ping()
+		if (err == nil) == i.wantErr {
+			t.Errorf("Expected error: %v got: %v", i.wantErr, err)
 		}
+		ctrl.Stop()
 	}
 }

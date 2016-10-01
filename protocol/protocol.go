@@ -24,6 +24,7 @@ const (
 	// Error Codes.
 	ERR_CHECKSUM_FAILURE byte = 0x1
 	ERR_DEVICE_BUSY      byte = 0x2
+	ERR_UNIMPLEMENTED    byte = 0x3
 
 	// Status Codes.
 	ACK      byte = 0x8
