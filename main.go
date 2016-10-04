@@ -10,18 +10,8 @@ import (
 func main() {
 
 	// Inialize Pi
-	pi := devices.NewPi()
-	for {
-		d, e := pi.Distance()
-		if e != nil {
-			fmt.Printf("Error %v", e)
-			continue
-		}
-		fmt.Printf("Distance is %f", d)
-		time.Sleep(time.Second * 1)
-	}
-	_ = pi
-
+	chip := devices.NewChip()
+	chip.BlinkGPIO8()
 	/*
 		ctrl, err := devices.NewController("/dev/ttyAMA0", 115200)
 		if err != nil {
