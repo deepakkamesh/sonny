@@ -6,7 +6,21 @@ import "empty.proto";
 
 // DevicesRPC service definition.
 service DevicesRPC {
-	// Pings the admin interface
-	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {} // Ping the Controller.
+	rpc LEDBlink(LEDBlinkReq) returns (google.protobuf.Empty) {} // Blink LED.
+	rpc LEDOn(LEDOnReq) returns (google.protobuf.Empty) {} // Turn on LED.
+	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
 }
 
+message HeadingRet {
+	double heading = 1;
+}
+
+message LEDBlinkReq {
+	uint32 duration = 1; // duration in ms to blink the LED.
+	uint32 times = 2; // the number of times to blink the LED.
+}
+
+message LEDOnReq {
+	bool On = 1;
+}

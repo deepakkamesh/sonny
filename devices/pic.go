@@ -54,6 +54,7 @@ type Controller struct {
 	quitR      chan struct{}
 }
 
+// NewController returns a new initialized controller.
 func NewController(tty string, baud int) (*Controller, error) {
 
 	c := &serial.Config{Name: tty, Baud: baud, ReadTimeout: 500 * time.Millisecond}
@@ -71,16 +72,19 @@ func NewController(tty string, baud int) (*Controller, error) {
 	}, nil
 }
 
+// Start runs the controller.
 func (m *Controller) Start() {
 	go m.run()
 	go m.read()
 }
 
+// Stop terminates the controller.
 func (m *Controller) Stop() {
 	m.quitR <- struct{}{}
 	m.quit <- struct{}{}
 }
 
+// read is the loop to recieve data from the pic and sends the packet to the goroutine for processing.
 func (m *Controller) read() {
 	for {
 		select {
@@ -124,6 +128,7 @@ func (m *Controller) read() {
 	}
 }
 
+// run is the main loop to process input.
 func (m *Controller) run() {
 
 	for {
@@ -193,7 +198,20 @@ func (m *Controller) run() {
 	}
 }
 
-func (m *Controller) LedOn(on bool) error {
+// LEDBlink blinks the LED for duration (in ms) and for the number of times.
+func (m *Controller) LEDBlink(duration uint16, times byte) error {
+
+	pkt := []byte{p.CMD_BLINK<<4 | p.DEV_LED, byte(duration >> 8), byte(duration & 0xF), times}
+	ret := make(chan result)
+	m.in <- request{
+		pkt: pkt,
+		ret: ret,
+	}
+	return (<-ret).err
+}
+
+// LEDOn turn on/off the LED.
+func (m *Controller) LEDOn(on bool) error {
 
 	cmd := p.CMD_ON
 	if !on {
@@ -208,6 +226,7 @@ func (m *Controller) LedOn(on bool) error {
 	return (<-ret).err
 }
 
+// Ping returns nil if the controller is available.
 func (m *Controller) Ping() error {
 	log.Println("Pinging controller")
 

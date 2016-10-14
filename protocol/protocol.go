@@ -19,6 +19,7 @@ const (
 	CMD_PING    byte = 0x2
 	CMD_VERSION byte = 0x3
 	CMD_OFF     byte = 0x4
+	CMD_BLINK   byte = 0x5
 	CMD_ROTATE  byte = 0x6
 
 	// Error Codes.
