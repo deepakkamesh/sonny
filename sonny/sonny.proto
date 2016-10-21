@@ -10,6 +10,7 @@ service DevicesRPC {
 	rpc LEDBlink(LEDBlinkReq) returns (google.protobuf.Empty) {} // Blink LED.
 	rpc LEDOn(LEDOnReq) returns (google.protobuf.Empty) {} // Turn on LED.
 	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
+	rpc PIRDetect(google.protobuf.Empty) returns (PIRRet) {} // Get PIR sensor.
 }
 
 message HeadingRet {
@@ -22,5 +23,9 @@ message LEDBlinkReq {
 }
 
 message LEDOnReq {
+	bool On = 1;
+}
+
+message PIRRet {
 	bool On = 1;
 }

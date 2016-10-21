@@ -4,6 +4,7 @@ import (
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
+	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/lsm303"
 	"golang.org/x/net/context"
@@ -12,17 +13,20 @@ import (
 type Devices struct {
 	Ctrl *devices.Controller
 	Mag  *lsm303.LSM303
+	Pir  string
 }
 
 type Server struct {
 	ctrl *devices.Controller
 	mag  *lsm303.LSM303
+	pir  string
 }
 
 func New(d *Devices) *Server {
 	return &Server{
 		ctrl: d.Ctrl,
 		mag:  d.Mag,
+		pir:  d.Pir,
 	}
 }
 
@@ -48,4 +52,16 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 		return nil, err
 	}
 	return &pb.HeadingRet{Heading: heading}, nil
+}
+
+// PIRDetect retuns true if Infrared signal is detected.
+func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet, error) {
+	v, err := embd.DigitalRead(m.pir)
+	if err != nil {
+		return nil, err
+	}
+	if v == embd.High {
+		return &pb.PIRRet{On: true}, nil
+	}
+	return &pb.PIRRet{On: false}, nil
 }

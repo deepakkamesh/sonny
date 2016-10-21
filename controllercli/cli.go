@@ -39,6 +39,19 @@ func main() {
 			},
 		},
 		{
+			Name:    "PIRDetect",
+			Aliases: []string{"pir"},
+			Usage:   "PIR Sensor",
+			Action: func(c *cli.Context) error {
+				h, err := ctrl.PIRDetect(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return err
+				}
+				log.Printf("PIR Sensor %v", h.On)
+				return nil
+			},
+		},
+		{
 			Name:    "Heading",
 			Aliases: []string{"head"},
 			Usage:   "Magnetic Heading",
