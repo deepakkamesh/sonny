@@ -68,8 +68,20 @@ extern "C" {
      * Return:
      * Param1 - MSB of ADC Value 
      * Param2 - LSB of ADC Value
-     */    
-    
+     */
+#define DEV_MOTOR 0x7
+    /* Drive Motor
+     * Additional Parameters
+     * CMD_FWD
+     * Request:
+     * Param1: MSB of slots to move
+     * Param2: LSB of slots to move
+     * 
+     * CMD_BWD
+     * Request:
+     * Param1: MSB of slots to move
+     * Param2: LSB of slots to move
+     */
     // Command definitions.    
 #define CMD_ON 0x1
 #define CMD_PING 0x2
@@ -79,6 +91,8 @@ extern "C" {
 #define CMD_ROTATE 0x6 
 #define CMD_STATE 0x7
 #define CMD_TEST 0x8
+#define CMD_FWD 0x9
+#define CMD_BWD 0x10
 
     // Error Codes.
 #define ERR_CHECKSUM_FAILURE 0x1

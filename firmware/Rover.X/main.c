@@ -13,7 +13,7 @@
   Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -53,7 +53,7 @@
 #include "edge_sensor_device.h"
 #include "ldr_device.h"
 #include "batt_device.h"
-
+#include "motor_device.h"
 
 /*
                          Main application
@@ -102,8 +102,6 @@ void main(void) {
     }
 
     while (1) {
-        // Add your application code
-
         SerialReadTask();
         AdminTask();
         LedTask();
@@ -112,13 +110,7 @@ void main(void) {
         EdgeSensorTask();
         LDRTask();
         BattTask();
-        /* int i;
-         for (i = 0; i < 24; i++) {
-             EUSART1_Write(65 + i);
-             EUSART1_Write(10);
-         }
-
-         __delay_ms(500); */
+        MotorTask();
     }
 }
 /**

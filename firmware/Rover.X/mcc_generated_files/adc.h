@@ -13,7 +13,7 @@
   @Description
     This header file provides APIs for driver for ADC.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -69,6 +69,15 @@
  */
 
 typedef uint16_t adc_result_t;
+
+/**
+ *  result type of a Double ADC conversion
+ */
+typedef struct
+{
+    adc_result_t adcResult1;
+    adc_result_t adcResult2;
+} adc_sync_double_result_t;
 
 /** ADC Channel Definition
 
@@ -251,6 +260,7 @@ adc_result_t ADC_GetConversionResult(void);
     </code>
 */
 adc_result_t ADC_GetConversion(adc_channel_t channel);
+
 
 #ifdef __cplusplus  // Provide C++ Compatibility
 

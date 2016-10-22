@@ -13,7 +13,7 @@
   @Description
     This source file provides implementations for driver APIs for ADC.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -83,7 +83,6 @@ void ADC_StartConversion(adc_channel_t channel)
     // Turn on the ADC module
     ADCON0bits.ADON = 1;
 
-
     // Start the conversion
     ADCON0bits.GO_nDONE = 1;
     
@@ -94,7 +93,6 @@ bool ADC_IsConversionDone()
     // Start the conversion
     return (!ADCON0bits.GO_nDONE);
 }
-
 adc_result_t ADC_GetConversionResult(void)
 {
     // Conversion finished, return the result
@@ -109,7 +107,6 @@ adc_result_t ADC_GetConversion(adc_channel_t channel)
     // Turn on the ADC module
     ADCON0bits.ADON = 1;
 
-
     // Start the conversion
     ADCON0bits.GO_nDONE = 1;
 
@@ -117,10 +114,11 @@ adc_result_t ADC_GetConversion(adc_channel_t channel)
     while (ADCON0bits.GO_nDONE)
     {
     }
-    
     // Conversion finished, return the result
     return ((ADRESH << 8) + ADRESL);
+
 }
+
 /**
  End of File
 */

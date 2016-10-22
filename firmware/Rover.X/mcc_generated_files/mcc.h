@@ -13,7 +13,7 @@
   @Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Version           :  1.02
     The generated drivers are tested against the following:
@@ -52,12 +52,11 @@
 #include "interrupt_manager.h"
 #include "adc.h"
 #include "fvr.h"
-#include "i2c1.h"
 #include "tmr0.h"
 #include "ccp5.h"
+#include "eusart1.h"
 #include "tmr5.h"
 #include "ccp4.h"
-#include "eusart1.h"
 #include "tmr3.h"
 
 #define _XTAL_FREQ  64000000

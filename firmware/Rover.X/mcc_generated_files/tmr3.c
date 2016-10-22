@@ -13,7 +13,7 @@
   @Description
     This source file provides APIs for TMR3.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -63,7 +63,7 @@ void TMR3_Initialize(void)
 {
     //Set the Timer to the options selected in the GUI
 
-    //T3CKPS 1:8; T3OSCEN disabled; nT3SYNC synchronize; TMR3CS FOSC/4; TMR3ON enabled; T3RD16 disabled; 
+    //T3CKPS 1:8; T3OSCEN disabled; nT3SYNC synchronize; TMR3CS FOSC/4; TMR3ON off; T3RD16 disabled; 
     T3CON = 0x30;
 
     //T3GSS T3G; TMR3GE disabled; T3GTM disabled; T3GPOL low; T3GGO done; T3GSPM disabled; 

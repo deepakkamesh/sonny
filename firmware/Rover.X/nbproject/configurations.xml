@@ -17,7 +17,6 @@
         <itemPath>mcc_generated_files/ccp5.h</itemPath>
         <itemPath>mcc_generated_files/tmr3.h</itemPath>
         <itemPath>mcc_generated_files/tmr5.h</itemPath>
-        <itemPath>mcc_generated_files/i2c1.h</itemPath>
         <itemPath>mcc_generated_files/fvr.h</itemPath>
       </logicalFolder>
       <itemPath>serial_controller.h</itemPath>
@@ -29,6 +28,7 @@
       <itemPath>edge_sensor_device.h</itemPath>
       <itemPath>ldr_device.h</itemPath>
       <itemPath>batt_device.h</itemPath>
+      <itemPath>motor_device.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -50,7 +50,6 @@
         <itemPath>mcc_generated_files/ccp5.c</itemPath>
         <itemPath>mcc_generated_files/tmr3.c</itemPath>
         <itemPath>mcc_generated_files/tmr5.c</itemPath>
-        <itemPath>mcc_generated_files/i2c1.c</itemPath>
         <itemPath>mcc_generated_files/fvr.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
@@ -62,6 +61,7 @@
       <itemPath>edge_sensor_device.c</itemPath>
       <itemPath>ldr_device.c</itemPath>
       <itemPath>batt_device.c</itemPath>
+      <itemPath>motor_device.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

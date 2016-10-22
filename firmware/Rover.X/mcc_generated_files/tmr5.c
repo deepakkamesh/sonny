@@ -13,7 +13,7 @@
   @Description
     This source file provides APIs for TMR5.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -63,7 +63,7 @@ void TMR5_Initialize(void)
 {
     //Set the Timer to the options selected in the GUI
 
-    //T5CKPS 1:8; T5SOSCEN disabled; T5SYNC synchronize; TMR5CS FOSC/4; TMR5ON enabled; T5RD16 disabled; 
+    //T5CKPS 1:8; T5SOSCEN disabled; T5SYNC synchronize; TMR5CS FOSC/4; TMR5ON off; T5RD16 disabled; 
     T5CON = 0x30;
 
     //T5GSS T5G; TMR5GE disabled; T5GTM disabled; T5GPOL low; T5GGO done; T5GSPM disabled; 

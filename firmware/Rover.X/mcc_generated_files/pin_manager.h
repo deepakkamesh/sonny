@@ -13,7 +13,7 @@
   @Description:
     This header file provides implementations for pin APIs for all pins selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 3.16
         Device            :  PIC18F26K22
         Version           :  1.01
     The generated drivers are tested against the following:
@@ -59,61 +59,43 @@
 #define PULL_UP_ENABLED      1
 #define PULL_UP_DISABLED     0
 
-// get/set LED1 aliases
-#define LED1_TRIS               TRISB1
-#define LED1_LAT                LATB1
-#define LED1_PORT               RB1
-#define LED1_WPU                WPUB1
-#define LED1_ANS                ANSB1
-#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
-#define LED1_SetLow()   do { LATB1 = 0; } while(0)
-#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
-#define LED1_GetValue()         PORTBbits.RB1
-#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
-#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
-
-#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
-#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
-#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
-#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
+// get/set MOTOR1_FWD aliases
+#define MOTOR1_FWD_TRIS               TRISA6
+#define MOTOR1_FWD_LAT                LATA6
+#define MOTOR1_FWD_PORT               RA6
+#define MOTOR1_FWD_SetHigh()    do { LATA6 = 1; } while(0)
+#define MOTOR1_FWD_SetLow()   do { LATA6 = 0; } while(0)
+#define MOTOR1_FWD_Toggle()   do { LATA6 = ~LATA6; } while(0)
+#define MOTOR1_FWD_GetValue()         PORTAbits.RA6
+#define MOTOR1_FWD_SetDigitalInput()    do { TRISA6 = 1; } while(0)
+#define MOTOR1_FWD_SetDigitalOutput()   do { TRISA6 = 0; } while(0)
 
 
-// get/set LED1 aliases
-#define LED1_TRIS               TRISB1
-#define LED1_LAT                LATB1
-#define LED1_PORT               RB1
-#define LED1_WPU                WPUB1
-#define LED1_ANS                ANSB1
-#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
-#define LED1_SetLow()   do { LATB1 = 0; } while(0)
-#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
-#define LED1_GetValue()         PORTBbits.RB1
-#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
-#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
 
-#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
-#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
-#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
-#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
+// get/set MOTOR1_BWD aliases
+#define MOTOR1_BWD_TRIS               TRISA7
+#define MOTOR1_BWD_LAT                LATA7
+#define MOTOR1_BWD_PORT               RA7
+#define MOTOR1_BWD_SetHigh()    do { LATA7 = 1; } while(0)
+#define MOTOR1_BWD_SetLow()   do { LATA7 = 0; } while(0)
+#define MOTOR1_BWD_Toggle()   do { LATA7 = ~LATA7; } while(0)
+#define MOTOR1_BWD_GetValue()         PORTAbits.RA7
+#define MOTOR1_BWD_SetDigitalInput()    do { TRISA7 = 1; } while(0)
+#define MOTOR1_BWD_SetDigitalOutput()   do { TRISA7 = 0; } while(0)
 
 
-// get/set LED1 aliases
-#define LED1_TRIS               TRISB1
-#define LED1_LAT                LATB1
-#define LED1_PORT               RB1
-#define LED1_WPU                WPUB1
-#define LED1_ANS                ANSB1
-#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
-#define LED1_SetLow()   do { LATB1 = 0; } while(0)
-#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
-#define LED1_GetValue()         PORTBbits.RB1
-#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
-#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
 
-#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
-#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
-#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
-#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
+// get/set MOTOR1_BWD aliases
+#define MOTOR1_BWD_TRIS               TRISA7
+#define MOTOR1_BWD_LAT                LATA7
+#define MOTOR1_BWD_PORT               RA7
+#define MOTOR1_BWD_SetHigh()    do { LATA7 = 1; } while(0)
+#define MOTOR1_BWD_SetLow()   do { LATA7 = 0; } while(0)
+#define MOTOR1_BWD_Toggle()   do { LATA7 = ~LATA7; } while(0)
+#define MOTOR1_BWD_GetValue()         PORTAbits.RA7
+#define MOTOR1_BWD_SetDigitalInput()    do { TRISA7 = 1; } while(0)
+#define MOTOR1_BWD_SetDigitalOutput()   do { TRISA7 = 0; } while(0)
+
 
 
 // get/set LED1 aliases
@@ -135,42 +117,107 @@
 #define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
 
 
-// get/set LED1 aliases
-#define LED1_TRIS               TRISB1
-#define LED1_LAT                LATB1
-#define LED1_PORT               RB1
-#define LED1_WPU                WPUB1
-#define LED1_ANS                ANSB1
-#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
-#define LED1_SetLow()   do { LATB1 = 0; } while(0)
-#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
-#define LED1_GetValue()         PORTBbits.RB1
-#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
-#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
+// get/set SE_M1 aliases
+#define SE_M1_TRIS               TRISB4
+#define SE_M1_LAT                LATB4
+#define SE_M1_PORT               RB4
+#define SE_M1_WPU                WPUB4
+#define SE_M1_ANS                ANSB4
+#define SE_M1_SetHigh()    do { LATB4 = 1; } while(0)
+#define SE_M1_SetLow()   do { LATB4 = 0; } while(0)
+#define SE_M1_Toggle()   do { LATB4 = ~LATB4; } while(0)
+#define SE_M1_GetValue()         PORTBbits.RB4
+#define SE_M1_SetDigitalInput()    do { TRISB4 = 1; } while(0)
+#define SE_M1_SetDigitalOutput()   do { TRISB4 = 0; } while(0)
 
-#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
-#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
-#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
-#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
+#define SE_M1_SetPullup()    do { WPUB4 = 1; } while(0)
+#define SE_M1_ResetPullup()   do { WPUB4 = 0; } while(0)
+#define SE_M1_SetAnalogMode()   do { ANSB4 = 1; } while(0)
+#define SE_M1_SetDigitalMode()   do { ANSB4 = 0; } while(0)
 
 
-// get/set LED1 aliases
-#define LED1_TRIS               TRISB1
-#define LED1_LAT                LATB1
-#define LED1_PORT               RB1
-#define LED1_WPU                WPUB1
-#define LED1_ANS                ANSB1
-#define LED1_SetHigh()    do { LATB1 = 1; } while(0)
-#define LED1_SetLow()   do { LATB1 = 0; } while(0)
-#define LED1_Toggle()   do { LATB1 = ~LATB1; } while(0)
-#define LED1_GetValue()         PORTBbits.RB1
-#define LED1_SetDigitalInput()    do { TRISB1 = 1; } while(0)
-#define LED1_SetDigitalOutput()   do { TRISB1 = 0; } while(0)
+// get/set SE_M2 aliases
+#define SE_M2_TRIS               TRISB5
+#define SE_M2_LAT                LATB5
+#define SE_M2_PORT               RB5
+#define SE_M2_WPU                WPUB5
+#define SE_M2_ANS                ANSB5
+#define SE_M2_SetHigh()    do { LATB5 = 1; } while(0)
+#define SE_M2_SetLow()   do { LATB5 = 0; } while(0)
+#define SE_M2_Toggle()   do { LATB5 = ~LATB5; } while(0)
+#define SE_M2_GetValue()         PORTBbits.RB5
+#define SE_M2_SetDigitalInput()    do { TRISB5 = 1; } while(0)
+#define SE_M2_SetDigitalOutput()   do { TRISB5 = 0; } while(0)
 
-#define LED1_SetPullup()    do { WPUB1 = 1; } while(0)
-#define LED1_ResetPullup()   do { WPUB1 = 0; } while(0)
-#define LED1_SetAnalogMode()   do { ANSB1 = 1; } while(0)
-#define LED1_SetDigitalMode()   do { ANSB1 = 0; } while(0)
+#define SE_M2_SetPullup()    do { WPUB5 = 1; } while(0)
+#define SE_M2_ResetPullup()   do { WPUB5 = 0; } while(0)
+#define SE_M2_SetAnalogMode()   do { ANSB5 = 1; } while(0)
+#define SE_M2_SetDigitalMode()   do { ANSB5 = 0; } while(0)
+
+
+// get/set MOTOR2_FWD aliases
+#define MOTOR2_FWD_TRIS               TRISC0
+#define MOTOR2_FWD_LAT                LATC0
+#define MOTOR2_FWD_PORT               RC0
+#define MOTOR2_FWD_SetHigh()    do { LATC0 = 1; } while(0)
+#define MOTOR2_FWD_SetLow()   do { LATC0 = 0; } while(0)
+#define MOTOR2_FWD_Toggle()   do { LATC0 = ~LATC0; } while(0)
+#define MOTOR2_FWD_GetValue()         PORTCbits.RC0
+#define MOTOR2_FWD_SetDigitalInput()    do { TRISC0 = 1; } while(0)
+#define MOTOR2_FWD_SetDigitalOutput()   do { TRISC0 = 0; } while(0)
+
+
+
+// get/set MOTOR2_BWD aliases
+#define MOTOR2_BWD_TRIS               TRISC1
+#define MOTOR2_BWD_LAT                LATC1
+#define MOTOR2_BWD_PORT               RC1
+#define MOTOR2_BWD_SetHigh()    do { LATC1 = 1; } while(0)
+#define MOTOR2_BWD_SetLow()   do { LATC1 = 0; } while(0)
+#define MOTOR2_BWD_Toggle()   do { LATC1 = ~LATC1; } while(0)
+#define MOTOR2_BWD_GetValue()         PORTCbits.RC1
+#define MOTOR2_BWD_SetDigitalInput()    do { TRISC1 = 1; } while(0)
+#define MOTOR2_BWD_SetDigitalOutput()   do { TRISC1 = 0; } while(0)
+
+
+
+// get/set MOTOR2_BWD aliases
+#define MOTOR2_BWD_TRIS               TRISC1
+#define MOTOR2_BWD_LAT                LATC1
+#define MOTOR2_BWD_PORT               RC1
+#define MOTOR2_BWD_SetHigh()    do { LATC1 = 1; } while(0)
+#define MOTOR2_BWD_SetLow()   do { LATC1 = 0; } while(0)
+#define MOTOR2_BWD_Toggle()   do { LATC1 = ~LATC1; } while(0)
+#define MOTOR2_BWD_GetValue()         PORTCbits.RC1
+#define MOTOR2_BWD_SetDigitalInput()    do { TRISC1 = 1; } while(0)
+#define MOTOR2_BWD_SetDigitalOutput()   do { TRISC1 = 0; } while(0)
+
+
+
+// get/set MOTOR2_BWD aliases
+#define MOTOR2_BWD_TRIS               TRISC1
+#define MOTOR2_BWD_LAT                LATC1
+#define MOTOR2_BWD_PORT               RC1
+#define MOTOR2_BWD_SetHigh()    do { LATC1 = 1; } while(0)
+#define MOTOR2_BWD_SetLow()   do { LATC1 = 0; } while(0)
+#define MOTOR2_BWD_Toggle()   do { LATC1 = ~LATC1; } while(0)
+#define MOTOR2_BWD_GetValue()         PORTCbits.RC1
+#define MOTOR2_BWD_SetDigitalInput()    do { TRISC1 = 1; } while(0)
+#define MOTOR2_BWD_SetDigitalOutput()   do { TRISC1 = 0; } while(0)
+
+
+
+// get/set MOTOR2_BWD aliases
+#define MOTOR2_BWD_TRIS               TRISC1
+#define MOTOR2_BWD_LAT                LATC1
+#define MOTOR2_BWD_PORT               RC1
+#define MOTOR2_BWD_SetHigh()    do { LATC1 = 1; } while(0)
+#define MOTOR2_BWD_SetLow()   do { LATC1 = 0; } while(0)
+#define MOTOR2_BWD_Toggle()   do { LATC1 = ~LATC1; } while(0)
+#define MOTOR2_BWD_GetValue()         PORTCbits.RC1
+#define MOTOR2_BWD_SetDigitalInput()    do { TRISC1 = 1; } while(0)
+#define MOTOR2_BWD_SetDigitalOutput()   do { TRISC1 = 0; } while(0)
+
 
 
 
@@ -197,6 +244,176 @@ void PIN_MANAGER_Initialize (void);
     PIN_MANAGER_IOC();
  */
 void PIN_MANAGER_IOC(void);
+
+/**
+ * @Param
+    none
+ * @Returns
+    none
+ * @Description
+    Interrupt on Change Handler for the IOCB4 pin functionality
+ * @Example
+    IOCB4_ISR();
+ */
+void IOCB4_ISR(void);
+
+/**
+  @Summary
+    Interrupt Handler Setter for IOCB4 pin interrupt-on-change functionality
+
+  @Description
+    Allows selecting an interrupt handler for IOCB4 at application runtime
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    InterruptHandler function pointer.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB4_SetInterruptHandler(MyInterruptHandler);
+
+*/
+void IOCB4_SetInterruptHandler(void* InterruptHandler);
+
+/**
+  @Summary
+    Dynamic Interrupt Handler for IOCB4 pin
+
+  @Description
+    This is a dynamic interrupt handler to be used together with the IOCB4_SetInterruptHandler() method.
+    This handler is called every time the IOCB4 ISR is executed and allows any function to be registered at runtime.
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB4_SetInterruptHandler(IOCB4_InterruptHandler);
+
+*/
+void (*IOCB4_InterruptHandler)(void);
+
+/**
+  @Summary
+    Default Interrupt Handler for IOCB4 pin
+
+  @Description
+    This is a predefined interrupt handler to be used together with the IOCB4_SetInterruptHandler() method.
+    This handler is called every time the IOCB4 ISR is executed. 
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB4_SetInterruptHandler(IOCB4_DefaultInterruptHandler);
+
+*/
+void IOCB4_DefaultInterruptHandler(void);
+
+/**
+ * @Param
+    none
+ * @Returns
+    none
+ * @Description
+    Interrupt on Change Handler for the IOCB5 pin functionality
+ * @Example
+    IOCB5_ISR();
+ */
+void IOCB5_ISR(void);
+
+/**
+  @Summary
+    Interrupt Handler Setter for IOCB5 pin interrupt-on-change functionality
+
+  @Description
+    Allows selecting an interrupt handler for IOCB5 at application runtime
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    InterruptHandler function pointer.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB5_SetInterruptHandler(MyInterruptHandler);
+
+*/
+void IOCB5_SetInterruptHandler(void* InterruptHandler);
+
+/**
+  @Summary
+    Dynamic Interrupt Handler for IOCB5 pin
+
+  @Description
+    This is a dynamic interrupt handler to be used together with the IOCB5_SetInterruptHandler() method.
+    This handler is called every time the IOCB5 ISR is executed and allows any function to be registered at runtime.
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB5_SetInterruptHandler(IOCB5_InterruptHandler);
+
+*/
+void (*IOCB5_InterruptHandler)(void);
+
+/**
+  @Summary
+    Default Interrupt Handler for IOCB5 pin
+
+  @Description
+    This is a predefined interrupt handler to be used together with the IOCB5_SetInterruptHandler() method.
+    This handler is called every time the IOCB5 ISR is executed. 
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB5_SetInterruptHandler(IOCB5_DefaultInterruptHandler);
+
+*/
+void IOCB5_DefaultInterruptHandler(void);
+
+
+
+
 
 #endif // PIN_MANAGER_H
 /**
