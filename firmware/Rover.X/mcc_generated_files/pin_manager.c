@@ -42,11 +42,10 @@
     (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
 
 */
-#include <stdint.h>
+
 #include <xc.h>
 #include "pin_manager.h"
 
-extern uint16_t se_m1_count,se_m2_count ;
 void PIN_MANAGER_Initialize(void)
 {
     LATB = 0x0;
@@ -57,10 +56,10 @@ void PIN_MANAGER_Initialize(void)
     ANSELC = 0x3C;
     TRISB = 0xFC;
     TRISC = 0xBC;
-    WPUB = 0xF0;
+    WPUB = 0xC0;
     TRISA = 0x2F;
 
-    INTCON2bits.nRBPU = 0x0;
+    INTCON2bits.nRBPU = 0x1;
 
     // interrupt on change for group IOCB - any
     IOCBbits.IOCB4 = 1; // Pin : RB4
@@ -76,11 +75,11 @@ void PIN_MANAGER_IOC(void)
     // interrupt on change for group IOCB
     if(IOCBbits.IOCB4 == 1)
     {
-        IOCB4_ISR();            
+       SpeedEncoderISR_M1(); // IOCB4_ISR();            
     }
     if(IOCBbits.IOCB5 == 1)
     {
-        IOCB5_ISR();            
+      SpeedEncoderISR_M2();//  IOCB5_ISR();            
     }
 }
 
@@ -110,23 +109,18 @@ void IOCB4_SetInterruptHandler(void* InterruptHandler){
 void IOCB4_DefaultInterruptHandler(void){
     // add your IOCB4 interrupt custom code
     // or set custom function using IOCB4_SetInterruptHandler()
-    se_m1_count++;    LED1_SetHigh();
-
 }
 /**
    IOCB5 Interrupt Service Routine
 */
 void IOCB5_ISR(void) {
-LED1_SetHigh();
-SE_M2_GetValue();
-NOP();
-    /*
+
     // Add custom IOCB5 code
     if(IOCB5_InterruptHandler)
     {
         IOCB5_InterruptHandler();
     }
-    IOCBbits.IOCB5 = 0; */
+    IOCBbits.IOCB5 = 0;
 }
 
 /**
@@ -142,8 +136,6 @@ void IOCB5_SetInterruptHandler(void* InterruptHandler){
 void IOCB5_DefaultInterruptHandler(void){
     // add your IOCB5 interrupt custom code
     // or set custom function using IOCB5_SetInterruptHandler()
-    se_m2_count++;
-    LED1_SetHigh();
 }
 
 /**

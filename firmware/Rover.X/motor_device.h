@@ -15,6 +15,8 @@ extern "C" {
 
 
 void MotorTask(void);
+void SpeedEncoderISR_M1(void);
+void SpeedEncoderISR_M2(void);
 
 #ifdef	__cplusplus
 }

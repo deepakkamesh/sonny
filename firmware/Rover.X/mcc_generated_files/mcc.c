@@ -68,7 +68,7 @@
 #pragma config HFOFST = ON    // HFINTOSC Fast Start-up->HFINTOSC output and ready status are not delayed by the oscillator stable status
 #pragma config T3CMX = PORTC0    // Timer3 Clock input mux bit->T3CKI is on RC0
 #pragma config P2BMX = PORTB5    // ECCP2 B output mux bit->P2B is on RB5
-#pragma config MCLRE = EXTMCLR    // MCLR Pin Enable bit->MCLR pin enabled, RE3 input pin disabled
+#pragma config MCLRE = INTMCLR    // MCLR Pin Enable bit->RE3 input pin enabled; MCLR disabled
 
 // CONFIG4L
 #pragma config STVREN = ON    // Stack Full/Underflow Reset Enable bit->Stack full/underflow will cause Reset

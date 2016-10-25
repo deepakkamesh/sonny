@@ -54,9 +54,9 @@
 #include "fvr.h"
 #include "tmr0.h"
 #include "ccp5.h"
+#include "ccp4.h"
 #include "eusart1.h"
 #include "tmr5.h"
-#include "ccp4.h"
 #include "tmr3.h"
 
 #define _XTAL_FREQ  64000000

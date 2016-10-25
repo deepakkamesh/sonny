@@ -94,6 +94,12 @@ void SendAckDone(uint8_t devID) {
     SendPacket(packet, 1);
 }
 
+void SendDone(uint8_t devID) {
+    uint8_t packet[PKT_SZ];
+    packet[0] = 0x40 | devID;
+    SendPacket(packet, 1);
+}
+
 void SendPacket(uint8_t packet[], uint8_t size) {
 
     // Calculate checksum of packet.

@@ -22,6 +22,7 @@ void SendError(uint8_t devID, uint8_t error);
 void SendAck(uint8_t devID);
 void SendPacket(uint8_t packet[], uint8_t size);
 void SendAckDone(uint8_t devID);
+void SendDone(uint8_t devID);
 
 
 #ifdef	__cplusplus

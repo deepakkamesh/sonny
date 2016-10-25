@@ -28,7 +28,6 @@ void LedTask(void) {
                     count--;
                 }
             }
-
         }
     }
 
