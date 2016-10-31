@@ -5,7 +5,6 @@
         <group>
             <file>file:/Users/dkg/Projects/golang/src/github.com/deepakkamesh/sonny/firmware/Rover.X/motor_device.c</file>
             <file>file:/Users/dkg/Projects/golang/src/github.com/deepakkamesh/sonny/firmware/Rover.X/mcc_generated_files/pin_manager.c</file>
-            <file>file:/Users/dkg/Projects/golang/src/github.com/deepakkamesh/sonny/firmware/Rover.X/protocol.h</file>
             <file>file:/Users/dkg/Projects/golang/src/github.com/deepakkamesh/sonny/firmware/Rover.X/motor_device.h</file>
             <file>file:/Users/dkg/Projects/golang/src/github.com/deepakkamesh/sonny/firmware/Rover.X/main.c</file>
             <file>file:/Users/dkg/Projects/golang/src/github.com/deepakkamesh/sonny/firmware/Rover.X/led_device.c</file>

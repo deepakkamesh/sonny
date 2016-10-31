@@ -15,7 +15,7 @@ void MotorTask(void) {
     static bool active = false;
 
     // Check if rotations are done.
-    if (se_m1_count / 30 >= rotation && active) {
+    if (se_m1_count / 40 >= rotation && active) {
         MOTOR1_BWD_SetLow();
         MOTOR1_FWD_SetLow();
         MOTOR2_FWD_SetLow();
@@ -98,14 +98,14 @@ void MotorTask(void) {
 // Called from IOC pin_manager.c
 
 void SpeedEncoderISR_M1(void) {
-    if (SE_M1_GetValue() == 1) {
+    if (SE_M1_GetValue() == 0) {
         se_m1_count++;
         NOP();
     }
 }
 
 void SpeedEncoderISR_M2(void) {
-    if (SE_M2_GetValue() == 1) {
+    if (SE_M2_GetValue() == 0) {
         se_m2_count++;
         NOP();
     }
