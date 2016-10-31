@@ -11,6 +11,7 @@ service DevicesRPC {
 	rpc LEDOn(LEDOnReq) returns (google.protobuf.Empty) {} // Turn on LED.
 	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
 	rpc PIRDetect(google.protobuf.Empty) returns (PIRRet) {} // Get PIR sensor.
+  rpc ServoRotate(ServoReq) returns (google.protobuf.Empty) {} // Rotate Servo.
 }
 
 message HeadingRet {
@@ -28,4 +29,9 @@ message LEDOnReq {
 
 message PIRRet {
 	bool On = 1;
+}
+
+message ServoReq{
+ uint32 servo =1;
+ uint32 angle = 2;
 }

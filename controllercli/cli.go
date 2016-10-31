@@ -65,6 +65,30 @@ func main() {
 			},
 		},
 		{
+			Name:    "ServoRotate",
+			Aliases: []string{"servo"},
+			Usage:   "Rotate the servo.",
+			Flags: []cli.Flag{
+				cli.UintFlag{
+					Name:  "servo,s",
+					Usage: "Select servo 1 (left-right) or 2 (top-bottom) ",
+				},
+				cli.UintFlag{
+					Name:  "angle, a",
+					Usage: "Angle of Rotation",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				if _, err := ctrl.ServoRotate(context.Background(), &pb.ServoReq{
+					Servo: uint32(c.Uint("servo")),
+					Angle: uint32(c.Uint("angle")),
+				}); err != nil {
+					log.Printf("ServoRotate failed %v", err)
+				}
+				return nil
+			},
+		},
+		{
 			Name:    "LEDOn",
 			Aliases: []string{"led"},
 			Usage:   "Turn on the LED.",

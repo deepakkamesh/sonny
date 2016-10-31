@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"errors"
+
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
@@ -32,16 +34,33 @@ func New(d *Devices) *Server {
 
 // Ping returns nil if the pic controller is up and responsive.
 func (m *Server) Ping(ctx context.Context, in *google_pb.Empty) (*google_pb.Empty, error) {
+	if m.ctrl == nil {
+		return &google_pb.Empty{}, errors.New("controller not enabled")
+	}
 	return &google_pb.Empty{}, m.ctrl.Ping()
+}
+
+// Servo Rotate rotates the servo by angle.
+func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.Empty, error) {
+	if m.ctrl == nil {
+		return &google_pb.Empty{}, errors.New("controller not enabled")
+	}
+	return &google_pb.Empty{}, m.ctrl.ServoRotate(byte(in.Servo), byte(in.Angle))
 }
 
 // LEDOn turns on/off the LED indicator.
 func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, error) {
+	if m.ctrl == nil {
+		return &google_pb.Empty{}, errors.New("controller not enabled")
+	}
 	return &google_pb.Empty{}, m.ctrl.LEDOn(in.On)
 }
 
 // LEDBlink blinks the LED.
 func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.Empty, error) {
+	if m.ctrl == nil {
+		return &google_pb.Empty{}, errors.New("controller not enabled")
+	}
 	return &google_pb.Empty{}, m.ctrl.LEDBlink(uint16(in.Duration), byte(in.Times))
 }
 

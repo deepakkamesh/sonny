@@ -5,7 +5,6 @@ package devices
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -228,8 +227,6 @@ func (m *Controller) LEDOn(on bool) error {
 
 // Ping returns nil if the controller is available.
 func (m *Controller) Ping() error {
-	log.Println("Pinging controller")
-
 	pkt := []byte{p.CMD_PING<<4 | p.DEV_ADMIN}
 	ret := make(chan result)
 	m.in <- request{
@@ -239,18 +236,41 @@ func (m *Controller) Ping() error {
 	return (<-ret).err
 }
 
-func (m *Controller) RotateServo(angle int) error {
-	fmt.Printf("Rotate angle %d\n", angle)
+// RotateServo rotates servo by angle.
+func (m *Controller) ServoRotate(servo byte, angle byte) error {
+	const (
+		deg0      float32 = 0.0007    // 0.7 ms.
+		deg180    float32 = 0.0024    // 2.4 ms.
+		pwmPeriod float32 = 0.020     // 20ms.
+		cycle     float32 = 0.0000005 // = Fosc/4 divided by PWM prescaler.
+	)
+
+	// Ensure maximums are not exceeded.
+	if angle < 0 || angle > 180 {
+		return errors.New("Angle needs to be between 0 to 180 degrees")
+	}
+	if servo != 1 && servo != 2 {
+		return errors.New("Servo should be 1 or 2")
+	}
+
+	time := deg0 + ((deg180 - deg0) * float32(angle) / 180)
+	duty := uint16(time / cycle)        // On time.
+	period := uint16(pwmPeriod / cycle) // PWM period.
 
 	// Assemble command data.
-	pkt := []byte{p.CMD_ROTATE<<4 | p.DEV_SERVO, 10}
-	// Channel for return value.
+	pkt := []byte{
+		p.CMD_ROTATE<<4 | p.DEV_SERVO,
+		byte(duty >> 8),
+		byte(duty & 0xFF),
+		byte(period >> 8),
+		byte(period & 0xFF),
+		servo,
+	}
 	ret := make(chan result)
 
 	m.in <- request{
 		pkt: pkt,
 		ret: ret,
 	}
-
 	return (<-ret).err // Wait for response on ack.
 }
