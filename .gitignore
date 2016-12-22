@@ -1,3 +1,5 @@
 /firmware/Rover.X/build/default/
 /firmware/Rover.X/dist/default/
 /firmware/Rover.X/debug/default/
+/bin/cli
+/bin/main
