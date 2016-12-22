@@ -9,6 +9,7 @@ import (
 	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/lsm303"
+	"github.com/kidoman/embd/sensor/us020"
 	"golang.org/x/net/context"
 )
 
@@ -16,11 +17,13 @@ type Devices struct {
 	Ctrl *devices.Controller
 	Mag  *lsm303.LSM303
 	Pir  string
+	Us   *us020.US020
 }
 
 type Server struct {
 	ctrl *devices.Controller
 	mag  *lsm303.LSM303
+	us   *us020.US020
 	pir  string
 }
 
@@ -29,6 +32,7 @@ func New(d *Devices) *Server {
 		ctrl: d.Ctrl,
 		mag:  d.Mag,
 		pir:  d.Pir,
+		us:   d.Us,
 	}
 }
 
@@ -71,6 +75,25 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 		return nil, err
 	}
 	return &pb.HeadingRet{Heading: heading}, nil
+}
+
+// Distance returns the forward clearance in cm using the ultrasonic sensor.
+func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, error) {
+	d, err := m.us.Distance()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.USRet{Distance: int32(d)}, nil
+}
+
+// ForwardSweep returns the distance to the nearest object sweeping angle degrees at a time.
+func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRet, error) {
+	v, err := devices.ForwardSweep(m.ctrl, m.us, int(in.Angle))
+
+	if err != nil {
+		return nil, err
+	}
+	return &pb.SweepRet{Distance: v}, nil
 }
 
 // PIRDetect retuns true if Infrared signal is detected.

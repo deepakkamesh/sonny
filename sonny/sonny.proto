@@ -12,6 +12,8 @@ service DevicesRPC {
 	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
 	rpc PIRDetect(google.protobuf.Empty) returns (PIRRet) {} // Get PIR sensor.
   rpc ServoRotate(ServoReq) returns (google.protobuf.Empty) {} // Rotate Servo.
+	rpc Distance(google.protobuf.Empty) returns (USRet) {} // Ultrasonic Distance.
+	rpc ForwardSweep(SweepReq) returns (SweepRet) {} // Ultrasonic Distance.
 }
 
 message HeadingRet {
@@ -32,6 +34,18 @@ message PIRRet {
 }
 
 message ServoReq{
- uint32 servo =1;
+ uint32 servo = 1;
  uint32 angle = 2;
+}
+
+message USRet {
+ int32 distance = 1;
+}
+
+message SweepReq {
+ int32 angle = 1;
+}
+
+message SweepRet {
+ repeated int32 distance = 1;
 }

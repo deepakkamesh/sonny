@@ -52,6 +52,40 @@ func main() {
 			},
 		},
 		{
+			Name:    "ForwardSweep",
+			Aliases: []string{"sweep"},
+			Usage:   "Forward Sweep ultrasonic sensor",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "angle,a",
+					Usage: "Increment Angle",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				d, err := ctrl.ForwardSweep(context.Background(), &pb.SweepReq{
+					Angle: int32(c.Int("angle")),
+				})
+				if err != nil {
+					return err
+				}
+				log.Printf("Sweep %v", d.Distance)
+				return nil
+			},
+		},
+		{
+			Name:    "Distance",
+			Aliases: []string{"dist"},
+			Usage:   "Distance from ultrasonic sensor",
+			Action: func(c *cli.Context) error {
+				d, err := ctrl.Distance(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return err
+				}
+				log.Printf("Distance %v", d.Distance)
+				return nil
+			},
+		},
+		{
 			Name:    "Heading",
 			Aliases: []string{"head"},
 			Usage:   "Magnetic Heading",
