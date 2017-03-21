@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
+	"github.com/deepakkamesh/sonny/httphandler"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
@@ -91,37 +91,13 @@ func main() {
 	}
 	s := grpc.NewServer()
 	pb.RegisterDevicesRPCServer(s, rpc.New(dev))
-	s.Serve(lis)
+	go s.Serve(lis)
 
-	// Inialize Pi
-	/*	for {
-		bus := embd.NewI2CBus(2)
-		mag := lsm303.New(bus)
-
-		h, e := mag.Heading()
-		if e != nil {
-			fmt.Printf("Got e %v", e)
-			continue
-		}
-		fmt.Printf("Heading %v\n", h)
-		time.Sleep(time.Millisecond * 500)
-	} */
-	/*
-		/*
-					log.Printf("Ping to controller failed: %v", err)
-				if err := ctrl.Ping(); err != nil {
-					fmt.Println("Error", err)
-				}
-
-				if err := ctrl.LedOn(true); err != nil {
-					fmt.Println("Error", err)
-				}
-				time.Sleep(2 * time.Second)
-				if err := ctrl.LedOn(false); err != nil {
-					fmt.Println("Error", err)
-				}
-	*/
-	fmt.Println("completed")
+	// Startup HTTP service.
+	h := httphandler.New(dev, false)
+	if err := h.Start(); err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
 
 	for {
 		time.Sleep(time.Millisecond * 20)

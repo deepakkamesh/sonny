@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"> </script>
+            <script type="text/javascript">
+               $(document).ready(function () {
+                 $("#output").append("Waiting for system time..");
+                 setInterval("delayedPost()", 2000);
+               });
+               function delayedPost() {
+                 $.post("http://10.0.0.105:8080/api/ping", "", function(data, status) {
+                 $("#output").empty();
+                 $("#output").append(data);
+                 });
+               }
+
+function led()
+{
+  if (document.getElementById('switch1').checked) 
+  {
+                 $.post("http://10.0.0.105:8080/api/led/_?cmd=on", "", function(data, status) {
+                 $("#output").empty();
+                 $("#output").append(data);
+                 });
+  } else {
+                 $.post("http://10.0.0.105:8080/api/led/_?cmd=off", "", function(data, status) {
+                 $("#output").empty();
+                 $("#output").append(data);
+                 });
+  }
+};
+             </script>
+
+<head>
+<style>
+div.container {
+    width: 100%;
+    border: 1px solid gray;
+}
+
+header, footer {
+    padding: 1em;
+    color: white;
+    background-color: black;
+    clear: left;
+    text-align: center;
+}
+
+nav {
+    float: left;
+    max-width: 160px;
+    margin: 0;
+    padding: 1em;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+}
+   
+nav ul a {
+    text-decoration: none;
+}
+
+article {
+    margin-left: 425px;
+    border-left: 1px solid gray;
+    padding: 1em;
+    overflow: hidden;
+}
+
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 10px;
+}
+
+button {
+	mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored
+    }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<header>
+   <h1>Robot Sonny Project</h1>
+</header>
+ 
+<nav>
+  <video width="400" controls>
+  <source src="mov_bbb.mp4" type="video/mp4">
+  <source src="mov_bbb.ogg" type="video/ogg">
+  Your browser does not support HTML5 video.
+</video>
+</nav>  
+
+<article>
+  <table>
+  <tr>
+  <td>
+  <h2>Control 1</h2>
+  <ul>
+  	&emsp;&emsp;&emsp;&emsp;
+    <!-- Colored FAB button with ripple -->
+	<button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE316;</li></button>
+    <br/><br/>
+    <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE314;</li></button>
+    &emsp;&emsp;&emsp;&emsp;
+    <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE315;</li></button><br/><br/>
+    &emsp;&emsp;&emsp;&emsp;
+    <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE313;</li></button><br/>
+    </ul>
+    </td>
+    <td>
+  <h2>Control 2</h2>
+  <ul>
+  	&emsp;&emsp;&emsp;&emsp;
+    <!-- Colored FAB button with ripple -->
+	<button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE316;</li></button>
+    <br/><br/>
+    <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE314;</li></button>
+    &emsp;&emsp;&emsp;&emsp;
+    <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE315;</li></button><br/><br/>
+    &emsp;&emsp;&emsp;&emsp;
+    <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored"><li class="material-icons">&#xE313;</li></button><br/>
+    </ul>
+    </td>
+    </tr>
+    </table>
+</article>
+
+<table width=100%>
+<tr><td>Sensor</td><td>Switches</td></tr>
+<tr><td>A1
+ <div id="output"></div>
+</td>
+	<td>
+    	<label for="switch1" class="mdl-switch mdl-js-switch">
+  		<input type="checkbox" id="switch1" class="mdl-switch__input" onclick="led();">
+  		<span class="mdl-switch__label">Sound off/on</span>
+		</label>
+    </td>
+</tr>
+<tr><td>B1</td>
+	<td>
+    	<label for="switch2" class="mdl-switch mdl-js-switch">
+  		<input type="checkbox" id="switch2" class="mdl-switch__input">
+  		<span class="mdl-switch__label">Light off/on</span>
+		</label>
+    </td>
+</tr>
+<!-- Copy & Paste following lines of code to add addition sensor & switches -->
+<tr>
+	<td>B1</td>
+	<td>
+    	<label for="switch3" class="mdl-switch mdl-js-switch">
+  		<input type="checkbox" id="switch3" class="mdl-switch__input">
+  		<span class="mdl-switch__label">LED off/on</span>
+		</label>
+    </td>
+</tr>
+<!---  End --->
+</table>
+
+
+
+<footer>Copyright &copy; Deepak_Chandra@moonlight.com</footer>
+
+</div>
+
+</body>
+</html>
