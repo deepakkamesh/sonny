@@ -23,6 +23,7 @@ func main() {
 	// Setup Flags.
 	var (
 		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
+		res       = flag.String("resources", "./resources", "resources directory")
 		pirPin    = flag.String("pir_pin", "gpio0", "PIR gpio pin")
 		usTrigPin = flag.String("us_trig_pin", "gpio3", "Ultrasonic Trigger Pin")
 		usEchoPin = flag.String("us_echo_pin", "gpio1", "Ultrasonic Echo Pin")
@@ -94,7 +95,7 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(dev, false)
+	h := httphandler.New(dev, false, *res)
 	if err := h.Start(); err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}

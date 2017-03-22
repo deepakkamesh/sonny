@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/deepakkamesh/sonny/devices"
@@ -15,20 +16,24 @@ import (
 )
 
 type Server struct {
-	ctrl *devices.Controller
-	mag  *lsm303.LSM303
-	us   *us020.US020
-	pir  string
-	ssl  bool
+	ctrl       *devices.Controller
+	mag        *lsm303.LSM303
+	us         *us020.US020
+	pir        string
+	ssl        bool
+	resources  string
+	servoAngle map[byte]byte // Map to hold state of each servo.
 }
 
-func New(d *rpc.Devices, ssl bool) *Server {
+func New(d *rpc.Devices, ssl bool, resources string) *Server {
 	return &Server{
-		ctrl: d.Ctrl,
-		mag:  d.Mag,
-		pir:  d.Pir,
-		us:   d.Us,
-		ssl:  ssl,
+		ctrl:       d.Ctrl,
+		mag:        d.Mag,
+		pir:        d.Pir,
+		us:         d.Us,
+		ssl:        ssl,
+		resources:  resources,
+		servoAngle: map[byte]byte{1: 90, 2: 90},
 	}
 }
 
@@ -36,14 +41,16 @@ func (m *Server) Start() error {
 
 	http.HandleFunc("/", m.ServeIndex)
 	http.HandleFunc("/api/ping", m.Ping)
-	http.HandleFunc("/api/led/", m.LEDOn)
+	http.HandleFunc("/api/ledon/", m.LEDOn)
+	http.HandleFunc("/api/ledblink/", m.LEDBlink)
+	http.HandleFunc("/api/servorotate/", m.ServoRotate)
 	return http.ListenAndServe(":8080", nil)
 	//return nil
 }
 
 func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	idx, err := ioutil.ReadFile("./index.html")
+	idx, err := ioutil.ReadFile(m.resources + "/index.html")
 	if err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
 	}
@@ -68,6 +75,38 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "OK")
 }
 
+// LEDBlink is the http wrapper for devices.LEDBlink().
+func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	if m.ctrl == nil {
+		fmt.Fprintf(w, "%s", "Error: Controller not enabled")
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+
+	dur, err := strconv.ParseUint(strings.ToLower(r.Form.Get("duration")), 10, 16) // Duration of blink in ms.
+	if err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+	no, err := strconv.ParseUint(strings.ToLower(r.Form.Get("times")), 10, 8) // Number of times to blink.
+	if err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+	if err := m.ctrl.LEDBlink(uint16(dur), byte(no)); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+	fmt.Fprint(w, "OK")
+}
+
+// LEDOn is the http wrapper for devices.LEDOn().
 func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
@@ -97,6 +136,48 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		fmt.Fprintf(w, "Error: unknown cmd %v", a)
+		return
+	}
+
+	fmt.Fprint(w, "OK")
+}
+
+// ServoRotate is the http wrapper for devices.ServoRotate().
+func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
+	const delta = 10
+	var servo byte = 1
+
+	w.Header().Set("Content-Type", "text/html")
+
+	if m.ctrl == nil {
+		fmt.Fprintf(w, "%s", "Error: Controller not enabled")
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+
+	dir := strings.ToLower(r.Form.Get("dir")) // Servo button { up, down, left, right}
+	switch dir {
+
+	case "up":
+		servo = 2
+		m.servoAngle[servo] += delta
+	case "down":
+		servo = 2
+		m.servoAngle[servo] -= delta
+	case "left":
+		servo = 1
+		m.servoAngle[servo] += delta
+	case "right":
+		servo = 1
+		m.servoAngle[servo] -= delta
+	}
+
+	if err := m.ctrl.ServoRotate(servo, m.servoAngle[servo]); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
 		return
 	}
 
