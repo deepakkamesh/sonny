@@ -1,6 +1,7 @@
 package httphandler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -26,6 +27,12 @@ type Server struct {
 	servoAngle map[byte]byte // Map to hold state of each servo.
 }
 
+// Struct to return JSON/
+type response struct {
+	Err  string
+	Data interface{}
+}
+
 func New(d *rpc.Devices, ssl bool, resources string) *Server {
 	return &Server{
 		ctrl:       d.Ctrl,
@@ -46,7 +53,7 @@ func (m *Server) Start() error {
 	}
 
 	http.HandleFunc("/", m.ServeIndex)
-	http.HandleFunc("/api/ping", m.Ping)
+	http.HandleFunc("/api/ping/", m.Ping)
 	http.HandleFunc("/api/ledon/", m.LEDOn)
 	http.HandleFunc("/api/ledblink/", m.LEDBlink)
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
@@ -56,6 +63,7 @@ func (m *Server) Start() error {
 
 func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
+	// TODO: change to http.ServeFile.
 	idx, err := ioutil.ReadFile(m.resources + "/index.html")
 	if err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -65,61 +73,89 @@ func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	d, err := m.us.Distance()
-	if err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+// writeResponse writes the response json object to w. If unable to marshal
+// it writes a http 500.
+func writeResponse(w http.ResponseWriter, resp *response) {
+	js, e := json.Marshal(resp)
+	if e != nil {
+		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, "%v", d)
+	glog.V(2).Infof("Writing json response %s", js)
+	w.Write(js)
 }
 
 // Ping is a http wrapper for devices.Ping.
 func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := m.ctrl.Ping(); err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprint("Error: ping failed %v", err),
+		})
 		return
 	}
-	fmt.Fprintf(w, "%s", "OK")
+
+	writeResponse(w, &response{
+		Data: "OK",
+	})
+}
+
+func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	d, err := m.us.Distance()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: distance query failed %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: fmt.Sprintf("%3.3f", d),
+	})
 }
 
 // LEDBlink is the http wrapper for devices.LEDBlink().
 func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := r.ParseForm(); err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	dur, err := strconv.ParseUint(strings.ToLower(r.Form.Get("duration")), 10, 16) // Duration of blink in ms.
 	if err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	no, err := strconv.ParseUint(strings.ToLower(r.Form.Get("times")), 10, 8) // Number of times to blink.
 	if err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	if err := m.ctrl.LEDBlink(uint16(dur), byte(no)); err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to blink LED %v", err),
+		})
 		return
 	}
-	fmt.Fprint(w, "OK")
+
+	writeResponse(w, &response{
+		Data: "OK",
+	})
+
 }
 
 // LEDOn is the http wrapper for devices.LEDOn().
 func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := r.ParseForm(); err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -128,20 +164,28 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 	switch a {
 	case "on":
 		if err := m.ctrl.LEDOn(true); err != nil {
-			fmt.Fprintf(w, "Error: %v", err)
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: LED failed %v", err),
+			})
 			return
 		}
 	case "off":
 		if err := m.ctrl.LEDOn(false); err != nil {
-			fmt.Fprintf(w, "Error: %v", err)
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: LED failed  %v", err),
+			})
 			return
 		}
 	default:
-		fmt.Fprintf(w, "Error: unknown cmd %v", a)
+		writeResponse(w, &response{
+			Err: "Error: unknown command",
+		})
 		return
 	}
 
-	fmt.Fprint(w, "OK")
+	writeResponse(w, &response{
+		Data: "OK",
+	})
 }
 
 // ServoRotate is the http wrapper for devices.ServoRotate().
@@ -161,16 +205,16 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	switch dir {
 	case "up":
 		servo = 2
-		m.servoAngle[servo] += delta
+		m.servoAngle[servo] -= delta
 	case "down":
 		servo = 2
-		m.servoAngle[servo] -= delta
+		m.servoAngle[servo] += delta
 	case "left":
 		servo = 1
-		m.servoAngle[servo] += delta
+		m.servoAngle[servo] -= delta
 	case "right":
 		servo = 1
-		m.servoAngle[servo] -= delta
+		m.servoAngle[servo] += delta
 	}
 
 	// Set rotation boundary angles.
@@ -182,9 +226,13 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := m.ctrl.ServoRotate(servo, m.servoAngle[servo]); err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: servo failed %v", err),
+		})
 		return
 	}
 
-	fmt.Fprint(w, "OK")
+	writeResponse(w, &response{
+		Data: "OK",
+	})
 }

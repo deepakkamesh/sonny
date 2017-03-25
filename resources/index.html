@@ -7,16 +7,16 @@
     <script type="text/javascript">
 
         $(document).ready(function () {
-            $("#output").append("Waiting for system time..");
-            setInterval("delayedPost()", 2000);
+            setInterval("RegularTasks()", 2000);
 
             var infoContainer = document.querySelector('#info-popup');
 
             var servoDownButton = document.querySelector('#servo-down');
             servoDownButton.addEventListener('click', function() {
                 $.post('/api/servorotate/_?dir=down', "", function(data, status) {
-                    if (data != 'OK') {
-                        infoContainer.MaterialSnackbar.showSnackbar({message: data});
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
                     }
                 });
             });
@@ -24,8 +24,9 @@
             var servoUpButton = document.querySelector('#servo-up');
             servoUpButton.addEventListener('click', function() {
                 $.post('/api/servorotate/_?dir=up', "", function(data, status) {
-                    if (data != 'OK') {
-                        infoContainer.MaterialSnackbar.showSnackbar({message: data});
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
                     }
                 });
             });
@@ -33,8 +34,9 @@
             var servoLeftButton = document.querySelector('#servo-left');
             servoLeftButton.addEventListener('click', function() {
                 $.post('/api/servorotate/_?dir=left', "", function(data, status) {
-                    if (data != 'OK') {
-                        infoContainer.MaterialSnackbar.showSnackbar({message: data});
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
                     }
                 });
             });
@@ -42,8 +44,9 @@
             var servoRightButton = document.querySelector('#servo-right');
             servoRightButton.addEventListener('click', function() {
                 $.post('/api/servorotate/_?dir=right', "", function(data, status) {
-                    if (data != 'OK') {
-                        infoContainer.MaterialSnackbar.showSnackbar({message: data});
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
                     }
                 });
             });
@@ -59,11 +62,12 @@
                 }
 
                 $.post('http://10.0.0.105:8080/api/ledon/_?cmd='+action, "", function(data, status) {
-                    if (data == 'OK') {
-                        infoContainer.MaterialSnackbar.showSnackbar({message: 'Turned '+action});
-                    } else {
-                        infoContainer.MaterialSnackbar.showSnackbar({message: data});
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
                     }
+                    infoContainer.MaterialSnackbar.showSnackbar({message: 'Turned '+action+' led'});
                 });
             });
 
@@ -71,32 +75,32 @@
         });
 
 
-        function delayedPost() {
-            $.post("http://10.0.0.105:8080/api/ping", "", function(data, status) {
-                $("#output").empty();
-                $("#output").append(data);
+        function RegularTasks() {
+            var infoContainer = document.querySelector('#info-popup');
+
+            // Ping controller.
+            $.post("http://10.0.0.105:8080/api/ping/", "", function(data, status) {
+                $("#ping").empty();
+                ret = JSON.parse(data)
+                if (ret.Err != '') {
+                    infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                    return
+                }             
+                $("#ping").append(ret.Data);   
+            });
+
+
+            // Get distance.
+            $.post("http://10.0.0.105:8080/api/distance/", "", function(data, status) {
+                $("#distance").empty();
+                ret = JSON.parse(data)
+                if (ret.Err != '') {
+                    infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                    return
+                }             
+                $("#distance").append(ret.Data);                
             });
         }
-
-        function LEDOn()
-        {
-            var infoContainer = document.querySelector('#info-popup');
-            var action = '';
-            if (document.getElementById('LED').checked) 
-            {
-                action = 'on';
-            } else {
-                action = 'off';
-            }
-
-            $.post('http://10.0.0.105:8080/api/ledon/_?cmd='+action, "", function(data, status) {
-                if (data == 'OK') {
-                    infoContainer.MaterialSnackbar.showSnackbar({message: 'Turned '+action});
-                } else {
-                    infoContainer.MaterialSnackbar.showSnackbar({message: data});
-                }
-            });
-        };
 
 
     </script>
@@ -238,7 +242,9 @@
                     <td>Switches</td>
                 </tr>
                 <tr>
-                    <td>A1</td>
+                    <td>
+                        Ping Controller: <div id="ping"></div>
+                    </td>
                     <td>
                         <label for="led" class="mdl-switch mdl-js-switch">
                             <input type="checkbox" id="led" class="mdl-switch__input">
@@ -247,7 +253,9 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>B1</td>
+                    <td>
+                        Ultrasonic Distance: <div id="distance"></div>
+                    </td>
                     <td>
                         <label for="switch2" class="mdl-switch mdl-js-switch">
                             <input type="checkbox" id="switch2" class="mdl-switch__input">
