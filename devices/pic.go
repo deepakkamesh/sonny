@@ -199,7 +199,6 @@ func (m *Controller) run() {
 
 // LEDBlink blinks the LED for duration (in ms) and for the number of times.
 func (m *Controller) LEDBlink(duration uint16, times byte) error {
-
 	pkt := []byte{p.CMD_BLINK<<4 | p.DEV_LED, byte(duration >> 8), byte(duration & 0xF), times}
 	ret := make(chan result)
 	m.in <- request{
@@ -209,9 +208,39 @@ func (m *Controller) LEDBlink(duration uint16, times byte) error {
 	return (<-ret).err
 }
 
+// LDR returns the ADC light value of the LDR sensor.
+func (m *Controller) LDR() (error, uint16) {
+	pkt := []byte{p.CMD_STATE<<4 | p.DEV_LDR}
+	ret := make(chan result)
+	m.in <- request{
+		pkt: pkt,
+		ret: ret,
+	}
+	res := <-ret
+	if res.err != nil {
+		return res.err, 0
+	}
+	return nil, uint16(res.pkt[0]<<8 | res.pkt[1])
+}
+
+// Motor turns the motor by turns forward if fwd is true or back if false.
+func (m *Controller) Motor(turns uint16, fwd bool) (error, uint16) {
+	dir := p.CMD_FWD
+	if !fwd {
+		dir = p.CMD_BWD
+	}
+
+	pkt := []byte{dir<<4 | p.DEV_MOTOR}
+	ret := make(chan result)
+	m.in <- request{
+		pkt: pkt,
+		ret: ret,
+	}
+	return (<-ret).err, 0
+}
+
 // LEDOn turn on/off the LED.
 func (m *Controller) LEDOn(on bool) error {
-
 	cmd := p.CMD_ON
 	if !on {
 		cmd = p.CMD_OFF

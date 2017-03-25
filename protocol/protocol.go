@@ -10,9 +10,14 @@ const (
 	MAX_DEVICES = 16
 
 	// Device Definitions.
-	DEV_ADMIN byte = 0x0
-	DEV_LED   byte = 0x1
-	DEV_SERVO byte = 0x2
+	DEV_ADMIN       byte = 0x0
+	DEV_LED         byte = 0x1
+	DEV_SERVO       byte = 0x2
+	DEV_ACCEL       byte = 0x3
+	DEV_EDGE_SENSOR byte = 0x4
+	DEV_LDR         byte = 0x5
+	DEV_BATT        byte = 0x6
+	DEV_MOTOR       byte = 0x7
 
 	// Command definitions.
 	CMD_ON      byte = 0x1
@@ -21,11 +26,18 @@ const (
 	CMD_OFF     byte = 0x4
 	CMD_BLINK   byte = 0x5
 	CMD_ROTATE  byte = 0x6
+	CMD_STATE   byte = 0x7
+	CMD_TEST    byte = 0x8
+	CMD_FWD     byte = 0x9
+	CMD_BWD     byte = 0x10
 
 	// Error Codes.
-	ERR_CHECKSUM_FAILURE byte = 0x1
-	ERR_DEVICE_BUSY      byte = 0x2
-	ERR_UNIMPLEMENTED    byte = 0x3
+	ERR_CHECKSUM_FAILURE   byte = 0x1
+	ERR_DEVICE_BUSY        byte = 0x2
+	ERR_UNIMPLEMENTED      byte = 0x3
+	ERR_INSUFFICENT_PARAMS byte = 0x4
+	ERR_EDGE_DETECTED      byte = 0x5
+	ERR_BATT_LOW           byte = 0x6
 
 	// Status Codes.
 	ACK      byte = 0x8

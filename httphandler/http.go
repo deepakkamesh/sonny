@@ -1,6 +1,7 @@
 package httphandler
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -39,13 +40,18 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 
 func (m *Server) Start() error {
 
+	// Validate devices.
+	if m.ctrl == nil {
+		return errors.New("Controller not enabled")
+	}
+
 	http.HandleFunc("/", m.ServeIndex)
 	http.HandleFunc("/api/ping", m.Ping)
 	http.HandleFunc("/api/ledon/", m.LEDOn)
 	http.HandleFunc("/api/ledblink/", m.LEDBlink)
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
+	http.HandleFunc("/api/distance/", m.Distance)
 	return http.ListenAndServe(":8080", nil)
-	//return nil
 }
 
 func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
@@ -59,14 +65,20 @@ func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	d, err := m.us.Distance()
+	if err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+	fmt.Fprintf(w, "%v", d)
+}
+
+// Ping is a http wrapper for devices.Ping.
 func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
-
-	if m.ctrl == nil {
-		fmt.Fprintf(w, "%s", "Error: Controller not enabled")
-		return
-	}
 
 	if err := m.ctrl.Ping(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -78,11 +90,6 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 // LEDBlink is the http wrapper for devices.LEDBlink().
 func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-
-	if m.ctrl == nil {
-		fmt.Fprintf(w, "%s", "Error: Controller not enabled")
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -110,11 +117,6 @@ func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
-
-	if m.ctrl == nil {
-		fmt.Fprintf(w, "%s", "Error: Controller not enabled")
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -144,24 +146,19 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 // ServoRotate is the http wrapper for devices.ServoRotate().
 func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
-	const delta = 10
-	var servo byte = 1
-
 	w.Header().Set("Content-Type", "text/html")
-
-	if m.ctrl == nil {
-		fmt.Fprintf(w, "%s", "Error: Controller not enabled")
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
 		return
 	}
 
-	dir := strings.ToLower(r.Form.Get("dir")) // Servo button { up, down, left, right}
-	switch dir {
+	dir := strings.ToLower(r.Form.Get("dir")) // Servo button { up, down, left, right}.
 
+	const delta = 10
+	var servo byte
+
+	switch dir {
 	case "up":
 		servo = 2
 		m.servoAngle[servo] += delta
@@ -174,6 +171,14 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	case "right":
 		servo = 1
 		m.servoAngle[servo] -= delta
+	}
+
+	// Set rotation boundary angles.
+	if m.servoAngle[servo] < 0 {
+		m.servoAngle[servo] = 0
+	}
+	if m.servoAngle[servo] > 180 {
+		m.servoAngle[servo] = 180
 	}
 
 	if err := m.ctrl.ServoRotate(servo, m.servoAngle[servo]); err != nil {
