@@ -17,7 +17,10 @@
                     ret = JSON.parse(data)
                     if (ret.Err != '') {
                         infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
                     }
+                    $("#servo-angle").empty();
+                    $("#servo-angle").append("Horiz:"+ret.Data['horiz']+" Vert:"+ret.Data['vert']);
                 });
             });
 
@@ -27,7 +30,10 @@
                     ret = JSON.parse(data)
                     if (ret.Err != '') {
                         infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
                     }
+                    $("#servo-angle").empty();
+                    $("#servo-angle").append("Horiz:"+ret.Data['horiz']+" Vert:"+ret.Data['vert']);
                 });
             });
 
@@ -37,7 +43,10 @@
                     ret = JSON.parse(data)
                     if (ret.Err != '') {
                         infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
                     }
+                    $("#servo-angle").empty();
+                    $("#servo-angle").append("Horiz:"+ret.Data['horiz']+" Vert:"+ret.Data['vert']);
                 });
             });
 
@@ -47,7 +56,10 @@
                     ret = JSON.parse(data)
                     if (ret.Err != '') {
                         infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
                     }
+                    $("#servo-angle").empty();
+                    $("#servo-angle").append("Horiz:"+ret.Data['horiz']+" Vert:"+ret.Data['vert']);
                 });
             });
 
@@ -67,7 +79,6 @@
                         infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
                         return
                     }
-                    infoContainer.MaterialSnackbar.showSnackbar({message: 'Turned '+action+' led'});
                 });
             });
 
@@ -238,12 +249,12 @@
             </article>
             <table width=100%>
                 <tr>
-                    <td>Sensor</td>
-                    <td>Switches</td>
+                    <td style = "font-size:20px;font-weight:bold;">Sensor</td>
+                    <td style = "font-size:20px;font-weight:bold;">Switches</td>
                 </tr>
                 <tr>
                     <td>
-                        Ping Controller: <div id="ping"></div>
+                        Ping Controller: <span style="font-color:green;" id="ping"></span>
                     </td>
                     <td>
                         <label for="led" class="mdl-switch mdl-js-switch">
@@ -254,7 +265,7 @@
                 </tr>
                 <tr>
                     <td>
-                        Ultrasonic Distance: <div id="distance"></div>
+                        Ultrasonic Distance: <span id="distance"></span>
                     </td>
                     <td>
                         <label for="switch2" class="mdl-switch mdl-js-switch">
@@ -263,9 +274,44 @@
                         </label>
                     </td>
                 </tr>
+                <tr>
+                    <td>
+                        Servo Angles: <span id="servo-angle"></span>
+                    </td>
+                    <td>
+                        <label for="switch3" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="switch3" class="mdl-switch__input">
+                            <span class="mdl-switch__label">LED off/on</span>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Light Level: <span id="ldr"></span>
+                    </td>
+                    <td>
+                        <label for="switch3" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="switch3" class="mdl-switch__input">
+                            <span class="mdl-switch__label">LED off/on</span>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Heading: <span id="heading"></span>
+                    </td>
+                    <td>
+                        <label for="switch3" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="switch3" class="mdl-switch__input">
+                            <span class="mdl-switch__label">LED off/on</span>
+                        </label>
+                    </td>
+                </tr>
                 <!-- Copy & Paste following lines of code to add addition sensor & switches -->
                 <tr>
-                    <td>B1</td>
+                    <td>
+                        B1
+                    </td>
                     <td>
                         <label for="switch3" class="mdl-switch mdl-js-switch">
                             <input type="checkbox" id="switch3" class="mdl-switch__input">
