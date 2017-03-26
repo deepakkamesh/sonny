@@ -5,10 +5,11 @@ package devices
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"time"
 
 	p "github.com/deepakkamesh/sonny/protocol"
+	"github.com/golang/glog"
 	"github.com/tarm/serial"
 )
 
@@ -75,6 +76,7 @@ func NewController(tty string, baud int) (*Controller, error) {
 func (m *Controller) Start() {
 	go m.run()
 	go m.read()
+
 }
 
 // Stop terminates the controller.
@@ -97,23 +99,27 @@ func (m *Controller) read() {
 				continue
 			}
 			if err != nil {
-				log.Printf("Failed to read header from tty: %v", err)
+				glog.Warningf("Failed to read header from tty: %v", err)
 				continue
 			}
 			sz := p.PacketSz(header)
+			if sz == 0 {
+				glog.Warning("Got a zero sized packet from controller. Discarding..")
+				continue
+			}
 			pkt := make([]byte, sz)
 			n, err = serialRead(m.port, pkt)
 			if err != nil {
-				log.Printf("Failed to read data from tty: %v", err)
+				glog.Warningf("Failed to read data from tty: %v", err)
 				continue
 			}
 			if n != int(sz) {
-				log.Printf("Expected to recieve %d bytes from tty, got %d", sz, n)
+				glog.Warningf("Expected to recieve %d bytes from tty, got %d", sz, n)
 				continue
 			}
 			c := p.Checksum(header)
 			if !p.VerifyChecksum(pkt, c) {
-				log.Printf("Checksum mismatch, discarding packet: %v", pkt)
+				glog.Warningf("Checksum mismatch, discarding packet: %v", pkt)
 				continue
 			}
 			// Send the packet to goroutine handling the device.
@@ -122,7 +128,7 @@ func (m *Controller) read() {
 				c <- pkt
 				continue
 			}
-			log.Printf("No registered channel found for device %b, packet:%x", dev, pkt)
+			glog.Warningf("No registered channel found for device %b, packet:%x", dev, pkt)
 		}
 	}
 }
@@ -133,38 +139,47 @@ func (m *Controller) run() {
 	for {
 		select {
 		case <-m.quit:
-			log.Printf("Shutting down sonny")
+			glog.Infof("Shutting down sonny")
 			return
 
 		case c := <-m.in:
 			// Write command to tty.
 			h := p.Header(c.pkt)
-			serialWrite(m.port, []byte{h})
-			serialWrite(m.port, c.pkt)
 			dev := p.DeviceID(c.pkt[0])
-			// Device is busy. Retry later.
+			// Device is busy.
 			if _, ok := m.deviceChan[dev]; ok {
-				go func() {
-					log.Printf("Device %v busy. Retrying command", dev)
+				// TODO: Need a retry logic.
+				/*	go func() {
 					time.Sleep(time.Millisecond * 100)
 					m.in <- c
-				}()
+				}()*/
+				glog.Warningf("Device %v busy. Dropping packet.", dev)
+				c.ret <- result{
+					pkt: nil,
+					err: errors.New(fmt.Sprintf("Error: device %v busy", dev)),
+				}
 				continue
 			}
+			// Create channel before sending command to avoid race condition.
+			glog.V(2).Infof("Sending command %v to device %v on tty", c.pkt, dev)
 			m.deviceChan[dev] = make(chan []byte)
+			serialWrite(m.port, []byte{h})
+			serialWrite(m.port, c.pkt)
 
 			// Goroutine to process data from controller.
 			go func() {
 				t := time.NewTimer(TIMEOUT * time.Millisecond)
 				for {
 					select {
-					// Timeout.
+					// Handle timeout.
 					case <-t.C:
 						c.ret <- result{
 							pkt: nil,
 							err: errors.New("timeout waiting response from controller"),
 						}
-					// Handle data from controller.
+						glog.Warningf("Timeout waiting on response from controller for device %v", dev)
+
+						// Handle data from controller.
 					case d := <-m.deviceChan[dev]:
 						switch p.StatusCode(d[0]) {
 						case p.ACK:
@@ -175,19 +190,23 @@ func (m *Controller) run() {
 								pkt: d,
 								err: nil,
 							}
+							glog.V(2).Infof("Recieved ACK DONE from %v", d)
 						case p.ERR:
 							c.ret <- result{
 								pkt: nil,
 								err: p.Error(d[1]),
 							}
+							glog.V(2).Infof("Recieved ERR from %v", d)
 						case p.DONE:
 							c.ret <- result{
 								pkt: d,
 								err: nil,
 							}
+							glog.V(2).Infof("Recieved DONE from %v", d)
 						}
 					}
-					// Done with this channel.
+					// Done with this channel, close it.
+					glog.V(2).Infof("Closing channel for dev %v", dev)
 					close(m.deviceChan[dev])
 					delete(m.deviceChan, dev)
 					return
@@ -266,7 +285,7 @@ func (m *Controller) Ping() error {
 }
 
 // RotateServo rotates servo by angle.
-func (m *Controller) ServoRotate(servo byte, angle byte) error {
+func (m *Controller) ServoRotate(servo byte, angle int) error {
 	const (
 		deg0      float32 = 0.0007    // 0.7 ms.
 		deg180    float32 = 0.0024    // 2.4 ms.

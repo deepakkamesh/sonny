@@ -13,7 +13,7 @@ func ForwardSweep(ctrl *Controller, us *us020.US020, angle int) ([]int32, error)
 	// Sleep to allow servo to move to starting position.
 	time.Sleep(320 * time.Millisecond)
 	for i := 20; i <= 160; i += angle {
-		if err := ctrl.ServoRotate(1, byte(i)); err != nil {
+		if err := ctrl.ServoRotate(1, i); err != nil {
 			return nil, err
 		}
 

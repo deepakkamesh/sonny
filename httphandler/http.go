@@ -24,7 +24,7 @@ type Server struct {
 	pir        string
 	ssl        bool
 	resources  string
-	servoAngle map[byte]byte // Map to hold state of each servo.
+	servoAngle map[byte]int // Map to hold state of each servo.
 }
 
 // Struct to return JSON/
@@ -41,7 +41,7 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 		us:         d.Us,
 		ssl:        ssl,
 		resources:  resources,
-		servoAngle: map[byte]byte{1: 90, 2: 90},
+		servoAngle: map[byte]int{1: 90, 2: 90},
 	}
 }
 
@@ -91,7 +91,7 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 
 	if err := m.ctrl.Ping(); err != nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprint("Error: ping failed %v", err),
+			Err: fmt.Sprintf("Error: ping failed %v", err),
 		})
 		return
 	}
@@ -219,10 +219,18 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 
 	// Set rotation boundary angles.
 	if m.servoAngle[servo] < 0 {
+		writeResponse(w, &response{
+			Err: "Error: servo angle below 0",
+		})
 		m.servoAngle[servo] = 0
+		return
 	}
 	if m.servoAngle[servo] > 180 {
+		writeResponse(w, &response{
+			Err: "Error servo angle above 180",
+		})
 		m.servoAngle[servo] = 180
+		return
 	}
 
 	if err := m.ctrl.ServoRotate(servo, m.servoAngle[servo]); err != nil {
@@ -233,6 +241,6 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(w, &response{
-		Data: "OK",
+		Data: map[string]int{"horiz": m.servoAngle[byte(1)], "vert": m.servoAngle[byte(2)]},
 	})
 }

@@ -49,7 +49,7 @@ func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.E
 	if m.ctrl == nil {
 		return &google_pb.Empty{}, errors.New("controller not enabled")
 	}
-	return &google_pb.Empty{}, m.ctrl.ServoRotate(byte(in.Servo), byte(in.Angle))
+	return &google_pb.Empty{}, m.ctrl.ServoRotate(byte(in.Servo), int(in.Angle))
 }
 
 // LEDOn turns on/off the LED indicator.
