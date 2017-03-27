@@ -65,7 +65,7 @@ Start:
 			log.Printf("failed to send to serial: %v", err)
 		}
 		log.Printf("%v", packet)
-		log.Printf("Sent %s\n", p.PrettyPrint(packet))
+		log.Printf("Sent %s\n", p.PktPrint(packet))
 	}
 
 }
@@ -81,7 +81,7 @@ func read(ser *serial.Port) {
 			continue
 		}
 		//log.Printf("Got %d bytes Binary:%08b  Hex:%X", n, buf[0], buf[0])
-		log.Printf("Got %s\n\n", p.PrettyPrint(buf))
+		log.Printf("Got %s\n\n", p.PktPrint(buf))
 	}
 
 }

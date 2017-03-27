@@ -32,7 +32,7 @@ func serWrite(s *serial.Port, b []byte) (int, error) {
 	return s.Write(b)
 }
 
-const TIMEOUT = 500 // Controller response timeout in milliseconds.
+const TIMEOUT = 600 // Controller response timeout in milliseconds.
 
 // result stores the return value from the controller.
 type result struct {
@@ -47,11 +47,12 @@ type request struct {
 }
 
 type Controller struct {
-	port       *serial.Port
-	in         chan request // Channel to recieve command.
-	deviceChan map[byte]chan []byte
-	quit       chan struct{}
-	quitR      chan struct{}
+	port  *serial.Port
+	in    chan request // Channel to recieve command.
+	got   chan []byte  // Channel to recieve packet from tty.
+	done  chan byte    // Channel to signal the goroutine is finished.
+	quit  chan struct{}
+	quitR chan struct{}
 }
 
 // NewController returns a new initialized controller.
@@ -64,11 +65,12 @@ func NewController(tty string, baud int) (*Controller, error) {
 	}
 
 	return &Controller{
-		port:       port,
-		in:         make(chan request),
-		deviceChan: make(map[byte]chan []byte),
-		quit:       make(chan struct{}),
-		quitR:      make(chan struct{}),
+		port:  port,
+		in:    make(chan request),
+		got:   make(chan []byte),
+		done:  make(chan byte),
+		quit:  make(chan struct{}),
+		quitR: make(chan struct{}),
 	}, nil
 }
 
@@ -119,16 +121,11 @@ func (m *Controller) read() {
 			}
 			c := p.Checksum(header)
 			if !p.VerifyChecksum(pkt, c) {
-				glog.Warningf("Checksum mismatch, discarding packet: %v", pkt)
+				glog.Warningf("Checksum mismatch, discarding packet: %v", p.PktPrint(pkt))
 				continue
 			}
-			// Send the packet to goroutine handling the device.
-			dev := p.DeviceID(pkt[0])
-			if c, ok := m.deviceChan[dev]; ok {
-				c <- pkt
-				continue
-			}
-			glog.Warningf("No registered channel found for device %b, packet:%x", dev, pkt)
+			// Packet is valid. Send to the main goroutine for dispatch.
+			m.got <- pkt
 		}
 	}
 }
@@ -136,23 +133,42 @@ func (m *Controller) read() {
 // run is the main loop to process input.
 func (m *Controller) run() {
 
+	deviceChan := make(map[byte]chan []byte) // Map of channels to recieve tty data.
+
 	for {
 		select {
 		case <-m.quit:
 			glog.Infof("Shutting down sonny")
 			return
 
+		// Dispatch packet to goroutine handling the device.
+		case pkt := <-m.got:
+			glog.V(2).Infof("Got packet from tty %v", p.PktPrint(pkt))
+			dev := p.DeviceID(pkt[0])
+			if c, ok := deviceChan[dev]; ok {
+				c <- pkt
+				continue
+			}
+			glog.Warningf("No registered channel found for device %b, packet:%v", dev, p.PktPrint(pkt))
+
+		// Clean up channels after goroutine is done.
+		case dev := <-m.done:
+			glog.V(2).Infof("Closing channel for dev %v", dev)
+			close(deviceChan[dev])
+			delete(deviceChan, dev)
+
+		// Process inbound command request.
 		case c := <-m.in:
-			// Write command to tty.
 			h := p.Header(c.pkt)
 			dev := p.DeviceID(c.pkt[0])
 			// Device is busy.
-			if _, ok := m.deviceChan[dev]; ok {
-				// TODO: Need a retry logic.
-				/*	go func() {
-					time.Sleep(time.Millisecond * 100)
-					m.in <- c
-				}()*/
+			if _, ok := deviceChan[dev]; ok {
+				/*
+					go func() {
+						glog.Warningf("Device %v busy. Retrying.", dev)
+						time.Sleep(time.Millisecond * 100)
+						m.in <- c
+					}()*/
 				glog.Warningf("Device %v busy. Dropping packet.", dev)
 				c.ret <- result{
 					pkt: nil,
@@ -161,8 +177,8 @@ func (m *Controller) run() {
 				continue
 			}
 			// Create channel before sending command to avoid race condition.
-			glog.V(2).Infof("Sending command %v to device %v on tty", c.pkt, dev)
-			m.deviceChan[dev] = make(chan []byte)
+			glog.V(2).Infof("Sending command %v to device %v on tty", p.PktPrint(c.pkt), dev)
+			deviceChan[dev] = make(chan []byte)
 			serialWrite(m.port, []byte{h})
 			serialWrite(m.port, c.pkt)
 
@@ -179,42 +195,43 @@ func (m *Controller) run() {
 						}
 						glog.Warningf("Timeout waiting on response from controller for device %v", dev)
 
-						// Handle data from controller.
-					case d := <-m.deviceChan[dev]:
+					// Handle data from controller.
+					case d := <-deviceChan[dev]:
 						switch p.StatusCode(d[0]) {
 						case p.ACK:
+							glog.V(2).Infof("Recieved ACK from %v", p.PktPrint(d))
 							t.Reset(TIMEOUT * time.Millisecond)
 							continue
 						case p.ACK_DONE:
+							glog.V(2).Infof("Recieved ACK DONE from %v", p.PktPrint(d))
 							c.ret <- result{
 								pkt: d,
 								err: nil,
 							}
-							glog.V(2).Infof("Recieved ACK DONE from %v", d)
 						case p.ERR:
+							glog.V(2).Infof("Recieved ERR from %v", p.PktPrint(d))
 							c.ret <- result{
 								pkt: nil,
 								err: p.Error(d[1]),
 							}
-							glog.V(2).Infof("Recieved ERR from %v", d)
 						case p.DONE:
+							glog.V(2).Infof("Recieved DONE from %v", p.PktPrint(d))
 							c.ret <- result{
 								pkt: d,
 								err: nil,
 							}
-							glog.V(2).Infof("Recieved DONE from %v", d)
 						}
 					}
-					// Done with this channel, close it.
-					glog.V(2).Infof("Closing channel for dev %v", dev)
-					close(m.deviceChan[dev])
-					delete(m.deviceChan, dev)
+					// Signal done to main goroutine.
+					m.done <- dev
 					return
 				}
 			}()
 		}
 	}
 }
+
+/****** Available Functions on Controller ******/
 
 // LEDBlink blinks the LED for duration (in ms) and for the number of times.
 func (m *Controller) LEDBlink(duration uint16, times byte) error {
