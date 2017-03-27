@@ -32,7 +32,7 @@ func serWrite(s *serial.Port, b []byte) (int, error) {
 	return s.Write(b)
 }
 
-const TIMEOUT = 600 // Controller response timeout in milliseconds.
+const TIMEOUT = 600 * 1000 * 1000 // Controller response timeout in nanoseconds.
 
 // result stores the return value from the controller.
 type result struct {
@@ -44,6 +44,12 @@ type result struct {
 type request struct {
 	pkt []byte
 	ret chan result
+}
+
+// CMDBuffer
+type CMDBuffer struct {
+	req    request
+	tmstmp int64
 }
 
 type Controller struct {
@@ -76,7 +82,7 @@ func NewController(tty string, baud int) (*Controller, error) {
 
 // Start runs the controller.
 func (m *Controller) Start() {
-	go m.run()
+	go m.newRun()
 	go m.read()
 
 }
@@ -126,6 +132,90 @@ func (m *Controller) read() {
 			}
 			// Packet is valid. Send to the main goroutine for dispatch.
 			m.got <- pkt
+		}
+	}
+}
+
+func (m *Controller) newRun() {
+	cmdBuf := make(map[byte]*CMDBuffer)
+	t := time.NewTimer(TIMEOUT * time.Millisecond)
+
+	for {
+		select {
+		case <-m.quit:
+			glog.Info("Shutting down pic processor")
+
+		// Process command requests.
+		case c := <-m.in:
+			h := p.Header(c.pkt)
+			dev := p.DeviceID(c.pkt[0])
+			if _, ok := cmdBuf[dev]; ok {
+				glog.Warningf("Device %v busy. Dropping packet.", dev)
+				c.ret <- result{
+					pkt: nil,
+					err: errors.New(fmt.Sprintf("Error: device %v busy", dev)),
+				}
+				continue
+			}
+			cmdBuf[dev] = &CMDBuffer{
+				req:    c,
+				tmstmp: time.Now().UnixNano(),
+			}
+			glog.V(2).Infof("Sending command %v to device %v on tty", p.PktPrint(c.pkt), dev)
+			serialWrite(m.port, []byte{h})
+			serialWrite(m.port, c.pkt)
+
+		// Timeout handler.
+		case <-t.C:
+			now := time.Now().UnixNano()
+			for _, b := range cmdBuf {
+				if now-b.tmstmp > TIMEOUT {
+					req := b.req
+					dev := p.DeviceID(req.pkt[0])
+					req.ret <- result{
+						pkt: nil,
+						err: errors.New("timeout waiting response from controller"),
+					}
+					delete(cmdBuf, dev)
+					glog.Warningf("Timeout controller device %v packet %v", dev, p.PktPrint(req.pkt))
+				}
+			}
+
+		// TTY data handler.
+		case pkt := <-m.got:
+			dev := p.DeviceID(pkt[0])
+			buf, ok := cmdBuf[dev]
+			if !ok {
+				glog.Warningf("No registered channel found for device %b, packet:%v", dev, p.PktPrint(pkt))
+				continue
+			}
+			c := buf.req
+			switch p.StatusCode(pkt[0]) {
+			case p.ACK:
+				glog.V(2).Infof("Recieved ACK from %v", p.PktPrint(pkt))
+				continue
+			case p.ACK_DONE:
+				glog.V(2).Infof("Recieved ACK DONE from %v", p.PktPrint(pkt))
+				c.ret <- result{
+					pkt: pkt,
+					err: nil,
+				}
+			case p.ERR:
+				glog.V(2).Infof("Recieved ERR from %v", p.PktPrint(pkt))
+				c.ret <- result{
+					pkt: nil,
+					err: p.Error(pkt[1]),
+				}
+			case p.DONE:
+				glog.V(2).Infof("Recieved DONE from %v", p.PktPrint(pkt))
+				c.ret <- result{
+					pkt: pkt,
+					err: nil,
+				}
+			}
+			glog.V(2).Infof("Request fulfilled for dev %v", dev)
+			delete(cmdBuf, dev)
+
 		}
 	}
 }
