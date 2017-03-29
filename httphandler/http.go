@@ -2,7 +2,6 @@ package httphandler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -47,11 +46,6 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 
 func (m *Server) Start() error {
 
-	// Validate devices.
-	if m.ctrl == nil {
-		return errors.New("Controller not enabled")
-	}
-
 	http.HandleFunc("/", m.ServeIndex)
 	http.HandleFunc("/api/ping/", m.Ping)
 	http.HandleFunc("/api/ledon/", m.LEDOn)
@@ -89,6 +83,13 @@ func writeResponse(w http.ResponseWriter, resp *response) {
 func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Controller not enabled"),
+		})
+		return
+	}
+
 	if err := m.ctrl.Ping(); err != nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: ping failed %v", err),
@@ -119,6 +120,13 @@ func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
 // LEDBlink is the http wrapper for devices.LEDBlink().
 func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Controller not enabled"),
+		})
+		return
+	}
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -153,6 +161,13 @@ func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 // LEDOn is the http wrapper for devices.LEDOn().
 func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Controller not enabled"),
+		})
+		return
+	}
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -191,6 +206,13 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 // ServoRotate is the http wrapper for devices.ServoRotate().
 func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Controller not enabled"),
+		})
+		return
+	}
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)

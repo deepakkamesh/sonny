@@ -3,3 +3,5 @@
 /firmware/Rover.X/debug/default/
 /bin/cli
 /bin/main
+sonny/sonny.pb.go
+logs/*

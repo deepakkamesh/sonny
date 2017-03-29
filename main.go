@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
@@ -16,6 +17,11 @@ import (
 	"github.com/kidoman/embd/sensor/lsm303"
 	"github.com/kidoman/embd/sensor/us020"
 	"google.golang.org/grpc"
+)
+
+var (
+	buildtime string // Compiler Flags
+	githash   string // Compiler Flags
 )
 
 func main() {
@@ -32,15 +38,28 @@ func main() {
 		enPic     = flag.Bool("en_pic", false, "Enable PIC")
 		enPir     = flag.Bool("en_pir", true, "Enable PIR")
 		enUS      = flag.Bool("en_us", true, "Enable UltraSonic Sensor")
+		version   = flag.Bool("version", false, "display version")
 	)
 	flag.Parse()
+
+	// Print version and exit.
+	if *version {
+		fmt.Printf("Version commit hash %s\n", githash)
+		fmt.Printf("Build date %s\n", buildtime)
+		os.Exit(0)
+	}
+
+	glog.Infof("Starting Sonny ver %s build on %s", githash, buildtime)
+	defer glog.Flush()
+
 	// Initialize PIC Controller.
 	var ctrl *devices.Controller
 	var err error
 	if *enPic {
 		ctrl, err = devices.NewController(*tty, 115200)
 		if err != nil {
-			log.Fatalf("Error creating new controller %v", err)
+			glog.Fatalf("Error creating new controller %v", err)
+
 		}
 		ctrl.Start()
 	}
@@ -50,7 +69,7 @@ func main() {
 	if *enCompass {
 		mag = lsm303.New(embd.NewI2CBus(byte(*magBus)))
 		if err := mag.Run(); err != nil {
-			log.Fatalf("Failed to start magnetometer %v", err)
+			glog.Fatalf("Failed to start magnetometer %v", err)
 		}
 	}
 
@@ -88,7 +107,7 @@ func main() {
 	// Startup RPC service.
 	lis, err := net.Listen("tcp", ":2233")
 	if err != nil {
-		log.Fatalf("Failed to listen:%v", err)
+		glog.Fatalf("Failed to listen:%v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterDevicesRPCServer(s, rpc.New(dev))
@@ -97,7 +116,7 @@ func main() {
 	// Startup HTTP service.
 	h := httphandler.New(dev, false, *res)
 	if err := h.Start(); err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		glog.Fatalf("Failed to listen: %v", err)
 	}
 
 	for {
