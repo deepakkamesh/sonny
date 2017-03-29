@@ -5,4 +5,6 @@ VER="-X main.buildtime=$BUILDTIME -X main.githash=$GITHASH"
 
 # Compile protobufs
 protoc -I ../sonny -I /usr/include/google/protobuf/  ../sonny/sonny.proto --go_out=plugins=grpc:../sonny
-go build -ldflags "$VER" ../main.go
+GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build -ldflags "$VER" ../main.go
+
+
