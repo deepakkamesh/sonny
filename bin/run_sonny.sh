@@ -6,8 +6,8 @@ $LOC/main \
 				-log_dir=$LOC/../logs/ \
 				-resources=$LOC/../resources \
 				-stderrthreshold=info \
-				-alsologtostderr=false \
-				-logtostderr=true \
+				-alsologtostderr=true \
+				-logtostderr=false \
 				-v=2 \
 				-en_pic
 	#			&

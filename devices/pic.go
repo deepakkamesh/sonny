@@ -32,7 +32,7 @@ func serWrite(s *serial.Port, b []byte) (int, error) {
 	return s.Write(b)
 }
 
-const TIMEOUT = 600 * 1000 * 1000 // Controller response timeout in nanoseconds.
+const TIMEOUT = 100 * 1000 * 1000 // Controller response timeout in nanoseconds.
 
 // result stores the return value from the controller.
 type result struct {
@@ -138,7 +138,7 @@ func (m *Controller) read() {
 
 func (m *Controller) newRun() {
 	cmdBuf := make(map[byte]*CMDBuffer)
-	t := time.NewTimer(TIMEOUT * time.Millisecond)
+	t := time.NewTicker(TIMEOUT * time.Nanosecond)
 
 	for {
 		select {
