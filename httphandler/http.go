@@ -52,6 +52,8 @@ func (m *Server) Start() error {
 	http.HandleFunc("/api/ledblink/", m.LEDBlink)
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
 	http.HandleFunc("/api/distance/", m.Distance)
+	http.HandleFunc("/api/batt/", m.BattState)
+
 	return http.ListenAndServe(":8080", nil)
 }
 
@@ -114,6 +116,29 @@ func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(w, &response{
 		Data: fmt.Sprintf("%3.3f", d),
+	})
+}
+
+func (m *Server) BattState(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Controller not enabled"),
+		})
+		return
+	}
+
+	val, err := m.ctrl.BattState()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to get battery level %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: val,
 	})
 }
 

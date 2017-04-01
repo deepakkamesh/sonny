@@ -32,7 +32,7 @@ func serWrite(s *serial.Port, b []byte) (int, error) {
 	return s.Write(b)
 }
 
-const TIMEOUT = 100 * 1000 * 1000 // Controller response timeout in nanoseconds.
+const TIMEOUT = 500 * 1000 * 1000 // Controller response timeout in nanoseconds.
 
 // result stores the return value from the controller.
 type result struct {
@@ -69,7 +69,6 @@ func NewController(tty string, baud int) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &Controller{
 		port:  port,
 		in:    make(chan request),
@@ -224,28 +223,36 @@ func (m *Controller) newRun() {
 
 // LEDBlink blinks the LED for duration (in ms) and for the number of times.
 func (m *Controller) LEDBlink(duration uint16, times byte) error {
-	pkt := []byte{p.CMD_BLINK<<4 | p.DEV_LED, byte(duration >> 8), byte(duration & 0xF), times}
 	ret := make(chan result)
 	m.in <- request{
-		pkt: pkt,
+		pkt: []byte{p.CMD_BLINK<<4 | p.DEV_LED,
+			byte(duration >> 8),
+			byte(duration & 0xF),
+			times,
+		},
+
 		ret: ret,
 	}
 	return (<-ret).err
 }
 
 // LDR returns the ADC light value of the LDR sensor.
-func (m *Controller) LDR() (error, uint16) {
-	pkt := []byte{p.CMD_STATE<<4 | p.DEV_LDR}
+func (m *Controller) LDR() (uint16, error) {
 	ret := make(chan result)
 	m.in <- request{
-		pkt: pkt,
+		pkt: []byte{p.CMD_STATE<<4 | p.DEV_LDR},
+
 		ret: ret,
 	}
 	res := <-ret
 	if res.err != nil {
-		return res.err, 0
+		return 0, res.err
 	}
-	return nil, uint16(res.pkt[0]<<8 | res.pkt[1])
+
+	var adc uint16
+	adc = uint16(res.pkt[1])
+	adc = adc<<8 | uint16(res.pkt[2])
+	return adc, nil
 }
 
 // Motor turns the motor by turns forward if fwd is true or back if false.
@@ -255,10 +262,9 @@ func (m *Controller) Motor(turns uint16, fwd bool) (error, uint16) {
 		dir = p.CMD_BWD
 	}
 
-	pkt := []byte{dir<<4 | p.DEV_MOTOR}
 	ret := make(chan result)
 	m.in <- request{
-		pkt: pkt,
+		pkt: []byte{dir<<4 | p.DEV_MOTOR},
 		ret: ret,
 	}
 	return (<-ret).err, 0
@@ -270,10 +276,9 @@ func (m *Controller) LEDOn(on bool) error {
 	if !on {
 		cmd = p.CMD_OFF
 	}
-	pkt := []byte{cmd<<4 | p.DEV_LED}
 	ret := make(chan result)
 	m.in <- request{
-		pkt: pkt,
+		pkt: []byte{cmd<<4 | p.DEV_LED},
 		ret: ret,
 	}
 	return (<-ret).err
@@ -281,10 +286,9 @@ func (m *Controller) LEDOn(on bool) error {
 
 // Ping returns nil if the controller is available.
 func (m *Controller) Ping() error {
-	pkt := []byte{p.CMD_PING<<4 | p.DEV_ADMIN}
 	ret := make(chan result)
 	m.in <- request{
-		pkt: pkt,
+		pkt: []byte{p.CMD_PING<<4 | p.DEV_ADMIN},
 		ret: ret,
 	}
 	return (<-ret).err
@@ -312,19 +316,36 @@ func (m *Controller) ServoRotate(servo byte, angle int) error {
 	period := uint16(pwmPeriod / cycle) // PWM period.
 
 	// Assemble command data.
-	pkt := []byte{
-		p.CMD_ROTATE<<4 | p.DEV_SERVO,
-		byte(duty >> 8),
-		byte(duty & 0xFF),
-		byte(period >> 8),
-		byte(period & 0xFF),
-		servo,
-	}
 	ret := make(chan result)
 
 	m.in <- request{
-		pkt: pkt,
+		pkt: []byte{
+			p.CMD_ROTATE<<4 | p.DEV_SERVO,
+			byte(duty >> 8),
+			byte(duty & 0xFF),
+			byte(period >> 8),
+			byte(period & 0xFF),
+			servo,
+		},
 		ret: ret,
 	}
 	return (<-ret).err // Wait for response on ack.
+}
+
+// BattState returns the voltage reading for the battery.
+func (m *Controller) BattState() (float32, error) {
+	ret := make(chan result)
+	m.in <- request{
+		pkt: []byte{p.CMD_STATE<<4 | p.DEV_BATT},
+		ret: ret,
+	}
+	res := <-ret
+	if res.err != nil {
+		return 0, res.err
+	}
+
+	var adc uint16
+	adc = uint16(res.pkt[1])
+	adc = adc<<8 | uint16(res.pkt[2])
+	return 2095.104 / float32(adc), nil
 }

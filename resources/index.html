@@ -7,7 +7,7 @@
     <script type="text/javascript">
 
         $(document).ready(function () {
-            setInterval("RegularTasks()", 2000);
+            setInterval("RegularTasks()", 2500);
 
             var infoContainer = document.querySelector('#info-popup');
 
@@ -73,7 +73,7 @@
                     action = 'off';
                 }
 
-                $.post('http://10.0.0.105:8080/api/ledon/_?cmd='+action, "", function(data, status) {
+                $.post('/api/ledon/_?cmd='+action, "", function(data, status) {
                     ret = JSON.parse(data)
                     if (ret.Err != '') {
                         infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
@@ -90,7 +90,7 @@
             var infoContainer = document.querySelector('#info-popup');
 
             // Ping controller.
-            $.post("http://10.0.0.105:8080/api/ping/", "", function(data, status) {
+            $.post("/api/ping/", "", function(data, status) {
                 $("#ping").empty();
                 ret = JSON.parse(data)
                 if (ret.Err != '') {
@@ -100,9 +100,8 @@
                 $("#ping").append(ret.Data);   
             });
 
-
             // Get distance.
-            $.post("http://10.0.0.105:8080/api/distance/", "", function(data, status) {
+            $.post("/api/distance/", "", function(data, status) {
                 $("#distance").empty();
                 ret = JSON.parse(data)
                 if (ret.Err != '') {
@@ -111,6 +110,18 @@
                 }             
                 $("#distance").append(ret.Data);                
             });
+            
+            // Get distance.
+            $.post("/api/batt/", "", function(data, status) {
+                $("#batt").empty();
+                ret = JSON.parse(data)
+                volts = Math.round(ret.Data * 10000) / 10000
+                if (ret.Err != '') {
+                    infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                    return
+                }             
+                $("#batt").append(volts);                
+            });            
         }
 
 
@@ -288,7 +299,7 @@
                 </tr>
                 <tr>
                     <td>
-                        Light Level: <span id="ldr"></span>
+                        Battery Level: <span id="batt"></span>
                     </td>
                     <td>
                         <label for="switch3" class="mdl-switch mdl-js-switch">
