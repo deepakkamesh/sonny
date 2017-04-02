@@ -13,12 +13,12 @@
   Description:
     This header file provides implementations for pin APIs for all pins selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.16
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 
     Copyright (c) 2013 - 2015 released Microchip Technology Inc.  All rights reserved.
 
@@ -45,97 +45,56 @@
 
 #include <xc.h>
 #include "pin_manager.h"
+#include "stdbool.h"
+
+
 
 void PIN_MANAGER_Initialize(void)
 {
-    LATB = 0x0;
-    LATA = 0x0;
-    LATC = 0x0;
-    ANSELA = 0x2F;
-    ANSELB = 0xC;
-    ANSELC = 0x3C;
+    /**
+    LATx registers
+    */   
+    LATA = 0x00;    
+    LATB = 0x00;    
+    LATC = 0x00;    
+
+    /**
+    TRISx registers
+    */    
+    TRISA = 0x2F;
     TRISB = 0xFC;
     TRISC = 0xBC;
+
+    /**
+    ANSELx registers
+    */   
+    ANSELC = 0x3C;
+    ANSELB = 0x0C;
+    ANSELA = 0x2F;
+
+    /**
+    WPUx registers
+    */ 
     WPUB = 0xC0;
-    TRISA = 0x2F;
+    INTCON2bits.nRBPU = 0;
 
-    INTCON2bits.nRBPU = 0x1;
+    
 
+    /**
+    IOCx registers
+    */
     // interrupt on change for group IOCB - any
-    IOCBbits.IOCB4 = 1; // Pin : RB4
-    IOCBbits.IOCB5 = 1; // Pin : RB5
+    IOCBbits.IOCB4 = 1;
+    IOCBbits.IOCB5 = 1;
 
-    INTCONbits.RBIE = 1; // Enable RBI interrupt 
-
-
-}
+    // register default IOC callback functions at runtime; use these methods to register a custom function
+   
+    
+}       
 
 void PIN_MANAGER_IOC(void)
-{    
-    // interrupt on change for group IOCB
-    if(IOCBbits.IOCB4 == 1)
-    {
-       SpeedEncoderISR_M1(); // IOCB4_ISR();            
-    }
-    if(IOCBbits.IOCB5 == 1)
-    {
-      SpeedEncoderISR_M2();//  IOCB5_ISR();            
-    }
-}
+{   
 
-/**
-   IOCB4 Interrupt Service Routine
-*/
-void IOCB4_ISR(void) {
-
-    // Add custom IOCB4 code
-    if(IOCB4_InterruptHandler)
-    {
-        IOCB4_InterruptHandler();
-    }
-    IOCBbits.IOCB4 = 0;
-}
-
-/**
-  Allows selecting an interrupt handler for IOCB4 at application runtime
-*/
-void IOCB4_SetInterruptHandler(void* InterruptHandler){
-    IOCB4_InterruptHandler = InterruptHandler;
-}
-
-/**
-  Default interrupt handler for IOCB4
-*/
-void IOCB4_DefaultInterruptHandler(void){
-    // add your IOCB4 interrupt custom code
-    // or set custom function using IOCB4_SetInterruptHandler()
-}
-/**
-   IOCB5 Interrupt Service Routine
-*/
-void IOCB5_ISR(void) {
-
-    // Add custom IOCB5 code
-    if(IOCB5_InterruptHandler)
-    {
-        IOCB5_InterruptHandler();
-    }
-    IOCBbits.IOCB5 = 0;
-}
-
-/**
-  Allows selecting an interrupt handler for IOCB5 at application runtime
-*/
-void IOCB5_SetInterruptHandler(void* InterruptHandler){
-    IOCB5_InterruptHandler = InterruptHandler;
-}
-
-/**
-  Default interrupt handler for IOCB5
-*/
-void IOCB5_DefaultInterruptHandler(void){
-    // add your IOCB5 interrupt custom code
-    // or set custom function using IOCB5_SetInterruptHandler()
 }
 
 /**

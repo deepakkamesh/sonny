@@ -15,12 +15,12 @@
     For individual peripheral handlers please see the peripheral driver for
     all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.16
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
-        Driver Version    :  1.01
+        Driver Version    :  2.00
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -47,6 +47,7 @@
 
 #ifndef INTERRUPT_MANAGER_H
 #define INTERRUPT_MANAGER_H
+
 
 /**
  * @Param
@@ -102,11 +103,11 @@
  * @Returns
     none
  * @Description
-    Initializes PIC18 peripheral interrupt priorities; enables/disables priority vectors
+    Main interrupt service routine. Calls module interrupt handlers.
  * @Example
-    INTERRUPT_Initialize();
+    INTERRUPT_InterruptManager();
  */
-void INTERRUPT_Initialize (void);
+void interrupt INTERRUPT_InterruptManager(void);
 
 /**
  * @Param
@@ -114,11 +115,11 @@ void INTERRUPT_Initialize (void);
  * @Returns
     none
  * @Description
-    Interrupt service routine. Calls module interrupt handlers.
+    Initializes PIC18 peripheral interrupt priorities; enables/disables priority vectors
  * @Example
-    INTERRUPT_InterruptManager();
+    INTERRUPT_Initialize();
  */
-void interrupt INTERRUPT_InterruptManager (void);
+void INTERRUPT_Initialize (void);
 
 #endif  // INTERRUPT_MANAGER_H
 /**

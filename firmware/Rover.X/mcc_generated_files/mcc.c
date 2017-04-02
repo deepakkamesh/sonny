@@ -13,12 +13,12 @@
   @Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.16
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -110,14 +110,14 @@
 
 void SYSTEM_Initialize(void)
 {
-    
+
     INTERRUPT_Initialize();
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
     FVR_Initialize();
-    ADC_Initialize();
-    CCP5_Initialize();
     CCP4_Initialize();
+    CCP5_Initialize();
+    ADC_Initialize();
     TMR3_Initialize();
     TMR5_Initialize();
     TMR0_Initialize();
@@ -135,6 +135,7 @@ void OSCILLATOR_Initialize(void)
     // Set the secondary oscillator
     
 }
+
 
 /**
  End of File

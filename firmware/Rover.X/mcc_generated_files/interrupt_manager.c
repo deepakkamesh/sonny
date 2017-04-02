@@ -1,5 +1,5 @@
 /**
-  @Generated Interrupt Manager File
+  Generated Interrupt Manager Source File
 
   @Company:
     Microchip Technology Inc.
@@ -15,12 +15,12 @@
     For individual peripheral handlers please see the peripheral driver for
     all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.16
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -51,52 +51,29 @@
 void  INTERRUPT_Initialize (void)
 {
     // Disable Interrupt Priority Vectors (16CXXX Compatibility Mode)
-    IPEN = 0;
-
-    // Clear peripheral interrupt priority bits (default reset value)
-
-    // TMRI
-    INTCON2bits.TMR0IP = 0;
-
-    // CCPI
-    IPR4bits.CCP5IP = 0;
-
-    // CCPI
-    IPR4bits.CCP4IP = 0;
-
-    // RBI
-    INTCON2bits.RBIP = 0;
-
+    RCONbits.IPEN = 0;
 }
 
 void interrupt INTERRUPT_InterruptManager (void)
 {
-   // interrupt handler
+    // interrupt handler
     if(INTCONbits.TMR0IE == 1 && INTCONbits.TMR0IF == 1)
     {
         TMR0_ISR();
     }
-    if(INTCONbits.PEIE == 1 && PIE4bits.CCP5IE == 1 && PIR4bits.CCP5IF == 1)
+    else if(INTCONbits.PEIE == 1 && PIE4bits.CCP5IE == 1 && PIR4bits.CCP5IF == 1)
     {
         CCP5_CompareISR();
     }
-    if(INTCONbits.PEIE == 1 && PIE4bits.CCP4IE == 1 && PIR4bits.CCP4IF == 1)
+    else if(INTCONbits.PEIE == 1 && PIE4bits.CCP4IE == 1 && PIR4bits.CCP4IF == 1)
     {
         CCP4_CompareISR();
-    }
-    if(INTCONbits.RBIE == 1 && INTCONbits.RBIF == 1)
-    {
-        PIN_MANAGER_IOC();
-                
-        // clear global interrupt-on-change flag
-        INTCONbits.RBIF = 0;
     }
     else
     {
         //Unhandled Interrupt
     }
 }
-
 /**
  End of File
 */

@@ -13,12 +13,12 @@
   @Description
     This header file provides APIs for TMR0.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -184,7 +184,7 @@ void TMR0_StopTimer(void);
     TMR0_StartTimer();
 
     // Read the current value of TMR0
-    if(0 == TMR0_Read16bitTimer())
+    if(0 == TMR0_ReadTimer())
     {
         // Do something else...
 
@@ -193,7 +193,7 @@ void TMR0_StopTimer(void);
     }
     </code>
 */
-uint16_t TMR0_Read16bitTimer(void);
+uint16_t TMR0_ReadTimer(void);
 
 /**
   @Summary
@@ -220,19 +220,19 @@ uint16_t TMR0_Read16bitTimer(void);
     while(1)
     {
         //Read the TMR0 register
-        if(ZERO == TMR0_Read16bitTimer())
+        if(ZERO == TMR0_ReadTimer())
         {
             // Do something else...
 
             // Write the TMR0 register
-            TMR0_Write16bitTimer(PERIOD);
+            TMR0_WriteTimer(PERIOD);
         }
 
         // Do something else...
     }
     </code>
 */
-void TMR0_Write16bitTimer(uint16_t timerVal);
+void TMR0_WriteTimer(uint16_t timerVal);
 
 /**
   @Summary
@@ -263,12 +263,12 @@ void TMR0_Write16bitTimer(uint16_t timerVal);
             TMR0IF = 0;
 
             // Reload the initial value of TMR0
-            TMR0_Reload16bit();
+            TMR0_Reload();
         }
     }
     </code>
 */
-void TMR0_Reload16bit(void);
+void TMR0_Reload(void);
 
 /**
   @Summary
@@ -288,16 +288,61 @@ void TMR0_Reload16bit(void);
  */
 void TMR0_ISR(void);
 
-uint32_t TickGet(void);
-static void GetTickCopy(void);
-uint32_t TickGetDev64K(void);
-uint32_t TickGetDev256(void);       
 
-#define TICKS_PER_SECOND ((_XTAL_FREQ/4)/256ull)
-#define TICK_MILLISECOND (TICKS_PER_SECOND/1000)
-#define TICK_SECOND TICKS_PER_SECOND
-#define TICK_MINUTE (TICKS_PER_SECOND*60ull)
-#define TICK_HOUR (TICKS_PER_SECOND*3600ull)
+/**
+  @Summary
+    Set Timer Interrupt Handler
+
+  @Description
+    This sets the function to be called during the ISR
+
+  @Preconditions
+    Initialize  the TMR0 module with interrupt before calling this.
+
+  @Param
+    Address of function to be set
+
+  @Returns
+    None
+*/
+ void TMR0_SetInterruptHandler(void *InterruptHandler);
+
+/**
+  @Summary
+    Timer Interrupt Handler
+
+  @Description
+    This is a function pointer to the function that will be called during the ISR
+
+  @Preconditions
+    Initialize  the TMR0 module with interrupt before calling this isr.
+
+  @Param
+    None
+
+  @Returns
+    None
+*/
+extern void (*TMR0_InterruptHandler)(void);
+
+/**
+  @Summary
+    Default Timer Interrupt Handler
+
+  @Description
+    This is the default Interrupt Handler function
+
+  @Preconditions
+    Initialize  the TMR0 module with interrupt before calling this isr.
+
+  @Param
+    None
+
+  @Returns
+    None
+*/
+void TMR0_DefaultInterruptHandler(void);
+
 #ifdef __cplusplus  // Provide C++ Compatibility
 
     }

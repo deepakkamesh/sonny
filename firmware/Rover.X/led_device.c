@@ -4,6 +4,7 @@
 #include "serial_controller.h"
 #include "protocol.h"
 #include "mcc_generated_files/mcc.h"
+#include "tick.h"
 
 extern Queue CmdQ[MAX_DEVICES];
 

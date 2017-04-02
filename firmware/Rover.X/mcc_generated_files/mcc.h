@@ -13,12 +13,12 @@
   @Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.16
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Version           :  1.02
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -50,16 +50,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "interrupt_manager.h"
-#include "adc.h"
-#include "fvr.h"
-#include "tmr0.h"
-#include "ccp5.h"
 #include "ccp4.h"
-#include "eusart1.h"
+#include "ccp5.h"
+#include "fvr.h"
 #include "tmr5.h"
+#include "tmr0.h"
 #include "tmr3.h"
+#include "adc.h"
+#include "eusart1.h"
 
 #define _XTAL_FREQ  64000000
+
 
 /**
  * @Param
@@ -86,6 +87,7 @@ void SYSTEM_Initialize(void);
     OSCILLATOR_Initialize(void);
  */
 void OSCILLATOR_Initialize(void);
+
 
 
 #endif	/* MCC_H */

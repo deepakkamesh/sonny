@@ -13,12 +13,12 @@
   @Description
     This header file provides implementations for driver APIs for CCP5.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -115,7 +115,7 @@ typedef union CCPR5Reg_tag
     uint16_t compare;
 
     CCP5_Initialize();
-    CCP5_SetCount(compare);
+    CCP5_SetCompareCount(compare);
     </code>
  */
 void CCP5_Initialize(void);
@@ -142,7 +142,7 @@ void CCP5_Initialize(void);
     uint16_t compare;
 
     CCP5_Initialize();
-    CCP5_SetCount(compare);
+    CCP5_SetCompareCount(compare);
     </code>
 */
 void CCP5_SetCompareCount(uint16_t compareCount);
@@ -162,8 +162,7 @@ void CCP5_SetCompareCount(uint16_t compareCount);
     None
 */
 void CCP5_CompareISR(void);
-
-void CCP5_SetOnOff(uint16_t on, uint16_t off) ;
+void CCP5_SetInterruptHandler(void* InterruptHandler);
 
 #ifdef __cplusplus  // Provide C++ Compatibility
 

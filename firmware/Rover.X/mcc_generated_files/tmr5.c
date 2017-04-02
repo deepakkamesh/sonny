@@ -13,12 +13,12 @@
   @Description
     This source file provides APIs for TMR5.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.16
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
+        MPLAB             :  MPLAB X 3.40
 */
 
 /*
@@ -54,7 +54,7 @@
   Section: Global Variable Definitions
 */
 volatile uint16_t timer5ReloadVal;
-
+void (*TMR5_InterruptHandler)(void);
 /**
   Section: TMR5 APIs
 */

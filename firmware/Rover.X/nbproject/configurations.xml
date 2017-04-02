@@ -29,6 +29,7 @@
       <itemPath>ldr_device.h</itemPath>
       <itemPath>batt_device.h</itemPath>
       <itemPath>motor_device.h</itemPath>
+      <itemPath>tick.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -62,6 +63,7 @@
       <itemPath>ldr_device.c</itemPath>
       <itemPath>batt_device.c</itemPath>
       <itemPath>motor_device.c</itemPath>
+      <itemPath>tick.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -80,7 +82,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>PICkit3PlatformTool</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>1.37</languageToolchainVersion>
+        <languageToolchainVersion>1.41</languageToolchainVersion>
         <platform>4</platform>
       </toolsSet>
       <compileType>
@@ -95,6 +97,8 @@
           <parseOnProdLoad>false</parseOnProdLoad>
           <alternateLoadableFile></alternateLoadableFile>
         </loading>
+        <subordinates>
+        </subordinates>
       </compileType>
       <makeCustomizationType>
         <makeCustomizationPreStepEnabled>false</makeCustomizationPreStepEnabled>

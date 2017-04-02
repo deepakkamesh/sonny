@@ -13,13 +13,13 @@
   @Description
     This source file provides APIs for TMR0.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 3.15.0
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
         Compiler          :  XC8 1.35
-        MPLAB             :  MPLAB X 3.20
- */
+        MPLAB             :  MPLAB X 3.40
+*/
 
 /*
     (c) 2016 Microchip Technology Inc. and its subsidiaries. You may use this
@@ -41,37 +41,34 @@
 
     MICROCHIP PROVIDES THIS SOFTWARE CONDITIONALLY UPON YOUR ACCEPTANCE OF THESE
     TERMS.
- */
+*/
 
 /**
   Section: Included Files
- */
+*/
 
 #include <xc.h>
 #include "tmr0.h"
 
 /**
   Section: Global Variables Definitions
- */
-volatile uint16_t timer0ReloadVal16bit;
-// Internal counter to store Ticks.  This variable is incremented in an ISR and
-// therefore must be marked volatile to prevent the compiler optimizer from
-// reordering code to use this value in the main context while interrupts are
-// disabled.
-static volatile uint32_t internalTicks=0;
-// 6-byte value to store Ticks.  Allows for use over longer periods of time.
-static volatile uint8_t vTickReading[6];
+*/
+
+void (*TMR0_InterruptHandler)(void);
+
+volatile uint16_t timer0ReloadVal;
 
 /**
   Section: TMR0 APIs
- */
+*/
 
 
-void TMR0_Initialize(void) {
+void TMR0_Initialize(void)
+{
     // Set TMR0 to the options selected in the User Interface
 
-    // T0PS 1:256; T08BIT 16-bit; T0SE Increment_hi_lo; T0CS FOSC/4; TMR0ON enabled; PSA assigned; 
-    T0CON = 0x97;
+    // T0PS 1:256; T08BIT 16-bit; T0SE Increment_hi_lo; T0CS FOSC/4; TMR0ON off; PSA assigned; 
+    T0CON = 0x17;
 
     // TMR0H 0; 
     TMR0H = 0x00;
@@ -80,7 +77,7 @@ void TMR0_Initialize(void) {
     TMR0L = 0x00;
 
     // Load TMR0 value to the 16-bit reload variable
-    timer0ReloadVal16bit = (TMR0H << 8) | TMR0L;
+    timer0ReloadVal = (TMR0H << 8) | TMR0L;
 
     // Clear Interrupt flag before enabling the interrupt
     INTCONbits.TMR0IF = 0;
@@ -88,104 +85,81 @@ void TMR0_Initialize(void) {
     // Enabling TMR0 interrupt.
     INTCONbits.TMR0IE = 1;
 
+    // Set Default Interrupt Handler
+    TMR0_SetInterruptHandler(TMR0_DefaultInterruptHandler);
+
     // Start TMR0
     TMR0_StartTimer();
 }
 
-void TMR0_StartTimer(void) {
+void TMR0_StartTimer(void)
+{
     // Start the Timer by writing to TMR0ON bit
     T0CONbits.TMR0ON = 1;
 }
 
-void TMR0_StopTimer(void) {
+void TMR0_StopTimer(void)
+{
     // Stop the Timer by writing to TMR0ON bit
     T0CONbits.TMR0ON = 0;
 }
 
-uint16_t TMR0_Read16bitTimer(void) {
+uint16_t TMR0_ReadTimer(void)
+{
     uint16_t readVal;
     uint8_t readValLow;
     uint8_t readValHigh;
 
-    readValLow = TMR0L;
+    readValLow  = TMR0L;
     readValHigh = TMR0H;
-    readVal = ((uint16_t) readValHigh << 8) + readValLow;
+    readVal  = ((uint16_t)readValHigh << 8) + readValLow;
 
     return readVal;
 }
 
-void TMR0_Write16bitTimer(uint16_t timerVal) {
+void TMR0_WriteTimer(uint16_t timerVal)
+{
     // Write to the Timer0 register
     TMR0H = timerVal >> 8;
     TMR0L = (uint8_t) timerVal;
 }
 
-void TMR0_Reload16bit(void) {
+void TMR0_Reload(void)
+{
     // Write to the Timer0 register
-    TMR0H = timer0ReloadVal16bit >> 8;
-    TMR0L = (uint8_t) timer0ReloadVal16bit;
+    TMR0H = timer0ReloadVal >> 8;
+    TMR0L = (uint8_t) timer0ReloadVal;
 }
 
-void TMR0_ISR(void) {
+void TMR0_ISR(void)
+{
 
     // clear the TMR0 interrupt flag
     INTCONbits.TMR0IF = 0;
 
     // reload TMR0
     // Write to the Timer0 register
-    TMR0H = timer0ReloadVal16bit >> 8;
-    TMR0L = (uint8_t) timer0ReloadVal16bit;
+    TMR0H = timer0ReloadVal >> 8;
+    TMR0L = (uint8_t) timer0ReloadVal;
 
+    if(TMR0_InterruptHandler)
+    {
+        TMR0_InterruptHandler();
+    }
 
     // add your TMR0 interrupt custom code
-    // Increment internal high tick counter
-    internalTicks++;
 }
 
-static void GetTickCopy(void) {
-    do {
-        INTCONbits.TMR0IE = 1; // Enable interrupt
-        Nop();
-        INTCONbits.TMR0IE = 0; // Disable interrupt
-        vTickReading[0] = TMR0L;
-        vTickReading[1] = TMR0H;
-        *((uint16_t*) & vTickReading[2]) = internalTicks;
-    } while (INTCONbits.TMR0IF);
-    INTCONbits.TMR0IE = 1; // Enable interrupt
+
+void TMR0_SetInterruptHandler(void* InterruptHandler){
+    TMR0_InterruptHandler = InterruptHandler;
 }
 
-uint32_t TickGet(void) {
-    uint32_t dw;
-
-    GetTickCopy();
-    ((uint8_t*) & dw)[0] = vTickReading[0]; // Note: This copy must be done one
-    ((uint8_t*) & dw)[1] = vTickReading[1]; // byte at a time to prevent misaligned
-    ((uint8_t*) & dw)[2] = vTickReading[2]; // memory reads, which will reset the PIC.
-    ((uint8_t*) & dw)[3] = vTickReading[3];
-    return dw;
-}
-
-uint32_t TickGetDev256(void) {
-    uint32_t dw;
-
-    GetTickCopy();
-    ((uint8_t*) & dw)[0] = vTickReading[1]; // Note: This copy must be done one
-    ((uint8_t*) & dw)[1] = vTickReading[2]; // byte at a time to prevent misaligned
-    ((uint8_t*) & dw)[2] = vTickReading[3]; // memory reads, which will reset the PIC.
-    ((uint8_t*) & dw)[3] = vTickReading[4];
-    return dw;
-}
-uint32_t TickGetDev64K(void) {
-    uint32_t dw;
-
-    GetTickCopy();
-    ((uint8_t*) & dw)[0] = vTickReading[2]; // Note: This copy must be done one
-    ((uint8_t*) & dw)[1] = vTickReading[3]; // byte at a time to prevent misaligned
-    ((uint8_t*) & dw)[2] = vTickReading[4]; // memory reads, which will reset the PIC.
-    ((uint8_t*) & dw)[3] = vTickReading[5];
-    return dw;
+void TMR0_DefaultInterruptHandler(void){
+    // add your TMR0 interrupt custom code
+    // or set custom function using TMR0_SetInterruptHandler()
 }
 
 /**
   End of File
- */
+*/

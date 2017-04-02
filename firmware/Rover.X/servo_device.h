@@ -14,6 +14,7 @@ extern "C" {
 
 
 void ServoTask(void);
+void ServoInit(void);
 
 #ifdef	__cplusplus
 }
