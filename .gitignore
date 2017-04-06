@@ -5,3 +5,4 @@
 /bin/main
 sonny/sonny.pb.go
 logs/*
+.DS_Store

@@ -15,6 +15,7 @@ extern "C" {
 
 
 void MotorTask(void);
+void MotorInit(void);
 void SpeedEncoderISR_M1(void);
 void SpeedEncoderISR_M2(void);
 

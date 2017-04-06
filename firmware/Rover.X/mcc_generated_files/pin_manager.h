@@ -275,6 +275,174 @@ void PIN_MANAGER_Initialize (void);
 void PIN_MANAGER_IOC(void);
 
 
+/**
+ * @Param
+    none
+ * @Returns
+    none
+ * @Description
+    Interrupt on Change Handler for the IOCB4 pin functionality
+ * @Example
+    IOCB4_ISR();
+ */
+void IOCB4_ISR(void);
+
+/**
+  @Summary
+    Interrupt Handler Setter for IOCB4 pin interrupt-on-change functionality
+
+  @Description
+    Allows selecting an interrupt handler for IOCB4 at application runtime
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    InterruptHandler function pointer.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB4_SetInterruptHandler(MyInterruptHandler);
+
+*/
+void IOCB4_SetInterruptHandler(void* InterruptHandler);
+
+/**
+  @Summary
+    Dynamic Interrupt Handler for IOCB4 pin
+
+  @Description
+    This is a dynamic interrupt handler to be used together with the IOCB4_SetInterruptHandler() method.
+    This handler is called every time the IOCB4 ISR is executed and allows any function to be registered at runtime.
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB4_SetInterruptHandler(IOCB4_InterruptHandler);
+
+*/
+extern void (*IOCB4_InterruptHandler)(void);
+
+/**
+  @Summary
+    Default Interrupt Handler for IOCB4 pin
+
+  @Description
+    This is a predefined interrupt handler to be used together with the IOCB4_SetInterruptHandler() method.
+    This handler is called every time the IOCB4 ISR is executed. 
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB4_SetInterruptHandler(IOCB4_DefaultInterruptHandler);
+
+*/
+void IOCB4_DefaultInterruptHandler(void);
+
+
+/**
+ * @Param
+    none
+ * @Returns
+    none
+ * @Description
+    Interrupt on Change Handler for the IOCB5 pin functionality
+ * @Example
+    IOCB5_ISR();
+ */
+void IOCB5_ISR(void);
+
+/**
+  @Summary
+    Interrupt Handler Setter for IOCB5 pin interrupt-on-change functionality
+
+  @Description
+    Allows selecting an interrupt handler for IOCB5 at application runtime
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    InterruptHandler function pointer.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB5_SetInterruptHandler(MyInterruptHandler);
+
+*/
+void IOCB5_SetInterruptHandler(void* InterruptHandler);
+
+/**
+  @Summary
+    Dynamic Interrupt Handler for IOCB5 pin
+
+  @Description
+    This is a dynamic interrupt handler to be used together with the IOCB5_SetInterruptHandler() method.
+    This handler is called every time the IOCB5 ISR is executed and allows any function to be registered at runtime.
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB5_SetInterruptHandler(IOCB5_InterruptHandler);
+
+*/
+extern void (*IOCB5_InterruptHandler)(void);
+
+/**
+  @Summary
+    Default Interrupt Handler for IOCB5 pin
+
+  @Description
+    This is a predefined interrupt handler to be used together with the IOCB5_SetInterruptHandler() method.
+    This handler is called every time the IOCB5 ISR is executed. 
+    
+  @Preconditions
+    Pin Manager intializer called
+
+  @Returns
+    None.
+
+  @Param
+    None.
+
+  @Example
+    PIN_MANAGER_Initialize();
+    IOCB5_SetInterruptHandler(IOCB5_DefaultInterruptHandler);
+
+*/
+void IOCB5_DefaultInterruptHandler(void);
+
+
 
 #endif // PIN_MANAGER_H
 /**

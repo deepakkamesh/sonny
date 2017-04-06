@@ -69,6 +69,10 @@ void interrupt INTERRUPT_InterruptManager (void)
     {
         CCP4_CompareISR();
     }
+    else if(INTCONbits.RBIE == 1 && INTCONbits.RBIF == 1)
+    {
+        PIN_MANAGER_IOC();
+    }
     else
     {
         //Unhandled Interrupt
