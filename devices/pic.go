@@ -237,7 +237,7 @@ func (m *Controller) LEDBlink(duration uint16, times byte) error {
 }
 
 // LDR returns the ADC light value of the LDR sensor.
-func (m *Controller) LDR() (uint16, error) {
+func (m *Controller) LDR() (adc uint16, err error) {
 	ret := make(chan result)
 	m.in <- request{
 		pkt: []byte{p.CMD_STATE<<4 | p.DEV_LDR},
@@ -245,18 +245,42 @@ func (m *Controller) LDR() (uint16, error) {
 		ret: ret,
 	}
 	res := <-ret
-	if res.err != nil {
-		return 0, res.err
+	if err = res.err; err != nil {
+		return
 	}
 
-	var adc uint16
 	adc = uint16(res.pkt[1])
 	adc = adc<<8 | uint16(res.pkt[2])
-	return adc, nil
+	return
 }
 
-// Motor turns the motor by turns forward if fwd is true or back if false.
-func (m *Controller) Motor(turns uint16, fwd bool) (error, uint16) {
+// Accelerometer returns the ADC values from the accelerometer.
+func (m *Controller) Accelerometer(x, y, z uint16, err error) {
+
+	ret := make(chan result)
+	m.in <- request{
+		pkt: []byte{p.CMD_STATE<<4 | p.DEV_LDR},
+		ret: ret,
+	}
+
+	res := <-ret
+	if err = res.err; err != nil {
+		return
+	}
+
+	x = uint16(res.pkt[1])
+	x = x<<8 | uint16(res.pkt[2])
+	y = uint16(res.pkt[3])
+	y = y<<8 | uint16(res.pkt[4])
+	z = uint16(res.pkt[5])
+	z = z<<8 | uint16(res.pkt[6])
+
+	return
+}
+
+// Motor turns the motor by turns forward if fwd is true or back if false. if
+// turns = 0 stop movement, turns < 0 moves indefinitely .
+func (m *Controller) Motor(turns int16, fwd bool) (error, uint16) {
 	dir := p.CMD_FWD
 	if !fwd {
 		dir = p.CMD_BWD
@@ -264,7 +288,10 @@ func (m *Controller) Motor(turns uint16, fwd bool) (error, uint16) {
 
 	ret := make(chan result)
 	m.in <- request{
-		pkt: []byte{dir<<4 | p.DEV_MOTOR},
+		pkt: []byte{dir<<4 | p.DEV_MOTOR,
+			byte(turns >> 8),
+			byte(turns & 0xFF),
+		},
 		ret: ret,
 	}
 	return (<-ret).err, 0
