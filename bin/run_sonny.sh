@@ -3,6 +3,7 @@ LOC=$(dirname "$0")
 killall main
 
 $LOC/main \
+				-baud=19200 \
 				-log_dir=$LOC/../logs/ \
 				-resources=$LOC/../resources \
 				-stderrthreshold=info \

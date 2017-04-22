@@ -28,6 +28,7 @@ func main() {
 
 	// Setup Flags.
 	var (
+		baud      = flag.Int("baud", 115200, "TTY Baud rate")
 		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
 		res       = flag.String("resources", "./resources", "resources directory")
 		pirPin    = flag.String("pir_pin", "gpio0", "PIR gpio pin")
@@ -56,7 +57,7 @@ func main() {
 	var ctrl *devices.Controller
 	var err error
 	if *enPic {
-		ctrl, err = devices.NewController(*tty, 115200)
+		ctrl, err = devices.NewController(*tty, *baud)
 		if err != nil {
 			glog.Fatalf("Error creating new controller %v", err)
 

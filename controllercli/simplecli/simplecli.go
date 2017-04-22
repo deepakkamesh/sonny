@@ -18,7 +18,7 @@ func main() {
 	log.SetFlags(log.Lmicroseconds)
 	in := bufio.NewReader(os.Stdin)
 	//c := &serial.Config{Name: "/dev/ttyAMA0", Baud: 9600}
-	c := &serial.Config{Name: "/dev/ttyS0", Baud: 115200}
+	c := &serial.Config{Name: "/dev/ttyS0", Baud: 19200}
 	ser, err := serial.OpenPort(c)
 	if err != nil {
 		log.Fatalf("Error opening %s", err)
