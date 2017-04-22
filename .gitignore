@@ -3,6 +3,7 @@
 /firmware/Rover.X/debug/default/
 /bin/cli
 /bin/main
+/bin/simplecli
 sonny/sonny.pb.go
 logs/*
 .DS_Store
