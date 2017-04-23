@@ -29,7 +29,7 @@ const (
 	CMD_STATE   byte = 0x7
 	CMD_TEST    byte = 0x8
 	CMD_FWD     byte = 0x9
-	CMD_BWD     byte = 0x10
+	CMD_BWD     byte = 0xA
 
 	// Error Codes.
 	ERR_CHECKSUM_FAILURE   byte = 0x1
