@@ -154,7 +154,7 @@ void SpeedEncoderISR_M1(void) {
     if (curr == 0 && prev == 1) {
       end = TickGet();
       uint32_t dur = (end - start) / TICK_MILLISECOND;
-      if (dur > 4 && dur < 10) {
+      if (dur > 2 && dur < 10) {
         se_m1_count++;
       }
     }
@@ -180,7 +180,7 @@ void SpeedEncoderISR_M2(void) {
     if (curr == 0 && prev == 1) {
       end = TickGet();
       uint32_t dur = (end - start) / TICK_MILLISECOND;
-      if (dur > 4 && dur < 10) {
+      if (dur > 2 && dur < 10) {
         se_m2_count++;
       }
     }

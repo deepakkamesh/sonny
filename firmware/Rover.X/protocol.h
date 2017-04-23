@@ -99,7 +99,7 @@ extern "C" {
 #define CMD_STATE 0x7
 #define CMD_TEST 0x8
 #define CMD_FWD 0x9
-#define CMD_BWD 0x10
+#define CMD_BWD 0xA
 
   // Error Codes.
 #define ERR_CHECKSUM_FAILURE 0x1
