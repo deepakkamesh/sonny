@@ -14,7 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/chip"
-	"github.com/kidoman/embd/sensor/lsm303"
+	"github.com/kidoman/embd/sensor/hmc5883l"
 	"github.com/kidoman/embd/sensor/us020"
 	"google.golang.org/grpc"
 )
@@ -65,10 +65,16 @@ func main() {
 		ctrl.Start()
 	}
 
+	// Initialize I2C.
+	if err := embd.InitI2C(); err != nil {
+		panic(err)
+	}
+	defer embd.CloseI2C()
+
 	// Initialize magnetometer.
-	var mag *lsm303.LSM303
+	var mag *hmc5883l.HMC5883L
 	if *enCompass {
-		mag = lsm303.New(embd.NewI2CBus(byte(*magBus)))
+		mag = hmc5883l.New(embd.NewI2CBus(byte(*magBus)))
 		if err := mag.Run(); err != nil {
 			glog.Fatalf("Failed to start magnetometer %v", err)
 		}

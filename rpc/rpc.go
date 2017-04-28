@@ -8,21 +8,21 @@ import (
 	google_pb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/chip"
-	"github.com/kidoman/embd/sensor/lsm303"
+	"github.com/kidoman/embd/sensor/hmc5883l"
 	"github.com/kidoman/embd/sensor/us020"
 	"golang.org/x/net/context"
 )
 
 type Devices struct {
 	Ctrl *devices.Controller
-	Mag  *lsm303.LSM303
+	Mag  *hmc5883l.HMC5883L
 	Pir  string
 	Us   *us020.US020
 }
 
 type Server struct {
 	ctrl *devices.Controller
-	mag  *lsm303.LSM303
+	mag  *hmc5883l.HMC5883L
 	us   *us020.US020
 	pir  string
 }
@@ -70,6 +70,9 @@ func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.E
 
 // Heading returns the magnetic heading.
 func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingRet, error) {
+	if m.mag == nil {
+		return nil, errors.New("magnetometer not enabled")
+	}
 	heading, err := m.mag.Heading()
 	if err != nil {
 		return nil, err
@@ -79,6 +82,9 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 
 // Distance returns the forward clearance in cm using the ultrasonic sensor.
 func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, error) {
+	if m.us == nil {
+		return nil, errors.New("compass not enabled")
+	}
 	d, err := m.us.Distance()
 	if err != nil {
 		return nil, err

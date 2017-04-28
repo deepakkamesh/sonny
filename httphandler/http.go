@@ -12,13 +12,13 @@ import (
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
 	_ "github.com/kidoman/embd/host/chip"
-	"github.com/kidoman/embd/sensor/lsm303"
+	"github.com/kidoman/embd/sensor/hmc5883l"
 	"github.com/kidoman/embd/sensor/us020"
 )
 
 type Server struct {
 	ctrl       *devices.Controller
-	mag        *lsm303.LSM303
+	mag        *hmc5883l.HMC5883L
 	us         *us020.US020
 	pir        string
 	ssl        bool

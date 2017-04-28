@@ -110,7 +110,7 @@
                 }             
                 $("#distance").append(ret.Data);                
             });
-            
+
             // Get distance.
             $.post("/api/batt/", "", function(data, status) {
                 $("#batt").empty();
@@ -189,11 +189,7 @@
                 <h1>Sonny Control Panel</h1>
             </header>
             <nav>
-                <video width="400" controls>
-                    <source src="mov_bbb.mp4" type="video/mp4">
-                    <source src="mov_bbb.ogg" type="video/ogg">
-                    Your browser does not support HTML5 video.
-                </video>
+                <img width=400 src="http://10.0.0.30:8888/?action=stream" />
             </nav>
             <article>
                 <table width=100%>
@@ -202,6 +198,7 @@
                             <h4>Rover Control</h4>
                             <ul>
                                 &emsp;&emsp;&emsp;&emsp;
+
 
                                 <!-- Colored FAB button with ripple -->
                                 <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
@@ -214,12 +211,14 @@
                                 </button>
                                 &emsp;&emsp;&emsp;&emsp;
 
+
                                 <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_right</li>
                                 </button>
                                 <br/>
                                 <br/>
                                 &emsp;&emsp;&emsp;&emsp;
+
 
                                 <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_down</li>
@@ -232,6 +231,7 @@
                             <ul>
                                 &emsp;&emsp;&emsp;&emsp;
 
+
                                 <!-- Colored FAB button with ripple -->
                                 <button id="servo-up" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_up</li>
@@ -243,12 +243,14 @@
                                 </button>
                                 &emsp;&emsp;&emsp;&emsp;
 
+
                                 <button id="servo-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_right</li>
                                 </button>
                                 <br/>
                                 <br/>
                                 &emsp;&emsp;&emsp;&emsp;
+
 
                                 <button id="servo-down" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_down</li>
@@ -266,7 +268,8 @@
                 </tr>
                 <tr>
                     <td>
-                        Ping Controller: <span id="ping"></span>
+                        Ping Controller: 
+                        <span id="ping"></span>
                     </td>
                     <td>
                         <label for="led" class="mdl-switch mdl-js-switch">
@@ -277,7 +280,8 @@
                 </tr>
                 <tr>
                     <td>
-                        Ultrasonic Distance: <span id="distance"></span>
+                        Ultrasonic Distance: 
+                        <span id="distance"></span>
                     </td>
                     <td>
                         <label for="switch2" class="mdl-switch mdl-js-switch">
@@ -288,7 +292,8 @@
                 </tr>
                 <tr>
                     <td>
-                        Servo Angles: <span id="servo-angle"></span>
+                        Servo Angles: 
+                        <span id="servo-angle"></span>
                     </td>
                     <td>
                         <label for="switch3" class="mdl-switch mdl-js-switch">
@@ -299,7 +304,8 @@
                 </tr>
                 <tr>
                     <td>
-                        Battery Level: <span id="batt"></span>
+                        Battery Level: 
+                        <span id="batt"></span>
                     </td>
                     <td>
                         <label for="switch3" class="mdl-switch mdl-js-switch">
@@ -310,7 +316,8 @@
                 </tr>
                 <tr>
                     <td>
-                        Heading: <span id="heading"></span>
+                        Heading: 
+                        <span id="heading"></span>
                     </td>
                     <td>
                         <label for="switch3" class="mdl-switch mdl-js-switch">
