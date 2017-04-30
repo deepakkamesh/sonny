@@ -92,6 +92,19 @@ func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, 
 	return &pb.USRet{Distance: int32(d)}, nil
 }
 
+// Accelerometer returns the dynamic and static acceleration from the accelerometer.
+func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.AccelRet, error) {
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
+	}
+
+	x, y, z, err := m.ctrl.Accelerometer()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.AccelRet{X: x, Y: y, Z: z}, nil
+}
+
 // ForwardSweep returns the distance to the nearest object sweeping angle degrees at a time.
 func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRet, error) {
 	v, err := devices.ForwardSweep(m.ctrl, m.us, int(in.Angle))
@@ -112,4 +125,43 @@ func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet
 		return &pb.PIRRet{On: true}, nil
 	}
 	return &pb.PIRRet{On: false}, nil
+}
+
+// BattState returns the battery level from pic.
+func (m *Server) BattState(ctx context.Context, in *google_pb.Empty) (*pb.BattRet, error) {
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
+	}
+
+	v, err := m.ctrl.BattState()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.BattRet{Volt: v}, nil
+}
+
+// LDR returns the light level from pic.
+func (m *Server) LDR(ctx context.Context, in *google_pb.Empty) (*pb.LDRRet, error) {
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
+	}
+
+	v, err := m.ctrl.LDR()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.LDRRet{Adc: uint32(v)}, nil
+}
+
+// DHT11 returns the temp and humidity level from pic.
+func (m *Server) DHT11(ctx context.Context, in *google_pb.Empty) (*pb.DHT11Ret, error) {
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
+	}
+
+	temp, humidity, err := m.ctrl.DHT11()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DHT11Ret{Temp: uint32(temp), Humidity: uint32(humidity)}, nil
 }

@@ -5,6 +5,7 @@ package sonny;
 import "empty.proto";
 
 // DevicesRPC service definition.
+// TODO: Add motor control.
 service DevicesRPC {
 	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {} // Ping the Controller.
 	rpc LEDBlink(LEDBlinkReq) returns (google.protobuf.Empty) {} // Blink LED.
@@ -14,15 +15,32 @@ service DevicesRPC {
   rpc ServoRotate(ServoReq) returns (google.protobuf.Empty) {} // Rotate Servo.
 	rpc Distance(google.protobuf.Empty) returns (USRet) {} // Ultrasonic Distance.
 	rpc ForwardSweep(SweepReq) returns (SweepRet) {} // Ultrasonic Distance.
+	rpc Accelerometer(google.protobuf.Empty) returns (AccelRet) {} // Accelerometer.
+	rpc BattState(google.protobuf.Empty) returns (BattRet) {} // Battery Level.
+	rpc LDR(google.protobuf.Empty) returns (LDRRet) {} // LDR level.
+	rpc DHT11(google.protobuf.Empty) returns (DHT11Ret) {} // Temp, Humidity.
 }
 
 message HeadingRet {
 	double heading = 1;
 }
 
+message LDRRet {
+	uint32 adc = 1;
+}
+
+message DHT11Ret {
+	uint32 temp = 1;
+	uint32 humidity = 2;
+}
+
 message LEDBlinkReq {
 	uint32 duration = 1; // duration in ms to blink the LED.
 	uint32 times = 2; // the number of times to blink the LED.
+}
+
+message BattRet {
+	float volt = 1; 
 }
 
 message LEDOnReq {
@@ -48,4 +66,10 @@ message SweepReq {
 
 message SweepRet {
  repeated int32 distance = 1;
+}
+
+message AccelRet {
+	float x = 1;
+	float y = 2;
+	float z = 3;
 }

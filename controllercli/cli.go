@@ -86,6 +86,19 @@ func main() {
 			},
 		},
 		{
+			Name:    "Acceleration",
+			Aliases: []string{"accel"},
+			Usage:   "Acceleration from Accelerometer",
+			Action: func(c *cli.Context) error {
+				a, err := ctrl.Accelerometer(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return err
+				}
+				log.Printf("Acceleration X=%0.00v,Y=%0.00v,Z=%0.00v", a.X, a.Y, a.Z)
+				return nil
+			},
+		},
+		{
 			Name:    "Heading",
 			Aliases: []string{"head"},
 			Usage:   "Magnetic Heading",
@@ -95,6 +108,45 @@ func main() {
 					return err
 				}
 				log.Printf("Heading %v", h.Heading)
+				return nil
+			},
+		},
+		{
+			Name:    "temp_humidity",
+			Aliases: []string{"temp"},
+			Usage:   "Returns temperature and humidity",
+			Action: func(c *cli.Context) error {
+				p, err := ctrl.DHT11(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return err
+				}
+				log.Printf("Temp %v C  Humidity %v%%", p.Temp, p.Humidity)
+				return nil
+			},
+		},
+		{
+			Name:    "battery",
+			Aliases: []string{"batt"},
+			Usage:   "Returns battery voltage",
+			Action: func(c *cli.Context) error {
+				p, err := ctrl.BattState(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return err
+				}
+				log.Printf("Volt %v", p.Volt)
+				return nil
+			},
+		},
+		{
+			Name:    "light_level",
+			Aliases: []string{"ldr"},
+			Usage:   "Returns light level",
+			Action: func(c *cli.Context) error {
+				p, err := ctrl.LDR(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return err
+				}
+				log.Printf("Light %v", p.Adc)
 				return nil
 			},
 		},

@@ -13,6 +13,10 @@ import (
 	"github.com/tarm/serial"
 )
 
+const (
+	Vdd float32 = 3.2
+)
+
 // Dependency injection for mocks.
 var (
 	serialOpen  = serOpen
@@ -236,6 +240,23 @@ func (m *Controller) LEDBlink(duration uint16, times byte) error {
 	return (<-ret).err
 }
 
+// DHT11 returns the temperature in 'C and humidity %.
+func (m *Controller) DHT11() (temp, humidity uint8, err error) {
+	ret := make(chan result)
+	m.in <- request{
+		pkt: []byte{p.CMD_STATE<<4 | p.DEV_DHT11},
+		ret: ret,
+	}
+	res := <-ret
+	if err = res.err; err != nil {
+		return
+	}
+
+	temp = uint8(res.pkt[1])
+	humidity = uint8(res.pkt[3])
+	return
+}
+
 // LDR returns the ADC light value of the LDR sensor.
 func (m *Controller) LDR() (adc uint16, err error) {
 	ret := make(chan result)
@@ -255,11 +276,11 @@ func (m *Controller) LDR() (adc uint16, err error) {
 }
 
 // Accelerometer returns the ADC values from the accelerometer.
-func (m *Controller) Accelerometer(x, y, z uint16, err error) {
+func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 
 	ret := make(chan result)
 	m.in <- request{
-		pkt: []byte{p.CMD_STATE<<4 | p.DEV_LDR},
+		pkt: []byte{p.CMD_STATE<<4 | p.DEV_ACCEL},
 		ret: ret,
 	}
 
@@ -268,12 +289,16 @@ func (m *Controller) Accelerometer(x, y, z uint16, err error) {
 		return
 	}
 
-	x = uint16(res.pkt[1])
+	x := uint16(res.pkt[1])
 	x = x<<8 | uint16(res.pkt[2])
-	y = uint16(res.pkt[3])
+	y := uint16(res.pkt[3])
 	y = y<<8 | uint16(res.pkt[4])
-	z = uint16(res.pkt[5])
+	z := uint16(res.pkt[5])
 	z = z<<8 | uint16(res.pkt[6])
+
+	gx = (float32(x)*Vdd/1023 - Vdd/2) / 0.8
+	gy = (float32(y)*Vdd/1023 - Vdd/2) / 0.8
+	gz = (float32(z)*Vdd/1023 - Vdd/2) / 0.8
 
 	return
 }

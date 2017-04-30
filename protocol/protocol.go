@@ -18,6 +18,7 @@ const (
 	DEV_LDR         byte = 0x5
 	DEV_BATT        byte = 0x6
 	DEV_MOTOR       byte = 0x7
+	DEV_DHT11       byte = 0x8
 
 	// Command definitions.
 	CMD_ON      byte = 0x1
@@ -38,6 +39,7 @@ const (
 	ERR_INSUFFICENT_PARAMS byte = 0x4
 	ERR_EDGE_DETECTED      byte = 0x5
 	ERR_BATT_LOW           byte = 0x6
+	ERR_TIMEOUT            byte = 0x7
 
 	// Status Codes.
 	ACK      byte = 0x8
