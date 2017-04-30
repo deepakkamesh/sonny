@@ -18,6 +18,7 @@
         <itemPath>mcc_generated_files/tmr3.h</itemPath>
         <itemPath>mcc_generated_files/tmr5.h</itemPath>
         <itemPath>mcc_generated_files/fvr.h</itemPath>
+        <itemPath>mcc_generated_files/tmr2.h</itemPath>
       </logicalFolder>
       <itemPath>serial_controller.h</itemPath>
       <itemPath>protocol.h</itemPath>
@@ -30,6 +31,7 @@
       <itemPath>batt_device.h</itemPath>
       <itemPath>motor_device.h</itemPath>
       <itemPath>tick.h</itemPath>
+      <itemPath>dht11_device.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -52,6 +54,7 @@
         <itemPath>mcc_generated_files/tmr3.c</itemPath>
         <itemPath>mcc_generated_files/tmr5.c</itemPath>
         <itemPath>mcc_generated_files/fvr.c</itemPath>
+        <itemPath>mcc_generated_files/tmr2.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>serial_controller.c</itemPath>
@@ -64,6 +67,7 @@
       <itemPath>batt_device.c</itemPath>
       <itemPath>motor_device.c</itemPath>
       <itemPath>tick.c</itemPath>
+      <itemPath>dht11_device.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

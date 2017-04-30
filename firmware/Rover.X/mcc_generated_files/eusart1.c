@@ -13,7 +13,7 @@
   @Description
     This header file provides implementations for driver APIs for EUSART1.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -86,8 +86,8 @@ uint8_t EUSART1_Read(void)
     {
         // EUSART1 error - restart
 
-        RCSTA1bits.CREN = 0; 
-        RCSTA1bits.CREN = 1; 
+        RCSTA1bits.SPEN = 0; 
+        RCSTA1bits.SPEN = 1; 
     }
 
     return RCREG1;

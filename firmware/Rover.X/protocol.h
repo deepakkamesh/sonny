@@ -89,6 +89,15 @@ extern "C" {
    * Byte3: MSB of Motor2 slots moved.
    * Byte4: LSB of Motor2 slots moved.
    */
+#define DEV_DHT11 0x8
+  /* DHT11 Humidity/ Temp sensor
+   * CMD_STATE
+   * Return
+   * Byte1 - MSB of Humidity
+   * Byte2 - LSB of Humidity
+   * Byte3 - MSB of Temp
+   * Byte4 - LSB of Temp
+   */
   // Command definitions.    
 #define CMD_ON 0x1
 #define CMD_PING 0x2
@@ -108,6 +117,7 @@ extern "C" {
 #define ERR_INSUFFICENT_PARAMS 0x4
 #define ERR_EDGE_DETECTED 0x5
 #define ERR_BATT_LOW 0x6
+#define ERR_TIMEOUT 0x7
 
   // Helper Functions.
 #define GetDeviceID(data) (data & 0xF)

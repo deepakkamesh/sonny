@@ -13,7 +13,7 @@
   @Description:
     This header file provides implementations for pin APIs for all pins selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
         Version           :  1.01
     The generated drivers are tested against the following:
@@ -100,6 +100,20 @@
 #define AZ_SetDigitalOutput()   do { TRISAbits.TRISA2 = 0; } while(0)
 #define AZ_SetAnalogMode()  do { ANSELAbits.ANSA2 = 1; } while(0)
 #define AZ_SetDigitalMode() do { ANSELAbits.ANSA2 = 0; } while(0)
+
+// get/set DHT11 aliases
+#define DHT11_TRIS               TRISAbits.TRISA3
+#define DHT11_LAT                LATAbits.LATA3
+#define DHT11_PORT               PORTAbits.RA3
+#define DHT11_ANS                ANSELAbits.ANSA3
+#define DHT11_SetHigh()            do { LATAbits.LATA3 = 1; } while(0)
+#define DHT11_SetLow()             do { LATAbits.LATA3 = 0; } while(0)
+#define DHT11_Toggle()             do { LATAbits.LATA3 = ~LATAbits.LATA3; } while(0)
+#define DHT11_GetValue()           PORTAbits.RA3
+#define DHT11_SetDigitalInput()    do { TRISAbits.TRISA3 = 1; } while(0)
+#define DHT11_SetDigitalOutput()   do { TRISAbits.TRISA3 = 0; } while(0)
+#define DHT11_SetAnalogMode()  do { ANSELAbits.ANSA3 = 1; } while(0)
+#define DHT11_SetDigitalMode() do { ANSELAbits.ANSA3 = 0; } while(0)
 
 // get/set RA4 procedures
 #define RA4_SetHigh()    do { LATAbits.LATA4 = 1; } while(0)
