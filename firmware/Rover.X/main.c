@@ -54,6 +54,7 @@
 #include "ldr_device.h"
 #include "batt_device.h"
 #include "motor_device.h"
+#include "dht11_device.h"
 #include "tick.h"
 
 /*
@@ -69,6 +70,7 @@ void main(void) {
     InitTicker();
     ServoInit();
     MotorInit();
+    DHT11Init();
     // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
     // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
     // Use the following macros to:
@@ -114,6 +116,7 @@ void main(void) {
         LDRTask();
         BattTask();
         MotorTask();
+        DHT11Task();
     }
 }
 /**

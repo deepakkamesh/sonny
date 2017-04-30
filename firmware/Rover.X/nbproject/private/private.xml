@@ -3,8 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/motor_device.c</file>
+            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/dht11_device.c</file>
+            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/mcc_generated_files/tmr2.c</file>
             <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/protocol.h</file>
+            <file>file:/Users/dkg/Projects/sonny/firmware/Rover.X/mcc_generated_files/pin_manager.h</file>
         </group>
     </open-files>
 </project-private>

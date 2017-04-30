@@ -13,7 +13,7 @@
   @Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
@@ -119,6 +119,7 @@ void SYSTEM_Initialize(void)
     CCP4_Initialize();
     ADC_Initialize();
     TMR3_Initialize();
+    TMR2_Initialize();
     TMR5_Initialize();
     TMR0_Initialize();
     EUSART1_Initialize();
@@ -126,14 +127,12 @@ void SYSTEM_Initialize(void)
 
 void OSCILLATOR_Initialize(void)
 {
-    // SCS FOSC; IRCF 16MHz_HFINTOSC/4; IDLEN disabled; 
+    // SCS FOSC; IRCF 16MHz_HFINTOSC; IDLEN disabled; 
     OSCCON = 0x70;
     // PRISD enabled; SOSCGO disabled; MFIOSEL disabled; 
     OSCCON2 = 0x04;
     // INTSRC disabled; PLLEN enabled; TUN 0; 
     OSCTUNE = 0x40;
-    // Set the secondary oscillator
-    
 }
 
 

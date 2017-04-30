@@ -15,7 +15,7 @@
     For individual peripheral handlers please see the peripheral driver for
     all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
@@ -68,6 +68,10 @@ void interrupt INTERRUPT_InterruptManager (void)
     else if(INTCONbits.PEIE == 1 && PIE4bits.CCP4IE == 1 && PIR4bits.CCP4IF == 1)
     {
         CCP4_CompareISR();
+    }
+    else if(INTCONbits.PEIE == 1 && PIE1bits.TMR2IE == 1 && PIR1bits.TMR2IF == 1)
+    {
+        TMR2_ISR();
     }
     else if(INTCONbits.RBIE == 1 && INTCONbits.RBIF == 1)
     {
