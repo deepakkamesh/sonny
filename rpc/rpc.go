@@ -6,8 +6,8 @@ import (
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
-	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/chip"
+	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
 	"github.com/kidoman/embd/sensor/us020"
 	"golang.org/x/net/context"
@@ -16,7 +16,7 @@ import (
 type Devices struct {
 	Ctrl *devices.Controller
 	Mag  *hmc5883l.HMC5883L
-	Pir  string
+	Pir  *hcsr501.HCSR501
 	Us   *us020.US020
 }
 
@@ -24,7 +24,7 @@ type Server struct {
 	ctrl *devices.Controller
 	mag  *hmc5883l.HMC5883L
 	us   *us020.US020
-	pir  string
+	pir  *hcsr501.HCSR501
 }
 
 func New(d *Devices) *Server {
@@ -117,14 +117,15 @@ func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRe
 
 // PIRDetect retuns true if Infrared signal is detected.
 func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet, error) {
-	v, err := embd.DigitalRead(m.pir)
+
+	if m.pir == nil {
+		return nil, errors.New("PIR Sensor not initialized")
+	}
+	v, err := m.pir.Detect()
 	if err != nil {
 		return nil, err
 	}
-	if v == embd.High {
-		return &pb.PIRRet{On: true}, nil
-	}
-	return &pb.PIRRet{On: false}, nil
+	return &pb.PIRRet{On: v}, nil
 }
 
 // BattState returns the battery level from pic.

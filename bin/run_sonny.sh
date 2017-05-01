@@ -14,5 +14,6 @@ $LOC/main \
 				-logtostderr=false \
 				-v=2 \
 				-en_pic \
+				-us_echo_pin="gpio1" \
 				-en_compass
 	#			&

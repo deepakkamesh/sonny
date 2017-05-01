@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/chip"
+	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
 	"github.com/kidoman/embd/sensor/us020"
 	"google.golang.org/grpc"
@@ -31,7 +32,7 @@ func main() {
 		baud      = flag.Int("baud", 115200, "TTY Baud rate")
 		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
 		res       = flag.String("resources", "./resources", "resources directory")
-		pirPin    = flag.String("pir_pin", "gpio0", "PIR gpio pin")
+		pirPin    = flag.String("pir_pin", "132", "PIR gpio pin")
 		usTrigPin = flag.String("us_trig_pin", "gpio3", "Ultrasonic Trigger Pin")
 		usEchoPin = flag.String("us_echo_pin", "gpio1", "Ultrasonic Echo Pin")
 		magBus    = flag.Int("mag_bus", 2, "I2C bus for Compass")
@@ -71,6 +72,11 @@ func main() {
 	}
 	defer embd.CloseI2C()
 
+	// Initialize GPIO.
+	if err := embd.InitGPIO(); err != nil {
+		glog.Fatalf("Failed to initialize GPIO %v", err)
+	}
+
 	// Initialize magnetometer.
 	var mag *hmc5883l.HMC5883L
 	if *enCompass {
@@ -81,11 +87,13 @@ func main() {
 	}
 
 	// Initialize PIR sensor.
+	var pir *hcsr501.HCSR501
 	if *enPir {
-		if err := embd.InitGPIO(); err != nil {
-			glog.Fatalf("Failed to initialize GPIO %v", err)
+		gpio, err := embd.NewDigitalPin(*pirPin)
+		if err != nil {
+			glog.Fatalf("Unable to initialize pin %v error %v", *pirPin, err)
 		}
-		embd.SetDirection(*pirPin, embd.In)
+		pir = hcsr501.New(gpio)
 	}
 
 	// Initialize Ultrasonic sensor.
@@ -107,7 +115,7 @@ func main() {
 	dev := &rpc.Devices{
 		Ctrl: ctrl,
 		Mag:  mag,
-		Pir:  *pirPin,
+		Pir:  pir,
 		Us:   us,
 	}
 

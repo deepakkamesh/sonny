@@ -12,6 +12,7 @@ import (
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
 	_ "github.com/kidoman/embd/host/chip"
+	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
 	"github.com/kidoman/embd/sensor/us020"
 )
@@ -20,7 +21,7 @@ type Server struct {
 	ctrl       *devices.Controller
 	mag        *hmc5883l.HMC5883L
 	us         *us020.US020
-	pir        string
+	pir        *hcsr501.HCSR501
 	ssl        bool
 	resources  string
 	servoAngle map[byte]int // Map to hold state of each servo.
