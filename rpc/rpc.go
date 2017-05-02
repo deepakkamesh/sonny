@@ -9,7 +9,6 @@ import (
 	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
-	"github.com/kidoman/embd/sensor/us020"
 	"golang.org/x/net/context"
 )
 
@@ -17,13 +16,11 @@ type Devices struct {
 	Ctrl *devices.Controller
 	Mag  *hmc5883l.HMC5883L
 	Pir  *hcsr501.HCSR501
-	Us   *us020.US020
 }
 
 type Server struct {
 	ctrl *devices.Controller
 	mag  *hmc5883l.HMC5883L
-	us   *us020.US020
 	pir  *hcsr501.HCSR501
 }
 
@@ -32,7 +29,6 @@ func New(d *Devices) *Server {
 		ctrl: d.Ctrl,
 		mag:  d.Mag,
 		pir:  d.Pir,
-		us:   d.Us,
 	}
 }
 
@@ -82,10 +78,10 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 
 // Distance returns the forward clearance in cm using the ultrasonic sensor.
 func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, error) {
-	if m.us == nil {
-		return nil, errors.New("compass not enabled")
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
 	}
-	d, err := m.us.Distance()
+	d, err := m.ctrl.Distance()
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +103,7 @@ func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.Ac
 
 // ForwardSweep returns the distance to the nearest object sweeping angle degrees at a time.
 func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRet, error) {
-	v, err := devices.ForwardSweep(m.ctrl, m.us, int(in.Angle))
+	v, err := devices.ForwardSweep(m.ctrl, int(in.Angle))
 
 	if err != nil {
 		return nil, err

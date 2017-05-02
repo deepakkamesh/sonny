@@ -2,12 +2,9 @@ package devices
 
 import (
 	"time"
-
-	_ "github.com/kidoman/embd/host/chip"
-	"github.com/kidoman/embd/sensor/us020"
 )
 
-func ForwardSweep(ctrl *Controller, us *us020.US020, angle int) ([]int32, error) {
+func ForwardSweep(ctrl *Controller, angle int) ([]int32, error) {
 	val := []int32{}
 
 	// Sleep to allow servo to move to starting position.
@@ -18,7 +15,7 @@ func ForwardSweep(ctrl *Controller, us *us020.US020, angle int) ([]int32, error)
 		}
 
 		time.Sleep(40 * time.Millisecond) // Sleep to allow servo to finish turning.
-		dist, err := us.Distance()
+		dist, err := ctrl.Distance()
 		if err == nil {
 			break
 		}

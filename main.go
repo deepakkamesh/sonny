@@ -16,7 +16,6 @@ import (
 	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
-	"github.com/kidoman/embd/sensor/us020"
 	"google.golang.org/grpc"
 )
 
@@ -33,13 +32,10 @@ func main() {
 		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
 		res       = flag.String("resources", "./resources", "resources directory")
 		pirPin    = flag.String("pir_pin", "132", "PIR gpio pin")
-		usTrigPin = flag.String("us_trig_pin", "gpio3", "Ultrasonic Trigger Pin")
-		usEchoPin = flag.String("us_echo_pin", "gpio1", "Ultrasonic Echo Pin")
 		magBus    = flag.Int("mag_bus", 2, "I2C bus for Compass")
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")
 		enPic     = flag.Bool("en_pic", false, "Enable PIC")
 		enPir     = flag.Bool("en_pir", true, "Enable PIR")
-		enUS      = flag.Bool("en_us", true, "Enable UltraSonic Sensor")
 		version   = flag.Bool("version", false, "display version")
 	)
 	flag.Parse()
@@ -96,27 +92,11 @@ func main() {
 		pir = hcsr501.New(gpio)
 	}
 
-	// Initialize Ultrasonic sensor.
-	var us *us020.US020
-	if *enUS {
-		echo, err := embd.NewDigitalPin(*usEchoPin)
-		if err != nil {
-			glog.Fatalf("Failed to init digital pin %v", err)
-		}
-		trig, err := embd.NewDigitalPin(*usTrigPin)
-		if err != nil {
-			glog.Fatalf("Failed to init digital pin %v", err)
-		}
-		us = us020.New(echo, trig, nil)
-		//defer us.Close()
-	}
-
 	// Build device list.
 	dev := &rpc.Devices{
 		Ctrl: ctrl,
 		Mag:  mag,
 		Pir:  pir,
-		Us:   us,
 	}
 
 	// Startup RPC service.

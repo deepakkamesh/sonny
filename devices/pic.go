@@ -401,3 +401,21 @@ func (m *Controller) BattState() (float32, error) {
 	adc = adc<<8 | uint16(res.pkt[2])
 	return 2095.104 / float32(adc), nil
 }
+
+// Distance returns the distance reading from the ultrasonic sensor.
+func (m *Controller) Distance() (uint16, error) {
+	ret := make(chan result)
+	m.in <- request{
+		pkt: []byte{p.CMD_STATE<<4 | p.DEV_US020},
+		ret: ret,
+	}
+	res := <-ret
+	if res.err != nil {
+		return 0, res.err
+	}
+
+	var dist uint16
+	dist = uint16(res.pkt[1])
+	dist = dist<<8 | uint16(res.pkt[2])
+	return dist, nil
+}

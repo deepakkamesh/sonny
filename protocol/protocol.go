@@ -19,6 +19,7 @@ const (
 	DEV_BATT        byte = 0x6
 	DEV_MOTOR       byte = 0x7
 	DEV_DHT11       byte = 0x8
+	DEV_US020       byte = 0x9
 
 	// Command definitions.
 	CMD_ON      byte = 0x1

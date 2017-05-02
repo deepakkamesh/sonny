@@ -14,13 +14,11 @@ import (
 	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
-	"github.com/kidoman/embd/sensor/us020"
 )
 
 type Server struct {
 	ctrl       *devices.Controller
 	mag        *hmc5883l.HMC5883L
-	us         *us020.US020
 	pir        *hcsr501.HCSR501
 	ssl        bool
 	resources  string
@@ -38,7 +36,6 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 		ctrl:       d.Ctrl,
 		mag:        d.Mag,
 		pir:        d.Pir,
-		us:         d.Us,
 		ssl:        ssl,
 		resources:  resources,
 		servoAngle: map[byte]int{1: 90, 2: 90},
@@ -107,7 +104,13 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 
 func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	d, err := m.us.Distance()
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Controller not enabled"),
+		})
+		return
+	}
+	d, err := m.ctrl.Distance()
 	if err != nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: distance query failed %v", err),
