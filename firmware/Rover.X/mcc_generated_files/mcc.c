@@ -115,9 +115,9 @@ void SYSTEM_Initialize(void)
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
     FVR_Initialize();
-    CCP5_Initialize();
-    CCP4_Initialize();
     ADC_Initialize();
+    CCP4_Initialize();
+    CCP5_Initialize();
     TMR3_Initialize();
     TMR2_Initialize();
     TMR5_Initialize();

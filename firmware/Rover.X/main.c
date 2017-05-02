@@ -55,6 +55,7 @@
 #include "batt_device.h"
 #include "motor_device.h"
 #include "dht11_device.h"
+#include "us020_device.h"
 #include "tick.h"
 
 /*
@@ -65,59 +66,60 @@
 Queue CmdQ[MAX_DEVICES];
 
 void main(void) {
-    // Initialize the device
-    SYSTEM_Initialize();
-    InitTicker();
-    ServoInit();
-    MotorInit();
-    DHT11Init();
-    // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
-    // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
-    // Use the following macros to:
+  // Initialize the device
+  SYSTEM_Initialize();
+  InitTicker();
+  ServoInit();
+  MotorInit();
+  DHT11Init();
+  // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
+  // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
+  // Use the following macros to:
 
-    // Enable high priority global interrupts
-    //INTERRUPT_GlobalInterruptHighEnable();
+  // Enable high priority global interrupts
+  //INTERRUPT_GlobalInterruptHighEnable();
 
-    // Enable low priority global interrupts.
-    //INTERRUPT_GlobalInterruptLowEnable();
+  // Enable low priority global interrupts.
+  //INTERRUPT_GlobalInterruptLowEnable();
 
-    // Disable high priority global interrupts
-    //INTERRUPT_GlobalInterruptHighDisable();
+  // Disable high priority global interrupts
+  //INTERRUPT_GlobalInterruptHighDisable();
 
-    // Disable low priority global interrupts.
-    //INTERRUPT_GlobalInterruptLowDisable();
+  // Disable low priority global interrupts.
+  //INTERRUPT_GlobalInterruptLowDisable();
 
-    // Enable the Global Interrupts
-    INTERRUPT_GlobalInterruptEnable();
+  // Enable the Global Interrupts
+  INTERRUPT_GlobalInterruptEnable();
 
-    // Enable the Peripheral Interrupts
-    INTERRUPT_PeripheralInterruptEnable();
+  // Enable the Peripheral Interrupts
+  INTERRUPT_PeripheralInterruptEnable();
 
-    // Disable the Global Interrupts
-    //INTERRUPT_GlobalInterruptDisable();
+  // Disable the Global Interrupts
+  //INTERRUPT_GlobalInterruptDisable();
 
-    // Disable the Peripheral Interrupts
-    //INTERRUPT_PeripheralInterruptDisable();
+  // Disable the Peripheral Interrupts
+  //INTERRUPT_PeripheralInterruptDisable();
 
-    // Init Command Queue
-    uint8_t i;
-    for (i = 0; i < MAX_DEVICES; i++) {
-        CmdQ[i].free = true;
-        CmdQ[i].size = 0;
-    }
-    __delay_ms(5);
-    while (1) {
-        SerialReadTask();
-        AdminTask();
-        LedTask();
-        ServoTask();
-        AccelTask();
-        EdgeSensorTask();
-        LDRTask();
-        BattTask();
-        MotorTask();
-        DHT11Task();
-    }
+  // Init Command Queue
+  uint8_t i;
+  for (i = 0; i < MAX_DEVICES; i++) {
+    CmdQ[i].free = true;
+    CmdQ[i].size = 0;
+  }
+  __delay_ms(5);
+  while (1) {
+    SerialReadTask();
+    AdminTask();
+    LedTask();
+    ServoTask();
+    AccelTask();
+    EdgeSensorTask();
+    LDRTask();
+    BattTask();
+    MotorTask();
+    DHT11Task();
+    US020Task();
+  }
 }
 /**
  End of File

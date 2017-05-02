@@ -98,6 +98,13 @@ extern "C" {
    * Byte3 - MSB of Temp
    * Byte4 - LSB of Temp
    */
+#define DEV_US020 0x9
+  /* US020 Ultrasonic range finder.
+   * CMD_STATE:
+   * Return
+   * Byte1 - MSB of distance in centimeters
+   * Byte2 - LSB of distance in centimeters.
+   */
   // Command definitions.    
 #define CMD_ON 0x1
 #define CMD_PING 0x2

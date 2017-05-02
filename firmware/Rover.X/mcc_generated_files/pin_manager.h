@@ -244,6 +244,34 @@
 #define LDR_SetAnalogMode()  do { ANSELCbits.ANSC2 = 1; } while(0)
 #define LDR_SetDigitalMode() do { ANSELCbits.ANSC2 = 0; } while(0)
 
+// get/set US_TRIG aliases
+#define US_TRIG_TRIS               TRISCbits.TRISC4
+#define US_TRIG_LAT                LATCbits.LATC4
+#define US_TRIG_PORT               PORTCbits.RC4
+#define US_TRIG_ANS                ANSELCbits.ANSC4
+#define US_TRIG_SetHigh()            do { LATCbits.LATC4 = 1; } while(0)
+#define US_TRIG_SetLow()             do { LATCbits.LATC4 = 0; } while(0)
+#define US_TRIG_Toggle()             do { LATCbits.LATC4 = ~LATCbits.LATC4; } while(0)
+#define US_TRIG_GetValue()           PORTCbits.RC4
+#define US_TRIG_SetDigitalInput()    do { TRISCbits.TRISC4 = 1; } while(0)
+#define US_TRIG_SetDigitalOutput()   do { TRISCbits.TRISC4 = 0; } while(0)
+#define US_TRIG_SetAnalogMode()  do { ANSELCbits.ANSC4 = 1; } while(0)
+#define US_TRIG_SetDigitalMode() do { ANSELCbits.ANSC4 = 0; } while(0)
+
+// get/set US_ECHO aliases
+#define US_ECHO_TRIS               TRISCbits.TRISC5
+#define US_ECHO_LAT                LATCbits.LATC5
+#define US_ECHO_PORT               PORTCbits.RC5
+#define US_ECHO_ANS                ANSELCbits.ANSC5
+#define US_ECHO_SetHigh()            do { LATCbits.LATC5 = 1; } while(0)
+#define US_ECHO_SetLow()             do { LATCbits.LATC5 = 0; } while(0)
+#define US_ECHO_Toggle()             do { LATCbits.LATC5 = ~LATCbits.LATC5; } while(0)
+#define US_ECHO_GetValue()           PORTCbits.RC5
+#define US_ECHO_SetDigitalInput()    do { TRISCbits.TRISC5 = 1; } while(0)
+#define US_ECHO_SetDigitalOutput()   do { TRISCbits.TRISC5 = 0; } while(0)
+#define US_ECHO_SetAnalogMode()  do { ANSELCbits.ANSC5 = 1; } while(0)
+#define US_ECHO_SetDigitalMode() do { ANSELCbits.ANSC5 = 0; } while(0)
+
 // get/set RC6 procedures
 #define RC6_SetHigh()    do { LATCbits.LATC6 = 1; } while(0)
 #define RC6_SetLow()   do { LATCbits.LATC6 = 0; } while(0)
