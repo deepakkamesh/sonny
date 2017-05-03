@@ -51,6 +51,11 @@ func (m *Server) Start() error {
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
 	http.HandleFunc("/api/distance/", m.Distance)
 	http.HandleFunc("/api/batt/", m.BattState)
+	http.HandleFunc("/api/accel/", m.Accelerometer)
+	http.HandleFunc("/api/head/", m.Heading)
+	http.HandleFunc("/api/temp/", m.DHT11)
+	http.HandleFunc("/api/ldr/", m.LDR)
+	http.HandleFunc("/api/pir/", m.PIRDetect)
 
 	return http.ListenAndServe(":8080", nil)
 }
@@ -85,7 +90,7 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 
 	if m.ctrl == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not enabled"),
+			Err: fmt.Sprintf("Error: Controller not initialized"),
 		})
 		return
 	}
@@ -106,7 +111,7 @@ func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if m.ctrl == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not enabled"),
+			Err: fmt.Sprintf("Error: Controller not initialized"),
 		})
 		return
 	}
@@ -119,16 +124,137 @@ func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(w, &response{
-		Data: fmt.Sprintf("%3.3f", d),
+		Data: d,
 	})
 }
 
+// Accelerometer is the http wrapper for ctrl.Accelerator.
+func (m *Server) Accelerometer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: controller not initialized"),
+		})
+		return
+	}
+
+	x, y, z, err := m.ctrl.Accelerometer()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to read accelerometer %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: []float32{x, y, z},
+	})
+}
+
+// Heading is a http wrapper for mag.HEading.
+func (m *Server) Heading(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.mag == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: magnetometer not initialized"),
+		})
+		return
+	}
+
+	h, err := m.mag.Heading()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to read magnetometer %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: h,
+	})
+}
+
+// Heading is a http wrapper for mag.HEading.
+func (m *Server) DHT11(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: controller not initialized"),
+		})
+		return
+	}
+
+	t, h, err := m.ctrl.DHT11()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to read DHT11 %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: []uint16{uint16(t), uint16(h)},
+	})
+}
+
+// LDR is a http wrapper for ctrl.LDR
+func (m *Server) LDR(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: controller not initialized"),
+		})
+		return
+	}
+
+	v, err := m.ctrl.LDR()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to read controller %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: v,
+	})
+}
+
+// PIRDetect is a http wrapper for pir.Detect.
+func (m *Server) PIRDetect(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.pir == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: PIR not initialized"),
+		})
+		return
+	}
+
+	v, err := m.pir.Detect()
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: failed to read pir %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: v,
+	})
+}
+
+// BattState is the http wrapper for ctrl.BattState
 func (m *Server) BattState(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if m.ctrl == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not enabled"),
+			Err: fmt.Sprintf("Error: Controller not initialized"),
 		})
 		return
 	}
@@ -152,7 +278,7 @@ func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 
 	if m.ctrl == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not enabled"),
+			Err: fmt.Sprintf("Error: Controller not initialized"),
 		})
 		return
 	}
@@ -193,7 +319,7 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 	if m.ctrl == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not enabled"),
+			Err: fmt.Sprintf("Error: Controller not initialized"),
 		})
 		return
 	}
@@ -238,7 +364,7 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 
 	if m.ctrl == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not enabled"),
+			Err: fmt.Sprintf("Error: Controller not initialized"),
 		})
 		return
 	}
