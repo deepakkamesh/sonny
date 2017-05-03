@@ -32,7 +32,7 @@ func main() {
 			Usage:   "Ping the controller.",
 			Action: func(c *cli.Context) error {
 				if _, err := ctrl.Ping(context.Background(), &google_pb.Empty{}); err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Pinging controller successful")
 				return nil
@@ -45,7 +45,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				h, err := ctrl.PIRDetect(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("PIR Sensor %v", h.On)
 				return nil
@@ -66,7 +66,7 @@ func main() {
 					Angle: int32(c.Int("angle")),
 				})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Sweep %v", d.Distance)
 				return nil
@@ -79,7 +79,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				d, err := ctrl.Distance(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Distance %v", d.Distance)
 				return nil
@@ -92,7 +92,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				a, err := ctrl.Accelerometer(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Acceleration X=%0.00v,Y=%0.00v,Z=%0.00v", a.X, a.Y, a.Z)
 				return nil
@@ -105,7 +105,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				h, err := ctrl.Heading(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Heading %v", h.Heading)
 				return nil
@@ -118,7 +118,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				p, err := ctrl.DHT11(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Temp %v C  Humidity %v%%", p.Temp, p.Humidity)
 				return nil
@@ -131,7 +131,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				p, err := ctrl.BattState(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Volt %v", p.Volt)
 				return nil
@@ -144,7 +144,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				p, err := ctrl.LDR(context.Background(), &google_pb.Empty{})
 				if err != nil {
-					return err
+					return cli.NewExitError(err, 1)
 				}
 				log.Printf("Light %v", p.Adc)
 				return nil
