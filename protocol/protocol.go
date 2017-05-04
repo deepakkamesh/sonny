@@ -55,6 +55,9 @@ func Error(errCode byte) error {
 		0x2: "device busy",
 		0x3: "unimplemented",
 		0x4: "insufficient parameters",
+		0x5: "edge detected",
+		0x6: "low battery",
+		0x7: "timeout",
 	}
 
 	if e, ok := err[errCode]; ok {

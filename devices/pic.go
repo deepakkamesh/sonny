@@ -36,7 +36,7 @@ func serWrite(s *serial.Port, b []byte) (int, error) {
 	return s.Write(b)
 }
 
-const TIMEOUT = 500 * 1000 * 1000 // Controller response timeout in nanoseconds.
+const TIMEOUT = 1000 * 1000 * 1000 // Controller response timeout in nanoseconds.
 
 // result stores the return value from the controller.
 type result struct {
@@ -125,7 +125,7 @@ func (m *Controller) read() {
 				continue
 			}
 			if n != int(sz) {
-				glog.Warningf("Expected to recieve %d bytes from tty, got %d", sz, n)
+				glog.Warningf("Expected to recieve %d bytes from tty, got %d %v", sz, n, pkt)
 				continue
 			}
 			c := p.Checksum(header)
@@ -144,6 +144,7 @@ func (m *Controller) newRun() {
 	t := time.NewTicker(TIMEOUT * time.Nanosecond)
 
 	for {
+		glog.Flush()
 		select {
 		case <-m.quit:
 			glog.Info("Shutting down pic processor")
