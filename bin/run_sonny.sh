@@ -3,11 +3,10 @@ LOC=$(dirname "$0")
 killall main
 
 # Delete old logs.
-#find $LOC/../logs -mindepth 1 -type f -mtime +1 -delete
-rm -f $LOC/../logs/*
+find $LOC/../logs -mindepth 1 -type f -mtime +10 -delete
 
 $LOC/main \
-				-baud=115200 \
+				-baud=19200 \
 				-log_dir=$LOC/../logs/ \
 				-resources=$LOC/../resources \
 				-stderrthreshold=info \

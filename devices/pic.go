@@ -36,7 +36,7 @@ func serWrite(s *serial.Port, b []byte) (int, error) {
 	return s.Write(b)
 }
 
-const TIMEOUT = 1000 * 1000 * 1000 // Controller response timeout in nanoseconds.
+const TIMEOUT = 800 * 1000 * 1000 // Controller response timeout in nanoseconds.
 
 // result stores the return value from the controller.
 type result struct {
@@ -68,7 +68,7 @@ type Controller struct {
 // NewController returns a new initialized controller.
 func NewController(tty string, baud int) (*Controller, error) {
 
-	c := &serial.Config{Name: tty, Baud: baud, ReadTimeout: 500 * time.Millisecond}
+	c := &serial.Config{Name: tty, Baud: baud, ReadTimeout: 1000 * time.Millisecond}
 	port, err := serialOpen(c)
 	if err != nil {
 		return nil, err
@@ -165,9 +165,14 @@ func (m *Controller) newRun() {
 				req:    c,
 				tmstmp: time.Now().UnixNano(),
 			}
+			time.Sleep(50 * time.Millisecond)
 			glog.V(2).Infof("Sending command %v to device %v on tty", p.PktPrint(c.pkt), dev)
-			serialWrite(m.port, []byte{h})
-			serialWrite(m.port, c.pkt)
+			if _, err := serialWrite(m.port, []byte{h}); err != nil {
+				glog.Warningf("Failed to write header %v to serial", h)
+			}
+			if _, err := serialWrite(m.port, c.pkt); err != nil {
+				glog.Warningf("Failed to write packet %v to serial", p.PktPrint(c.pkt))
+			}
 
 		// Timeout handler.
 		case <-t.C:
@@ -253,8 +258,8 @@ func (m *Controller) DHT11() (temp, humidity uint8, err error) {
 		return
 	}
 
-	temp = uint8(res.pkt[1])
-	humidity = uint8(res.pkt[3])
+	humidity = uint8(res.pkt[1])
+	temp = uint8(res.pkt[3])
 	return
 }
 
