@@ -52,12 +52,12 @@
 #include "interrupt_manager.h"
 #include "ccp4.h"
 #include "ccp5.h"
-#include "eusart1.h"
 #include "adc.h"
-#include "fvr.h"
 #include "tmr2.h"
-#include "tmr3.h"
 #include "tmr0.h"
+#include "eusart1.h"
+#include "tmr3.h"
+#include "fvr.h"
 #include "tmr5.h"
 
 #define _XTAL_FREQ  64000000
