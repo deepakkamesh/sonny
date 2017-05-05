@@ -15,7 +15,7 @@ void SerialReadTask(void) {
 
 
   // Check if there is data to be read.
-  RCSTA1bits.SREN = 1;
+  //RCSTA1bits.SREN = 1;
   if (!PIR1bits.RC1IF) {
     return;
   }

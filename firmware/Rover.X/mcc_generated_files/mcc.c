@@ -115,12 +115,12 @@ void SYSTEM_Initialize(void)
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
     FVR_Initialize();
+    ADC_Initialize();
     CCP4_Initialize();
     CCP5_Initialize();
-    ADC_Initialize();
     TMR3_Initialize();
-    TMR2_Initialize();
     TMR5_Initialize();
+    TMR2_Initialize();
     TMR0_Initialize();
     EUSART1_Initialize();
 }
