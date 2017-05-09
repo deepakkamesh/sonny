@@ -19,6 +19,10 @@
         <itemPath>mcc_generated_files/tmr5.h</itemPath>
         <itemPath>mcc_generated_files/fvr.h</itemPath>
         <itemPath>mcc_generated_files/tmr2.h</itemPath>
+        <itemPath>mcc_generated_files/epwm1.h</itemPath>
+        <itemPath>mcc_generated_files/tmr4.h</itemPath>
+        <itemPath>mcc_generated_files/epwm2.h</itemPath>
+        <itemPath>mcc_generated_files/tmr6.h</itemPath>
       </logicalFolder>
       <itemPath>serial_controller.h</itemPath>
       <itemPath>protocol.h</itemPath>
@@ -56,6 +60,10 @@
         <itemPath>mcc_generated_files/tmr5.c</itemPath>
         <itemPath>mcc_generated_files/fvr.c</itemPath>
         <itemPath>mcc_generated_files/tmr2.c</itemPath>
+        <itemPath>mcc_generated_files/epwm1.c</itemPath>
+        <itemPath>mcc_generated_files/tmr4.c</itemPath>
+        <itemPath>mcc_generated_files/epwm2.c</itemPath>
+        <itemPath>mcc_generated_files/tmr6.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>serial_controller.c</itemPath>

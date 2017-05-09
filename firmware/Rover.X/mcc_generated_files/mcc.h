@@ -50,15 +50,19 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "interrupt_manager.h"
+#include "tmr6.h"
+#include "epwm2.h"
+#include "epwm1.h"
+#include "fvr.h"
 #include "adc.h"
-#include "eusart1.h"
-#include "ccp4.h"
 #include "ccp5.h"
-#include "tmr3.h"
+#include "eusart1.h"
 #include "tmr5.h"
+#include "tmr3.h"
+#include "ccp4.h"
 #include "tmr2.h"
 #include "tmr0.h"
-#include "fvr.h"
+#include "tmr4.h"
 
 #define _XTAL_FREQ  64000000
 

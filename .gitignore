@@ -7,3 +7,6 @@
 sonny/sonny.pb.go
 logs/*
 .DS_Store
+/firmware/dock.X/nbproject/private/
+/firmware/dock.X/build/default/
+/firmware/dock.X/dist/default/

@@ -67,7 +67,7 @@
 #pragma config CCP3MX = PORTB5    // P3A/CCP3 Mux bit->P3A/CCP3 input/output is multiplexed with RB5
 #pragma config HFOFST = ON    // HFINTOSC Fast Start-up->HFINTOSC output and ready status are not delayed by the oscillator stable status
 #pragma config T3CMX = PORTC0    // Timer3 Clock input mux bit->T3CKI is on RC0
-#pragma config P2BMX = PORTB5    // ECCP2 B output mux bit->P2B is on RB5
+#pragma config P2BMX = PORTC0    // ECCP2 B output mux bit->P2B is on RC0
 #pragma config MCLRE = INTMCLR    // MCLR Pin Enable bit->RE3 input pin enabled; MCLR disabled
 
 // CONFIG4L
@@ -115,13 +115,17 @@ void SYSTEM_Initialize(void)
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
     FVR_Initialize();
-    ADC_Initialize();
-    CCP4_Initialize();
+    EPWM2_Initialize();
     CCP5_Initialize();
-    TMR3_Initialize();
-    TMR5_Initialize();
+    TMR4_Initialize();
     TMR2_Initialize();
     TMR0_Initialize();
+    TMR6_Initialize();
+    ADC_Initialize();
+    CCP4_Initialize();
+    EPWM1_Initialize();
+    TMR3_Initialize();
+    TMR5_Initialize();
     EUSART1_Initialize();
 }
 

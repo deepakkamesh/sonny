@@ -96,7 +96,7 @@ typedef enum
     AX =  0x0,
     AY =  0x1,
     AZ =  0x2,
-    LDR =  0xE,
+    LDR =  0xF,
     channel_CTMU =  0x1D,
     channel_DAC =  0x1E,
     channel_FVRBuf2 =  0x1F

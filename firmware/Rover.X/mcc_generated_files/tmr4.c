@@ -1,17 +1,17 @@
 /**
-  EUSART1 Generated Driver File
+  TMR4 Generated Driver File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    eusart1.c
+    tmr4.c
 
   @Summary
-    This is the generated driver implementation file for the EUSART1 driver using MPLAB(c) Code Configurator
+    This is the generated driver implementation file for the TMR4 driver using MPLAB(c) Code Configurator
 
   @Description
-    This header file provides implementations for driver APIs for EUSART1.
+    This source file provides APIs for TMR4.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
@@ -46,60 +46,82 @@
 /**
   Section: Included Files
 */
-#include "eusart1.h"
+
+#include <xc.h>
+#include "tmr4.h"
 
 /**
-  Section: EUSART1 APIs
+  Section: Global Variables Definitions
 */
 
-void EUSART1_Initialize(void)
+void (*TMR4_InterruptHandler)(void);
+
+/**
+  Section: TMR4 APIs
+*/
+
+void TMR4_Initialize(void)
 {
-    // Set the EUSART1 module to the options selected in the user interface.
+    // Set TMR4 to the options selected in the User Interface
 
-    // ABDOVF no_overflow; CKTXP async_noninverted_sync_fallingedge; BRG16 16bit_generator; WUE disabled; ABDEN disabled; DTRXP not_inverted; 
-    BAUDCON1 = 0x08;
+    // T4CKPS 1:4; T4OUTPS 1:1; TMR4ON off; 
+    T4CON = 0x01;
 
-    // SPEN enabled; RX9 8-bit; CREN enabled; ADDEN disabled; SREN disabled; 
-    RCSTA1 = 0x90;
+    // PR4 199; 
+    PR4 = 0xC7;
 
-    // TX9 8-bit; TX9D 0; SENDB sync_break_complete; TXEN enabled; SYNC asynchronous; BRGH hi_speed; CSRC master_mode; 
-    TXSTA1 = 0xA4;
+    // TMR4 0; 
+    TMR4 = 0x00;
 
-    // Baud Rate = 19200; 
-    SPBRG1 = 0x40;
+    // Clearing IF flag.
+    PIR5bits.TMR4IF = 0;
 
-    // Baud Rate = 19200; 
-    SPBRGH1 = 0x03;
-
+    // Start TMR4
+    TMR4_StartTimer();
 }
 
-
-uint8_t EUSART1_Read(void)
+void TMR4_StartTimer(void)
 {
-
-    while(!PIR1bits.RC1IF)
-    {
-    }
-
-    
-    if(1 == RCSTA1bits.OERR)
-    {
-        // EUSART1 error - restart
-
-        RCSTA1bits.SPEN = 0; 
-        RCSTA1bits.SPEN = 1; 
-    }
-
-    return RCREG1;
+    // Start the Timer by writing to TMRxON bit
+    T4CONbits.TMR4ON = 1;
 }
 
-void EUSART1_Write(uint8_t txData)
+void TMR4_StopTimer(void)
 {
-    while(0 == PIR1bits.TX1IF)
-    {
-    }
+    // Stop the Timer by writing to TMRxON bit
+    T4CONbits.TMR4ON = 0;
+}
 
-    TXREG1 = txData;    // Write the data byte to the USART.
+uint8_t TMR4_ReadTimer(void)
+{
+    uint8_t readVal;
+
+    readVal = TMR4;
+
+    return readVal;
+}
+
+void TMR4_WriteTimer(uint8_t timerVal)
+{
+    // Write to the Timer4 register
+    TMR4 = timerVal;
+}
+
+void TMR4_LoadPeriodRegister(uint8_t periodVal)
+{
+   PR4 = periodVal;
+}
+
+bool TMR4_HasOverflowOccured(void)
+{
+    // check if  overflow has occurred by checking the TMRIF bit
+    bool status = PIR5bits.TMR4IF;
+    if(status)
+    {
+        // Clearing IF flag.
+        PIR5bits.TMR4IF = 0;
+    }
+    return status;
 }
 /**
   End of File

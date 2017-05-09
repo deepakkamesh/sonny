@@ -10,38 +10,37 @@ extern Queue CmdQ[MAX_DEVICES];
 
 static volatile uint16_t se_m1_count = 0, se_m2_count = 0;
 bool active = false;
+
+#define M1_FWD_SetHigh STR1A=1
+#define M1_FWD_SetLow STR1A=0
+#define M1_BWD_SetHigh STR1B = 1
+#define M1_BWD_SetLow STR1B = 0
+
+#define M2_FWD_SetHigh STR2A = 1
+#define M2_FWD_SetLow STR2A = 0
+#define M2_BWD_SetHigh STR2B = 1
+#define M2_BWD_SetLow STR2B = 0
+
+enum uint8_t {
+  RIGHT_SYNC = 0,
+  LEFT_SYNC,
+  RIGHT_ASYNC,
+  LEFT_ASYNC,
+} dir = RIGHT_SYNC;
+
 void SpeedEncoderISR_M1(void);
 void SpeedEncoderISR_M2(void);
 
 void MotorTask(void) {
   uint8_t packet[PKT_SZ];
   static uint16_t rotation = 0;
-  /*
-    uint8_t currSt = 0;
-    static uint8_t prevSt = 0;
-    static uint32_t start, end = 0;
-
-    // Pool rotations to speed encoder disk.
-    if (active) {
-      currSt = SE_M1_GetValue();
-      if (currSt == 1 && prevSt == 0) { // Count on rising edge.
-        start = TickGet();
-      }
-      if (currSt == 0 && prevSt == 1) {
-        end = TickGet();
-        if ((end - start) / TICK_MILLISECOND > 4) {
-          se_m1_count++;
-        }
-      }
-      prevSt = currSt;
-    } */
 
   // Check if rotations are done.
   if ((se_m1_count >= rotation || se_m2_count >= rotation) && active) {
-    MOTOR1_BWD_SetLow();
-    MOTOR1_FWD_SetLow();
-    MOTOR2_FWD_SetLow();
-    MOTOR2_BWD_SetLow();
+    M1_BWD_SetLow;
+    M1_FWD_SetLow;
+    M2_FWD_SetLow;
+    M2_BWD_SetLow;
     packet[0] = 0x40 | DEV_MOTOR;
     packet[1] = se_m1_count >> 8;
     packet[2] = se_m1_count & 0xFF;
@@ -57,40 +56,54 @@ void MotorTask(void) {
   }
 
   uint8_t command = GetCommand(CmdQ[DEV_MOTOR].packet[0]);
+  float dutyRatio = 0;
+  uint16_t dutyValue1, dutyValue2 = 0;
+
 
   switch (command) {
     case CMD_ON:
-      se_m1_count = 0;
-      se_m2_count = 0;
-      MOTOR1_FWD_SetHigh();
-      MOTOR1_BWD_SetLow();
-      MOTOR2_FWD_SetHigh();
-      MOTOR2_BWD_SetLow();
-      SendDone(DEV_MOTOR);
-      break;
-
-    case CMD_FWD:
-      if (CmdQ[DEV_MOTOR].size != 3) {
-        // Send insufficient param error 
+      if (CmdQ[DEV_MOTOR].size != 2) {
         SendError(DEV_MOTOR, ERR_INSUFFICENT_PARAMS);
         break;
       }
-      // Initialize counters.
+      dutyRatio = (float) CmdQ[DEV_MOTOR].packet[1] / 100;
+      dutyValue1 = 4 * (PR4 + 1) * dutyRatio;
+      dutyValue2 = 4 * (PR6 + 1) * dutyRatio;
+
+      M1_FWD_SetHigh;
+      M1_BWD_SetLow;
+      M2_FWD_SetHigh;
+      M2_BWD_SetLow;
+      EPWM1_LoadDutyValue(dutyValue1);
+      EPWM2_LoadDutyValue(dutyValue2);
+      SendAckDone(DEV_MOTOR);
+      active = false;
+      break;
+
+    case CMD_FWD:
+      if (CmdQ[DEV_MOTOR].size != 4) {
+        SendError(DEV_MOTOR, ERR_INSUFFICENT_PARAMS);
+        break;
+      }
       se_m1_count = 0;
       se_m2_count = 0;
       rotation = CmdQ[DEV_MOTOR].packet[1];
       rotation = rotation << 8 | CmdQ[DEV_MOTOR].packet[2];
-      MOTOR1_FWD_SetHigh();
-      MOTOR1_BWD_SetLow();
-      MOTOR2_FWD_SetHigh();
-      MOTOR2_BWD_SetLow();
+      dutyRatio = (float) CmdQ[DEV_MOTOR].packet[1] / 100;
+      dutyValue1 = 4 * (PR4 + 1) * dutyRatio;
+      dutyValue2 = 4 * (PR6 + 1) * dutyRatio;
+      EPWM1_LoadDutyValue(dutyValue1);
+      EPWM2_LoadDutyValue(dutyValue2);
+      M1_FWD_SetHigh;
+      M1_BWD_SetLow;
+      M2_FWD_SetHigh;
+      M2_BWD_SetLow;
       SendAck(DEV_MOTOR);
       active = true;
       break;
 
     case CMD_BWD:
-      if (CmdQ[DEV_MOTOR].size != 3) {
-        // Send insufficient param error 
+      if (CmdQ[DEV_MOTOR].size != 4) {
         SendError(DEV_MOTOR, ERR_INSUFFICENT_PARAMS);
         break;
       }
@@ -98,19 +111,29 @@ void MotorTask(void) {
       se_m2_count = 0;
       rotation = CmdQ[DEV_MOTOR].packet[1];
       rotation = rotation << 8 | CmdQ[DEV_MOTOR].packet[2];
-      MOTOR1_BWD_SetHigh();
-      MOTOR1_FWD_SetLow();
-      MOTOR2_BWD_SetHigh();
-      MOTOR2_FWD_SetLow();
+      dutyRatio = (float) CmdQ[DEV_MOTOR].packet[1] / 100;
+      dutyValue1 = 4 * (PR4 + 1) * dutyRatio;
+      dutyValue2 = 4 * (PR6 + 1) * dutyRatio;
+      EPWM1_LoadDutyValue(dutyValue1);
+      EPWM2_LoadDutyValue(dutyValue2);
+      M1_BWD_SetHigh;
+      M1_FWD_SetLow;
+      M2_BWD_SetHigh;
+      M2_FWD_SetLow;
       SendAck(DEV_MOTOR);
       active = true;
       break;
 
+    case CMD_ROTATE:
+
+      break;
+
+
     case CMD_OFF:
-      MOTOR1_BWD_SetLow();
-      MOTOR1_FWD_SetLow();
-      MOTOR2_FWD_SetLow();
-      MOTOR2_BWD_SetLow();
+      M1_BWD_SetLow;
+      M1_FWD_SetLow;
+      M2_FWD_SetLow;
+      M2_BWD_SetLow;
       SendAckDone(DEV_MOTOR);
       active = false;
       break;
@@ -135,6 +158,12 @@ void MotorTask(void) {
 void MotorInit(void) {
   IOCB4_SetInterruptHandler(SpeedEncoderISR_M1);
   IOCB5_SetInterruptHandler(SpeedEncoderISR_M2);
+
+  // Turn off motors otherwise the default pwm is 50% duty cycle.
+  M1_BWD_SetLow;
+  M1_FWD_SetLow;
+  M2_FWD_SetLow;
+  M2_BWD_SetLow;
 }
 
 void SpeedEncoderISR_M1(void) {

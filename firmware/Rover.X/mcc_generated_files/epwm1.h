@@ -1,17 +1,17 @@
 /**
-  EUSART1 Generated Driver File
+  ECCP1 Generated Driver File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    eusart1.c
+    eccp1.c
 
   @Summary
-    This is the generated driver implementation file for the EUSART1 driver using MPLAB(c) Code Configurator
+    This is the generated driver implementation file for the ECCP1 driver using MPLAB(c) Code Configurator
 
   @Description
-    This header file provides implementations for driver APIs for EUSART1.
+    This source file provides APIs for ECCP1.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
@@ -43,64 +43,90 @@
     TERMS.
 */
 
+#ifndef _EPWM1_H
+#define _EPWM1_H
+
 /**
   Section: Included Files
 */
-#include "eusart1.h"
+
+#include <xc.h>
+#include <stdint.h>
+
+#ifdef __cplusplus  // Provide C++ Compatibility
+
+    extern "C" {
+
+#endif
 
 /**
-  Section: EUSART1 APIs
+  Section: EPWM Module APIs
 */
 
-void EUSART1_Initialize(void)
-{
-    // Set the EUSART1 module to the options selected in the user interface.
+  /**
+  @Summary
+    Initializes the EPWM1
 
-    // ABDOVF no_overflow; CKTXP async_noninverted_sync_fallingedge; BRG16 16bit_generator; WUE disabled; ABDEN disabled; DTRXP not_inverted; 
-    BAUDCON1 = 0x08;
+  @Description
+    This routine initializes the EPWM1_Initialize.
+    This routine must be called before any other ECCP1 routine is called.
+    This routine should only be called once during system initialization.
 
-    // SPEN enabled; RX9 8-bit; CREN enabled; ADDEN disabled; SREN disabled; 
-    RCSTA1 = 0x90;
+  @Preconditions
+    None
 
-    // TX9 8-bit; TX9D 0; SENDB sync_break_complete; TXEN enabled; SYNC asynchronous; BRGH hi_speed; CSRC master_mode; 
-    TXSTA1 = 0xA4;
+  @Param
+    None
 
-    // Baud Rate = 19200; 
-    SPBRG1 = 0x40;
+  @Returns
+    None
 
-    // Baud Rate = 19200; 
-    SPBRGH1 = 0x03;
-
-}
-
-
-uint8_t EUSART1_Read(void)
-{
-
-    while(!PIR1bits.RC1IF)
-    {
-    }
-
+  @Comment
     
-    if(1 == RCSTA1bits.OERR)
-    {
-        // EUSART1 error - restart
 
-        RCSTA1bits.SPEN = 0; 
-        RCSTA1bits.SPEN = 1; 
-    }
+ @Example
+    <code>
+    uint16_t dutycycle;
 
-    return RCREG1;
-}
+    EPWM1_Initialize();
+    EPWM1_LoadDutyValue(dutycycle);
+    </code>
+ */
+void EPWM1_Initialize(void);
 
-void EUSART1_Write(uint8_t txData)
-{
-    while(0 == PIR1bits.TX1IF)
-    {
-    }
-
-    TXREG1 = txData;    // Write the data byte to the USART.
-}
 /**
-  End of File
+  @Summary
+    Loads 16-bit duty cycle.
+
+  @Description
+    This routine loads the 16 bit duty cycle value.
+
+  @Preconditions
+    EPWM1_Initialize() function should have been called before calling this function.
+
+  @Param
+    Pass in 16bit duty cycle value.
+
+  @Returns
+    None
+
+  @Example
+    <code>
+    uint16_t dutycycle;
+
+    EPWM1_Initialize();
+    EPWM1_LoadDutyValue(dutycycle);
+    </code>
+*/
+void EPWM1_LoadDutyValue(uint16_t dutyValue);
+
+#ifdef __cplusplus  // Provide C++ Compatibility
+
+    }
+
+#endif
+
+#endif  // _EPWM1_H
+/**
+ End of File
 */

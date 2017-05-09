@@ -1,17 +1,17 @@
 /**
-  EUSART1 Generated Driver File
+  ECCP1 Generated Driver File
 
   @Company
     Microchip Technology Inc.
 
   @File Name
-    eusart1.c
+    eccp1.c
 
   @Summary
-    This is the generated driver implementation file for the EUSART1 driver using MPLAB(c) Code Configurator
+    This is the generated driver implementation file for the ECCP1 driver using MPLAB(c) Code Configurator
 
   @Description
-    This header file provides implementations for driver APIs for EUSART1.
+    This source file provides APIs for ECCP1.
     Generation Information :
         Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
         Device            :  PIC18F26K22
@@ -46,61 +46,55 @@
 /**
   Section: Included Files
 */
-#include "eusart1.h"
+
+#include <xc.h>
+#include "epwm1.h"
 
 /**
-  Section: EUSART1 APIs
+  Section: Macro Declarations
 */
 
-void EUSART1_Initialize(void)
+#define PWM1_INITIALIZE_DUTY_VALUE    399
+
+/**
+  Section: EPWM Module APIs
+*/
+
+void EPWM1_Initialize (void)
 {
-    // Set the EUSART1 module to the options selected in the user interface.
-
-    // ABDOVF no_overflow; CKTXP async_noninverted_sync_fallingedge; BRG16 16bit_generator; WUE disabled; ABDEN disabled; DTRXP not_inverted; 
-    BAUDCON1 = 0x08;
-
-    // SPEN enabled; RX9 8-bit; CREN enabled; ADDEN disabled; SREN disabled; 
-    RCSTA1 = 0x90;
-
-    // TX9 8-bit; TX9D 0; SENDB sync_break_complete; TXEN enabled; SYNC asynchronous; BRGH hi_speed; CSRC master_mode; 
-    TXSTA1 = 0xA4;
-
-    // Baud Rate = 19200; 
-    SPBRG1 = 0x40;
-
-    // Baud Rate = 19200; 
-    SPBRGH1 = 0x03;
-
-}
-
-
-uint8_t EUSART1_Read(void)
-{
-
-    while(!PIR1bits.RC1IF)
-    {
-    }
-
+    // Set the PWM to the options selected in MPLAB(c) Code Configurator
     
-    if(1 == RCSTA1bits.OERR)
-    {
-        // EUSART1 error - restart
-
-        RCSTA1bits.SPEN = 0; 
-        RCSTA1bits.SPEN = 1; 
-    }
-
-    return RCREG1;
+    // CCP1M P1A,P1C: active high; P1B,P1D: active low; DC1B 3; P1M single; 
+    CCP1CON = 0x3D;
+    
+    // CCP1ASE operating; PSS1BD low; PSS1AC low; CCP1AS disabled; 
+    ECCP1AS = 0x00;
+    
+    // P1RSEN automatic_restart; P1DC 0; 
+    PWM1CON = 0x80;
+    
+    // STR1D P1D_to_port; STR1C P1C_to_port; STR1B P1B_to_CCP1M; STR1A P1A_to_CCP1M; STR1SYNC start_at_begin; 
+    PSTR1CON = 0x03;
+    
+    // CCPR1L 99; 
+    CCPR1L = 0x63;
+    
+    // CCPR1H 0; 
+    CCPR1H = 0x00;
+    
+    
+    // Selecting Timer4
+    CCPTMRS0bits.C1TSEL = 0x1;
 }
 
-void EUSART1_Write(uint8_t txData)
+void EPWM1_LoadDutyValue(uint16_t dutyValue)
 {
-    while(0 == PIR1bits.TX1IF)
-    {
-    }
-
-    TXREG1 = txData;    // Write the data byte to the USART.
+   // Writing to 8 MSBs of pwm duty cycle in CCPRL register
+    CCPR1L = ((dutyValue & 0x03FC)>>2);
+    
+   // Writing to 2 LSBs of pwm duty cycle in CCPCON register
+    CCP1CON = (CCP1CON & 0xCF) | ((dutyValue & 0x0003)<<4);
 }
 /**
-  End of File
+ End of File
 */
