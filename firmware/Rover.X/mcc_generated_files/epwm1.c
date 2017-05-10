@@ -64,8 +64,8 @@ void EPWM1_Initialize (void)
 {
     // Set the PWM to the options selected in MPLAB(c) Code Configurator
     
-    // CCP1M P1A,P1C: active high; P1B,P1D: active low; DC1B 3; P1M single; 
-    CCP1CON = 0x3D;
+    // CCP1M P1A,P1C: active high; P1B,P1D: active high; DC1B 3; P1M single; 
+    CCP1CON = 0x3C;
     
     // CCP1ASE operating; PSS1BD low; PSS1AC low; CCP1AS disabled; 
     ECCP1AS = 0x00;

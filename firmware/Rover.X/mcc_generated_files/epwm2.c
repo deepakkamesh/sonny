@@ -64,8 +64,8 @@ void EPWM2_Initialize (void)
 {
     // Set the PWM to the options selected in MPLAB(c) Code Configurator
     
-    // CCP2M P2A,P2C: active high; P2B,P2D: active low; DC2B 3; P2M0 single; 
-    CCP2CON = 0x3D;
+    // CCP2M P2A,P2C: active high; P2B,P2D: active high; DC2B 3; P2M0 single; 
+    CCP2CON = 0x3C;
     
     // CCP2ASE operating; PSS2BD low; PSS2AC low; CCP2AS disabled; 
     ECCP2AS = 0x00;
@@ -83,8 +83,8 @@ void EPWM2_Initialize (void)
     CCPR2H = 0x00;
     
     
-    // Selecting Timer6
-    CCPTMRS0bits.C2TSEL = 0x2;
+    // Selecting Timer4
+    CCPTMRS0bits.C2TSEL = 0x1;
 }
 
 void EPWM2_LoadDutyValue(uint16_t dutyValue)

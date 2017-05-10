@@ -120,7 +120,6 @@ void SYSTEM_Initialize(void)
     TMR4_Initialize();
     TMR2_Initialize();
     TMR0_Initialize();
-    TMR6_Initialize();
     ADC_Initialize();
     CCP4_Initialize();
     EPWM1_Initialize();
