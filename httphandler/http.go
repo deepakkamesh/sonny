@@ -56,6 +56,7 @@ func (m *Server) Start() error {
 	http.HandleFunc("/api/temp/", m.DHT11)
 	http.HandleFunc("/api/ldr/", m.LDR)
 	http.HandleFunc("/api/pir/", m.PIRDetect)
+	http.HandleFunc("/api/move/", m.Move)
 
 	return http.ListenAndServe(":8080", nil)
 }
@@ -150,6 +151,57 @@ func (m *Server) Accelerometer(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, &response{
 		Data: []float32{x, y, z},
 	})
+}
+
+// Move is the wrapper around ctrl.Move.
+func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.ctrl == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: controller not initialized"),
+		})
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
+		return
+	}
+
+	dir := strings.ToLower(r.Form.Get("dir")) // Motor button { up, down, left, right}.
+
+	switch dir {
+	case "forward":
+		// TODO: Remove hardcoded values for turns and duty percent.
+		if _, _, err := m.ctrl.Move(20, true, 90); err != nil {
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: motor failed %v", err),
+			})
+			return
+		}
+	case "back":
+		if _, _, err := m.ctrl.Move(20, false, 90); err != nil {
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: motor failed %v", err),
+			})
+			return
+		}
+	case "left":
+		if _, _, err := m.ctrl.Turn(10, 1, 90); err != nil {
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: motor failed %v", err),
+			})
+			return
+		}
+	case "right":
+		if _, _, err := m.ctrl.Turn(10, 0, 90); err != nil {
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: motor failed %v", err),
+			})
+			return
+		}
+	}
 }
 
 // Heading is a http wrapper for mag.HEading.

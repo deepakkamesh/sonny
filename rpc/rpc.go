@@ -56,6 +56,36 @@ func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, 
 	return &google_pb.Empty{}, m.ctrl.LEDOn(in.On)
 }
 
+// Moves moves the motor.
+func (m *Server) Move(ctx context.Context, in *pb.MoveReq) (*pb.MoveRet, error) {
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
+	}
+	m1, m2, err := m.ctrl.Move(int16(in.Turns), in.Fwd, byte(in.DutyPercent))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.MoveRet{
+		M1Turns: uint32(m1),
+		M2Turns: uint32(m2),
+	}, nil
+}
+
+// Turn rotates the motor.
+func (m *Server) Turn(ctx context.Context, in *pb.TurnReq) (*pb.TurnRet, error) {
+	if m.ctrl == nil {
+		return nil, errors.New("controller not enabled")
+	}
+	m1, m2, err := m.ctrl.Turn(int16(in.Turns), byte(in.RotateType), byte(in.DutyPercent))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TurnRet{
+		M1Turns: uint32(m1),
+		M2Turns: uint32(m2),
+	}, nil
+}
+
 // LEDBlink blinks the LED.
 func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.Empty, error) {
 	if m.ctrl == nil {

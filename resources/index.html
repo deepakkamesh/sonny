@@ -7,10 +7,55 @@
     <script type="text/javascript">
 
         $(document).ready(function () {
-            setInterval("RegularTasks()", 2500);
+            setInterval("RegularTasks()", 1000);
 
             var infoContainer = document.querySelector('#info-popup');
 
+            var motorBackButton = document.querySelector('#motor-back');
+            motorBackButton.addEventListener('click', function() {
+                $.post('/api/move/_?dir=back', "", function(data, status) {
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
+                    }
+                });
+            }); 
+
+            var motorForwardButton = document.querySelector('#motor-forward');
+            motorForwardButton.addEventListener('click', function() {
+                $.post('/api/move/_?dir=forward', "", function(data, status) {
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
+                    }
+                });
+            });
+
+            var motorLeftButton = document.querySelector('#motor-left');
+            motorLeftButton.addEventListener('click', function() {
+                $.post('/api/move/_?dir=left', "", function(data, status) {
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
+                    }
+                });
+            });
+
+            var motorRightButton = document.querySelector('#motor-right');
+            motorRightButton.addEventListener('click', function() {
+                $.post('/api/move/_?dir=right', "", function(data, status) {
+                    ret = JSON.parse(data)
+                    if (ret.Err != '') {
+                        infoContainer.MaterialSnackbar.showSnackbar({message: ret.Err});
+                        return
+                    }
+                });
+            }); 
+
+            // Servo Controls.
             var servoDownButton = document.querySelector('#servo-down');
             servoDownButton.addEventListener('click', function() {
                 $.post('/api/servorotate/_?dir=down', "", function(data, status) {
@@ -274,18 +319,18 @@
 
 
                                 <!-- Colored FAB button with ripple -->
-                                <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                <button  id="motor-forward" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_up</li>
                                 </button>
                                 <br/>
                                 <br/>
-                                <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                <button id="motor-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_left</li>
                                 </button>
                                 &emsp;&emsp;&emsp;&emsp;
 
 
-                                <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                <button id="motor-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_right</li>
                                 </button>
                                 <br/>
@@ -293,7 +338,7 @@
                                 &emsp;&emsp;&emsp;&emsp;
 
 
-                                <button class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                <button id="motor-back" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
                                     <li class="material-icons">keyboard_arrow_down</li>
                                 </button>
                                 <br/>

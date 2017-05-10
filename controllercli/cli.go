@@ -39,6 +39,68 @@ func main() {
 			},
 		},
 		{
+			Name:    "MotorTurn",
+			Aliases: []string{"turn"},
+			Usage:   "Turn Motor",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "turns,t",
+					Usage: "Number of Turns",
+				},
+				cli.UintFlag{
+					Name:  "rotateType,r",
+					Usage: "right_sync = 0, left_sync, right_async, left_async",
+				},
+				cli.UintFlag{
+					Name:  "dutyPercent, d",
+					Usage: "Duty percentage 0 - 100",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				r, err := ctrl.Turn(context.Background(), &pb.TurnReq{
+					Turns:       int32(c.Int("turns")),
+					RotateType:  uint32(c.Uint("rotateType")),
+					DutyPercent: uint32(c.Uint("dutyPercent")),
+				})
+				if err != nil {
+					return cli.NewExitError(err, 1)
+				}
+				log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
+				return nil
+			},
+		},
+		{
+			Name:    "MotorMove",
+			Aliases: []string{"move"},
+			Usage:   "Move motor",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "turns,t",
+					Usage: "Number of Turns",
+				},
+				cli.BoolFlag{
+					Name:  "forward,f",
+					Usage: "Forward or default backward",
+				},
+				cli.UintFlag{
+					Name:  "dutyPercent, d",
+					Usage: "Duty percentage 0 - 100",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				r, err := ctrl.Move(context.Background(), &pb.MoveReq{
+					Turns:       int32(c.Int("turns")),
+					Fwd:         bool(c.Bool("forward")),
+					DutyPercent: uint32(c.Uint("dutyPercent")),
+				})
+				if err != nil {
+					return cli.NewExitError(err, 1)
+				}
+				log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
+				return nil
+			},
+		},
+		{
 			Name:    "PIRDetect",
 			Aliases: []string{"pir"},
 			Usage:   "PIR Sensor",

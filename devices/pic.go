@@ -309,9 +309,10 @@ func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 	return
 }
 
-// Motor turns the motor by turns forward if fwd is true or back if false. if
-// turns = 0 stop movement, turns < 0 moves indefinitely .
-func (m *Controller) Motor(turns int16, fwd bool) (error, uint16) {
+// Motor moves the motor by turns forward if fwd is true or back if false. if
+// turns = 0 stop movement, turns < 0 moves indefinitely. Speed is controlled
+// by dutyPercent(0 - 100)
+func (m *Controller) Move(turns int16, fwd bool, dutyPercent byte) (uint16, uint16, error) {
 	dir := p.CMD_FWD
 	if !fwd {
 		dir = p.CMD_BWD
@@ -322,10 +323,32 @@ func (m *Controller) Motor(turns int16, fwd bool) (error, uint16) {
 		pkt: []byte{dir<<4 | p.DEV_MOTOR,
 			byte(turns >> 8),
 			byte(turns & 0xFF),
+			dutyPercent,
 		},
 		ret: ret,
 	}
-	return (<-ret).err, 0
+	return 0, 0, (<-ret).err
+}
+
+// Turn turns the motor to the right or left by turns.
+// rotateType
+// RIGHT_SYNC = 0
+// LEFT_SYNC = 1
+// RIGHT_ASYNC = 2
+// LEFT_ASYNC = 3
+// Speed is controlled by dutyPercent(0 - 100)
+func (m *Controller) Turn(turns int16, rotateType byte, dutyPercent byte) (uint16, uint16, error) {
+	ret := make(chan result)
+	m.in <- request{
+		pkt: []byte{p.CMD_ROTATE<<4 | p.DEV_MOTOR,
+			byte(turns >> 8),
+			byte(turns & 0xFF),
+			dutyPercent,
+			rotateType,
+		},
+		ret: ret,
+	}
+	return 0, 0, (<-ret).err
 }
 
 // LEDOn turn on/off the LED.

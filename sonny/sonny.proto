@@ -19,6 +19,32 @@ service DevicesRPC {
 	rpc BattState(google.protobuf.Empty) returns (BattRet) {} // Battery Level.
 	rpc LDR(google.protobuf.Empty) returns (LDRRet) {} // LDR level.
 	rpc DHT11(google.protobuf.Empty) returns (DHT11Ret) {} // Temp, Humidity.
+	rpc Move(MoveReq) returns (MoveRet) {} // Motor Move back or Forward.
+  rpc Turn(TurnReq) returns (TurnRet) {}// Turn right or left.
+}
+
+
+message TurnReq {
+	int32 turns = 1;
+ 	uint32 rotateType = 2;
+	uint32 dutyPercent = 3;
+}
+
+message TurnRet {
+	uint32 m1Turns = 1;
+	uint32 m2Turns = 2;
+}
+
+
+message MoveReq {
+	int32 turns = 1;
+	bool fwd = 2;
+	uint32 dutyPercent = 3;
+}
+
+message MoveRet {
+	uint32 m1Turns = 1;
+	uint32 m2Turns = 2;
 }
 
 message HeadingRet {
