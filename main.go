@@ -29,6 +29,7 @@ func main() {
 	// Setup Flags.
 	var (
 		baud      = flag.Int("baud", 115200, "TTY Baud rate")
+		_         = flag.String("brc", "LCD-D23", "GPIO port for roomba BRC for keepalive")
 		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
 		res       = flag.String("resources", "./resources", "resources directory")
 		pirPin    = flag.String("pir_pin", "132", "PIR gpio pin")

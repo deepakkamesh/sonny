@@ -1,4 +1,2 @@
-# sonny
-# sonny
-# sonny
-# sonny
+# Sonny
+A robotic platform on top of Roomba
