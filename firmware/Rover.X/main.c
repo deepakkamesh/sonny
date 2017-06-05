@@ -45,15 +45,13 @@
 #include <stdbool.h>
 #include "mcc_generated_files/mcc.h"
 #include "protocol.h"
-#include "serial_controller.h"
+#include "host_controller.h"
 #include "admin_device.h"
 #include "led_device.h"
 #include "servo_device.h"
 #include "accel_device.h"
-#include "edge_sensor_device.h"
 #include "ldr_device.h"
 #include "batt_device.h"
-#include "motor_device.h"
 #include "dht11_device.h"
 #include "us020_device.h"
 #include "tick.h"
@@ -70,7 +68,6 @@ void main(void) {
   SYSTEM_Initialize();
   InitTicker();
   ServoInit();
-  MotorInit();
   DHT11Init();
   // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
   // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
@@ -108,15 +105,13 @@ void main(void) {
   }
   __delay_ms(5);
   while (1) {
-    SerialReadTask();
+    HostControllerTask();
     AdminTask();
     LedTask();
     ServoTask();
     AccelTask();
-    EdgeSensorTask();
     LDRTask();
     BattTask();
-    MotorTask();
     DHT11Task();
     US020Task();
   }

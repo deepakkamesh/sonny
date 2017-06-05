@@ -1,4 +1,4 @@
-#include "serial_controller.h"
+#include "host_controller.h"
 #include "protocol.h"
 #include "tick.h"
 #include <stdlib.h>
@@ -53,7 +53,7 @@ void US020Task(void) {
       if (US_ECHO_GetValue()) {
         break;
       }
-      dist = (TickGet() - ticks)*1000 / TICK_MILLISECOND / 58.3;
+      dist = (uint16_t)((TickGet() - ticks)*1000 / TICK_MILLISECOND / 58.3);
       state = SEND_RESPONSE;
       break;
 

@@ -2,19 +2,20 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "serial_controller.h"
+#include "host_controller.h"
 #include "protocol.h"
 #include "mcc_generated_files/mcc.h" 
 // SerialTask runs in a loop to process incoming serial data and 
 // hands it over to the respective device to handle.
 extern Queue CmdQ[MAX_DEVICES];
 
-void SerialReadTask(void) {
+void HostControllerTask(void) {
 
   static uint8_t data, packetSize, chksum, sz, packet[PKT_SZ], deviceID;
 
 
   // Check if there is data to be read.
+  // TODO: Update to I2C
   //RCSTA1bits.SREN = 1;
   if (!PIR1bits.RC1IF) {
     return;
@@ -112,10 +113,11 @@ void SendPacket(uint8_t packet[], uint8_t size) {
   chksum = CalcCheckSum(packet, size); // 4 bit checksum.
   header = size << 4 | (chksum & 0xF);
 
-  EUSART1_Write(header);
+  // TODO: Write Data to I2C
+ // EUSART1_Write(header);
   uint8_t i;
   for (i = 0; i < size; i++) {
-    EUSART1_Write(packet[i]);
+    //EUSART1_Write(packet[i]);
   }
 }
 

@@ -9,7 +9,6 @@
                      projectFiles="true">
         <itemPath>mcc_generated_files/pin_manager.h</itemPath>
         <itemPath>mcc_generated_files/mcc.h</itemPath>
-        <itemPath>mcc_generated_files/eusart1.h</itemPath>
         <itemPath>mcc_generated_files/interrupt_manager.h</itemPath>
         <itemPath>mcc_generated_files/tmr0.h</itemPath>
         <itemPath>mcc_generated_files/ccp4.h</itemPath>
@@ -19,23 +18,19 @@
         <itemPath>mcc_generated_files/tmr5.h</itemPath>
         <itemPath>mcc_generated_files/fvr.h</itemPath>
         <itemPath>mcc_generated_files/tmr2.h</itemPath>
-        <itemPath>mcc_generated_files/epwm1.h</itemPath>
-        <itemPath>mcc_generated_files/tmr4.h</itemPath>
-        <itemPath>mcc_generated_files/epwm2.h</itemPath>
+        <itemPath>mcc_generated_files/i2c2.h</itemPath>
       </logicalFolder>
-      <itemPath>serial_controller.h</itemPath>
       <itemPath>protocol.h</itemPath>
       <itemPath>admin_device.h</itemPath>
       <itemPath>led_device.h</itemPath>
       <itemPath>servo_device.h</itemPath>
       <itemPath>accel_device.h</itemPath>
-      <itemPath>edge_sensor_device.h</itemPath>
       <itemPath>ldr_device.h</itemPath>
       <itemPath>batt_device.h</itemPath>
-      <itemPath>motor_device.h</itemPath>
       <itemPath>tick.h</itemPath>
       <itemPath>dht11_device.h</itemPath>
       <itemPath>us020_device.h</itemPath>
+      <itemPath>host_controller.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -49,7 +44,6 @@
                      projectFiles="true">
         <itemPath>mcc_generated_files/mcc.c</itemPath>
         <itemPath>mcc_generated_files/pin_manager.c</itemPath>
-        <itemPath>mcc_generated_files/eusart1.c</itemPath>
         <itemPath>mcc_generated_files/tmr0.c</itemPath>
         <itemPath>mcc_generated_files/interrupt_manager.c</itemPath>
         <itemPath>mcc_generated_files/ccp4.c</itemPath>
@@ -59,23 +53,19 @@
         <itemPath>mcc_generated_files/tmr5.c</itemPath>
         <itemPath>mcc_generated_files/fvr.c</itemPath>
         <itemPath>mcc_generated_files/tmr2.c</itemPath>
-        <itemPath>mcc_generated_files/epwm1.c</itemPath>
-        <itemPath>mcc_generated_files/tmr4.c</itemPath>
-        <itemPath>mcc_generated_files/epwm2.c</itemPath>
+        <itemPath>mcc_generated_files/i2c2.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
-      <itemPath>serial_controller.c</itemPath>
       <itemPath>admin_device.c</itemPath>
       <itemPath>led_device.c</itemPath>
       <itemPath>servo_device.c</itemPath>
       <itemPath>accel_device.c</itemPath>
-      <itemPath>edge_sensor_device.c</itemPath>
       <itemPath>ldr_device.c</itemPath>
       <itemPath>batt_device.c</itemPath>
-      <itemPath>motor_device.c</itemPath>
       <itemPath>tick.c</itemPath>
       <itemPath>dht11_device.c</itemPath>
       <itemPath>us020_device.c</itemPath>
+      <itemPath>host_controller.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

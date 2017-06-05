@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 
-void SerialReadTask(void);
+void HostControllerTask(void);
 bool VerifyCheckSum(uint8_t a[],uint8_t len, uint8_t chksum);
 uint8_t CalcCheckSum(uint8_t a[], uint8_t len);
 void SendError(uint8_t devID, uint8_t error);

@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
-#include "serial_controller.h"
+#include "host_controller.h"
 #include "protocol.h"
 #include "mcc_generated_files/mcc.h"
 

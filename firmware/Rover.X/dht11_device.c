@@ -1,5 +1,5 @@
 #include "admin_device.h"
-#include "serial_controller.h"
+#include "host_controller.h"
 #include "protocol.h"
 #include "tick.h"
 #include "mcc_generated_files/mcc.h"
