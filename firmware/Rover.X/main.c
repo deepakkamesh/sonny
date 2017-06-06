@@ -69,6 +69,7 @@ void main(void) {
   InitTicker();
   ServoInit();
   DHT11Init();
+  HostControllerInit();
   // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
   // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
   // Use the following macros to:
@@ -105,7 +106,6 @@ void main(void) {
   }
   __delay_ms(5);
   while (1) {
-    HostControllerTask();
     AdminTask();
     LedTask();
     ServoTask();

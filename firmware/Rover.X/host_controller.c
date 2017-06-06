@@ -9,6 +9,70 @@
 // hands it over to the respective device to handle.
 extern Queue CmdQ[MAX_DEVICES];
 
+typedef enum {
+  SLAVE_NORMAL_DATA,
+  SLAVE_DATA_ADDRESS,
+} SLAVE_WRITE_DATA_TYPE;
+
+void I2C2_Callback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state) {
+
+  static uint8_t deviceID = 0, sz = 0, PktSz = 0;
+  static uint8_t slaveWriteType = SLAVE_NORMAL_DATA;
+  static bool gotHeader = false;
+  uint8_t data;
+
+
+  switch (i2c_bus_state) {
+    case I2C2_SLAVE_WRITE_REQUEST:
+      // the master will be sending the eeprom address next
+      slaveWriteType = SLAVE_DATA_ADDRESS;
+      break;
+
+    case I2C2_SLAVE_WRITE_COMPLETED:
+
+      switch (slaveWriteType) {
+        case SLAVE_DATA_ADDRESS:
+          deviceID = I2C2_slaveWriteData;
+          break;
+
+        case SLAVE_NORMAL_DATA:
+        default:
+          if (!gotHeader) {
+            gotHeader = true;
+            data = I2C2_slaveWriteData;
+            PktSz = data >> 4;
+            sz = 0;
+            // TODO: Implement checksum verification.
+            break;
+          }
+          CmdQ[deviceID].packet[sz++] = I2C2_slaveWriteData;
+          if (PktSz == sz) {
+            CmdQ[deviceID].size = sz;
+            CmdQ[deviceID].free = false;
+            gotHeader = false;
+          }
+          break;
+      }
+      slaveWriteType = SLAVE_NORMAL_DATA;
+      break;
+
+    case I2C2_SLAVE_READ_REQUEST:
+      /*  SSP2BUF = EEPROM_Buffer[deviceID++];
+        if (sizeof (EEPROM_Buffer) <= deviceID) {
+          deviceID = 0; // wrap to start of eeprom page
+        }*/
+      break;
+
+    case I2C2_SLAVE_READ_COMPLETED:
+    default:;
+
+  } // end switch(i2c_bus_state)
+}
+
+void HostControllerInit(void) {
+  I2C2_SetCallback(I2C2_Callback);
+}
+
 void HostControllerTask(void) {
 
   static uint8_t data, packetSize, chksum, sz, packet[PKT_SZ], deviceID;
@@ -114,7 +178,7 @@ void SendPacket(uint8_t packet[], uint8_t size) {
   header = size << 4 | (chksum & 0xF);
 
   // TODO: Write Data to I2C
- // EUSART1_Write(header);
+  // EUSART1_Write(header);
   uint8_t i;
   for (i = 0; i < size; i++) {
     //EUSART1_Write(packet[i]);

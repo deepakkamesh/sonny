@@ -128,7 +128,7 @@ extern "C" {
 
   // Helper Functions.
 #define GetDeviceID(data) (data & 0xF)
-#define GetCommand(data) (data>>4 & 0xF)
+#define GetCommand(data) (data)
 
 
   // Global device command queue.

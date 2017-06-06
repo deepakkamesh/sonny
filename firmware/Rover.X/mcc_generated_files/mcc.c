@@ -116,9 +116,9 @@ void SYSTEM_Initialize(void)
     OSCILLATOR_Initialize();
     I2C2_Initialize();
     FVR_Initialize();
-    ADC_Initialize();
     CCP4_Initialize();
     CCP5_Initialize();
+    ADC_Initialize();
     TMR3_Initialize();
     TMR2_Initialize();
     TMR5_Initialize();
