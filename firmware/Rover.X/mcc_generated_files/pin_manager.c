@@ -48,9 +48,6 @@
 #include "stdbool.h"
 
 
-void (*IOCB4_InterruptHandler)(void);
-void (*IOCB5_InterruptHandler)(void);
-
 void PIN_MANAGER_Initialize(void)
 {
     /**
@@ -71,7 +68,7 @@ void PIN_MANAGER_Initialize(void)
     ANSELx registers
     */   
     ANSELC = 0xC8;
-    ANSELB = 0x08;
+    ANSELB = 0x38;
     ANSELA = 0x27;
 
     /**
@@ -82,96 +79,14 @@ void PIN_MANAGER_Initialize(void)
 
     
 
-    /**
-    IOCx registers
-    */
-    // interrupt on change for group IOCB - any
-    IOCBbits.IOCB4 = 1;
-    IOCBbits.IOCB5 = 1;
 
-    // register default IOC callback functions at runtime; use these methods to register a custom function
-    IOCB4_SetInterruptHandler(IOCB4_DefaultInterruptHandler);
-    IOCB5_SetInterruptHandler(IOCB5_DefaultInterruptHandler);
    
-    // Enable RBI interrupt 
-    INTCONbits.RBIE = 1; 
     
 }       
 
 void PIN_MANAGER_IOC(void)
 {   
-    // interrupt on change for pin IOCB4
-    if(IOCBbits.IOCB4 == 1)
-    {
-        IOCB4_ISR();  
-    } 
-    // interrupt on change for pin IOCB5
-    if(IOCBbits.IOCB5 == 1)
-    {
-        IOCB5_ISR();  
-    } 
-    
-    // Clear global Interrupt-On-Change flag
-    INTCONbits.RBIF = 0;
 
-}
-
-/**
-   IOCB4 Interrupt Service Routine
-*/
-void IOCB4_ISR(void) {
-
-    // Add custom IOCB4 code
-
-    // Call the interrupt handler for the callback registered at runtime
-    if(IOCB4_InterruptHandler)
-    {
-        IOCB4_InterruptHandler();
-    }
-}
-
-/**
-  Allows selecting an interrupt handler for IOCB4 at application runtime
-*/
-void IOCB4_SetInterruptHandler(void* InterruptHandler){
-    IOCB4_InterruptHandler = InterruptHandler;
-}
-
-/**
-  Default interrupt handler for IOCB4
-*/
-void IOCB4_DefaultInterruptHandler(void){
-    // add your IOCB4 interrupt custom code
-    // or set custom function using IOCB4_SetInterruptHandler()
-}
-
-/**
-   IOCB5 Interrupt Service Routine
-*/
-void IOCB5_ISR(void) {
-
-    // Add custom IOCB5 code
-
-    // Call the interrupt handler for the callback registered at runtime
-    if(IOCB5_InterruptHandler)
-    {
-        IOCB5_InterruptHandler();
-    }
-}
-
-/**
-  Allows selecting an interrupt handler for IOCB5 at application runtime
-*/
-void IOCB5_SetInterruptHandler(void* InterruptHandler){
-    IOCB5_InterruptHandler = InterruptHandler;
-}
-
-/**
-  Default interrupt handler for IOCB5
-*/
-void IOCB5_DefaultInterruptHandler(void){
-    // add your IOCB5 interrupt custom code
-    // or set custom function using IOCB5_SetInterruptHandler()
 }
 
 /**

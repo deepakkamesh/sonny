@@ -45,11 +45,15 @@ void I2C2_Callback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state) {
             // TODO: Implement checksum verification.
             break;
           }
+          // TODO: Verify if the device is .free before writing or send error.
           CmdQ[deviceID].packet[sz++] = I2C2_slaveWriteData;
+
           if (PktSz == sz) {
             CmdQ[deviceID].size = sz;
             CmdQ[deviceID].free = false;
             gotHeader = false;
+          //  if (CmdQ[deviceID].packet[0] == 0x1 && deviceID == 1  && CmdQ[1].size == 1)
+            //  LED1_SetHigh();
           }
           break;
       }

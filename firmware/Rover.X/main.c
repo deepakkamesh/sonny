@@ -104,8 +104,11 @@ void main(void) {
     CmdQ[i].free = true;
     CmdQ[i].size = 0;
   }
+  
   __delay_ms(5);
+  
   while (1) {
+
     AdminTask();
     LedTask();
     ServoTask();
