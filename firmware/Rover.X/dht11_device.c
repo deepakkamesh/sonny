@@ -85,7 +85,7 @@ void DHT11Task(void) {
         SendError(DEV_DHT11, ERR_TIMEOUT);
         break;
       }
-      
+
       // Read data from sensor.
       for (uint8_t i = 1; i <= 5; i++) {
         int16_t data = ReadByte();
@@ -95,15 +95,15 @@ void DHT11Task(void) {
         }
         packet[i] = data;
       }
-      
+
       // Verify checksum.
       if (packet[5] != (packet[1] + packet[2] + packet[3] + packet[4])& 0xFF) {
         SendError(DEV_DHT11, ERR_CHECKSUM_FAILURE);
         break;
       }
-      
-      packet[0] = 0xC0 | DEV_DHT11; // Ack & Done.
-      SendPacket(packet, 5);
+
+      packet[0] = 0xC0; // Ack & Done.
+      SendPacket(DEV_DHT11, packet, 5);
       break;
 
     default:

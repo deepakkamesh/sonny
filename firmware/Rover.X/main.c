@@ -59,17 +59,14 @@
 /*
                          Main application
  */
-
-
-Queue CmdQ[MAX_DEVICES];
-
 void main(void) {
-  // Initialize the device
+  // Initialize the device and subsystems.
   SYSTEM_Initialize();
   InitTicker();
   ServoInit();
   DHT11Init();
   HostControllerInit();
+  
   // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
   // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
   // Use the following macros to:
@@ -98,15 +95,8 @@ void main(void) {
   // Disable the Peripheral Interrupts
   //INTERRUPT_PeripheralInterruptDisable();
 
-  // Init Command Queue
-  uint8_t i;
-  for (i = 0; i < MAX_DEVICES; i++) {
-    CmdQ[i].free = true;
-    CmdQ[i].size = 0;
-  }
-  
   __delay_ms(5);
-  
+
   while (1) {
 
     AdminTask();

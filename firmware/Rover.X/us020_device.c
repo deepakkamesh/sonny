@@ -53,15 +53,15 @@ void US020Task(void) {
       if (US_ECHO_GetValue()) {
         break;
       }
-      dist = (uint16_t)((TickGet() - ticks)*1000 / TICK_MILLISECOND / 58.3);
+      dist = (uint16_t) ((TickGet() - ticks)*1000 / TICK_MILLISECOND / 58.3);
       state = SEND_RESPONSE;
       break;
 
     case SEND_RESPONSE:
-      packet[0] = 0xC0 | DEV_US020; // Ack & Done.
+      packet[0] = 0xC0; // Ack & Done.
       packet[1] = dist >> 8;
       packet[2] = dist & 0xFF;
-      SendPacket(packet, 3);
+      SendPacket(DEV_US020, packet, 3);
       state = RESET;
       break;
 
