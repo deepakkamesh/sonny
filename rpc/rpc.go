@@ -40,14 +40,6 @@ func (m *Server) Ping(ctx context.Context, in *google_pb.Empty) (*google_pb.Empt
 	return &google_pb.Empty{}, m.ctrl.Ping()
 }
 
-// Servo Rotate rotates the servo by angle.
-func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.Empty, error) {
-	if m.ctrl == nil {
-		return &google_pb.Empty{}, errors.New("controller not enabled")
-	}
-	return &google_pb.Empty{}, m.ctrl.ServoRotate(byte(in.Servo), int(in.Angle))
-}
-
 // LEDOn turns on/off the LED indicator.
 func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, error) {
 	if m.ctrl == nil {
@@ -56,6 +48,23 @@ func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, 
 	return &google_pb.Empty{}, m.ctrl.LEDOn(in.On)
 }
 
+// LEDBlink blinks the LED.
+func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.Empty, error) {
+	if m.ctrl == nil {
+		return &google_pb.Empty{}, errors.New("controller not enabled")
+	}
+	return &google_pb.Empty{}, m.ctrl.LEDBlink(uint16(in.Duration), byte(in.Times))
+}
+
+// Servo Rotate rotates the servo by angle.
+func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.Empty, error) {
+	if m.ctrl == nil {
+		return &google_pb.Empty{}, errors.New("controller not enabled")
+	}
+	return &google_pb.Empty{}, m.ctrl.ServoRotate(byte(in.Servo), int(in.Angle))
+}
+
+/*
 // Moves moves the motor.
 func (m *Server) Move(ctx context.Context, in *pb.MoveReq) (*pb.MoveRet, error) {
 	if m.ctrl == nil {
@@ -84,14 +93,6 @@ func (m *Server) Turn(ctx context.Context, in *pb.TurnReq) (*pb.TurnRet, error) 
 		M1Turns: uint32(m1),
 		M2Turns: uint32(m2),
 	}, nil
-}
-
-// LEDBlink blinks the LED.
-func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.Empty, error) {
-	if m.ctrl == nil {
-		return &google_pb.Empty{}, errors.New("controller not enabled")
-	}
-	return &google_pb.Empty{}, m.ctrl.LEDBlink(uint16(in.Duration), byte(in.Times))
 }
 
 // Heading returns the magnetic heading.
@@ -191,4 +192,4 @@ func (m *Server) DHT11(ctx context.Context, in *google_pb.Empty) (*pb.DHT11Ret, 
 		return nil, err
 	}
 	return &pb.DHT11Ret{Temp: uint32(temp), Humidity: uint32(humidity)}, nil
-}
+} */

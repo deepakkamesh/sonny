@@ -29,12 +29,13 @@ void HostControllerInit(void) {
     SendQ[i].size = 0;
   }
 }
+bool headSnd = true;
 
 void I2C2_Callback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state) {
 
-  static uint8_t deviceID = 0, ptr = 0, PktSz = 0;
+  static uint8_t deviceID = 0, ptr = 0, PktSz = 0, chksum = 0;
   static uint8_t slaveWriteType = SLAVE_NORMAL_DATA;
-  static bool gotHeader = false;
+  static bool headNow = false;
   uint8_t data;
 
 
@@ -49,42 +50,56 @@ void I2C2_Callback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state) {
       switch (slaveWriteType) {
         case SLAVE_DATA_ADDRESS:
           deviceID = I2C2_slaveWriteData;
+          headNow = true;
+          ptr = 0;
           break;
 
         case SLAVE_NORMAL_DATA:
         default:
-          if (!gotHeader) {
-            gotHeader = true;
+          if (headNow) {
+            headNow = false;
             data = I2C2_slaveWriteData;
             PktSz = data >> 4;
-            // TODO: Implement checksum verification.
+            chksum = data & 0xF;
             break;
           }
-          // TODO: Verify if the device is .free before writing or send error.
+          if (!CmdQ[deviceID].free) {
+            SendError(deviceID, ERR_DEVICE_BUSY);
+            break;
+          }
           CmdQ[deviceID].packet[ptr++] = I2C2_slaveWriteData;
-
           if (PktSz == ptr) {
+            if (!VerifyCheckSum(CmdQ[deviceID].packet, ptr, chksum)) {
+              SendError(deviceID, ERR_CHECKSUM_FAILURE);
+              break;
+            }
             CmdQ[deviceID].size = ptr;
             CmdQ[deviceID].free = false;
-            gotHeader = false;
-            ptr = 0;
           }
           break;
-      }
+      } // end switch(slaveWriteType)
+
       slaveWriteType = SLAVE_NORMAL_DATA;
       break;
 
     case I2C2_SLAVE_READ_REQUEST:
       PktSz = SendQ[deviceID].size;
       // If free, nothing to send.
-      if (SendQ[deviceID].free) {
+      if (SendQ[deviceID].free || ptr >= PktSz) {
         SSP2BUF = 0;
         break;
       }
+      if (headSnd) {
+        headSnd = false;
+        chksum = CalcCheckSum(SendQ[deviceID].packet, PktSz); // 4 bit checksum.
+        uint8_t header = PktSz << 4 | (chksum & 0xF);
+        SSP2BUF = header;
+        break;
+      }
       SSP2BUF = SendQ[deviceID].packet[ptr++];
-      if (PktSz == ptr - 1) { // +1 because header takes up [0].
+      if (PktSz == ptr) {
         SendQ[deviceID].free = true;
-        ptr = 0;
+        headSnd = true;
       }
       break;
 
@@ -121,24 +136,26 @@ void SendDone(uint8_t devID) {
 
 void SendPacket(uint8_t deviceID, uint8_t packet[], uint8_t size) {
 
-  // Calculate checksum of packet.
-  uint8_t chksum, header;
-  chksum = CalcCheckSum(packet, size); // 4 bit checksum.
-  header = size << 4 | (chksum & 0xF);
-
+  headSnd = true;
   SendQ[deviceID].size = size;
-  SendQ[deviceID].packet[0] = header;
-  for (uint8_t i = 1; i <= size; i++) {
-    SendQ[deviceID].packet[i] = packet[i - 1];
-  }
+  memcpy(SendQ[deviceID].packet, packet, size);
   SendQ[deviceID].free = false;
 
 }
 
 uint8_t CalcCheckSum(uint8_t a[], uint8_t len) {
-  return 0x6;
+  int sum = 0;
+  for (uint8_t i = 0; i < len; i++) {
+    sum += a[i]*(i + 1);
+  }
+  return sum % 16;
 }
 
 bool VerifyCheckSum(uint8_t a[], uint8_t len, uint8_t chksum) {
-  return true;
+  int sum = 0;
+  for (uint8_t i = 0; i < len; i++) {
+    sum += a[i]*(i + 1);
+  }
+
+  return ((sum % 16) == chksum);
 }

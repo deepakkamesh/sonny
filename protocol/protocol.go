@@ -66,34 +66,43 @@ func Error(errCode byte) error {
 	return errors.New("unknown")
 }
 
+func PacketSz(header byte) byte {
+	return header >> 4
+}
+
+func Checksum(header byte) byte {
+	return header & 0xF
+}
+
 func CalcChecksum(packet []byte) byte {
-	return 0x1
-}
-
-func Checksum(packet []byte) byte {
-	return packet[0] & 0xF
-}
-
-func VerifyChecksum(packet []byte, checksum byte) bool {
-	return true
-}
-
-func PacketSz(packet []byte) byte {
-	return packet[0] >> 4
+	var sum, i byte
+	for i = 0; i < byte(len(packet)); i++ {
+		sum = sum + packet[i]*(i+1)
+	}
+	return sum % 16
 }
 
 func Header(packet []byte) byte {
 	header := byte(len(packet) << 4)
 	return header | CalcChecksum(packet)
-
 }
+
+func VerifyChecksum(packet []byte, checksum byte) bool {
+	var sum, i byte
+
+	for i = 0; i < byte(len(packet)); i++ {
+		sum = sum + packet[i]*(i+1)
+	}
+	if (sum % 16) != checksum {
+		return false
+	}
+	return true
+}
+
 func StatusCode(b byte) byte {
 	return b >> 4
 }
 
-func DeviceID(b byte) byte {
-	return b & 0xF
-}
 func PktPrint(packet []byte) (logline string) {
 
 	// Calculate len of packet

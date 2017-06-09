@@ -28,11 +28,11 @@ if [ $1 == "arm" ]; then
 	GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build -ldflags "$VER" $BINARY
 else
 	echo "Compiling on local machine"
-	go build -ldflags "$VER" ../main.go
+	go build -ldflags "$VER" $BINARY
 fi
 
 # Push binary to remote if previous step completed.
-if ! [ -z "$3" ] && [ $? -ne 0 ]; then
+if ! [ -z "$3" ]; then
   echo "Pushing binary to machine $3"
 	scp $2 $3:~/
 fi

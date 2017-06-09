@@ -1,9 +1,6 @@
 package devices
 
-import (
-	"time"
-)
-
+/*
 func ForwardSweep(ctrl *Controller, angle int) ([]int32, error) {
 	val := []int32{}
 
@@ -25,4 +22,4 @@ func ForwardSweep(ctrl *Controller, angle int) ([]int32, error) {
 	}
 
 	return val, nil
-}
+}*/

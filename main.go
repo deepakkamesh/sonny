@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
-	"github.com/deepakkamesh/sonny/httphandler"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
@@ -29,18 +28,22 @@ func main() {
 	// Setup Flags.
 	var (
 		baud      = flag.Int("baud", 115200, "TTY Baud rate")
-		_         = flag.String("brc", "LCD-D23", "GPIO port for roomba BRC for keepalive")
+		brc       = flag.String("brc", "LCD-D23", "GPIO port for roomba BRC for keepalive")
+		picAddr   = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
 		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
 		res       = flag.String("resources", "./resources", "resources directory")
 		pirPin    = flag.String("pir_pin", "132", "PIR gpio pin")
-		magBus    = flag.Int("mag_bus", 2, "I2C bus for Compass")
+		I2CBus    = flag.Int("i2c_bus", 2, "I2C bus for Compass")
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")
 		enPic     = flag.Bool("en_pic", false, "Enable PIC")
 		enPir     = flag.Bool("en_pir", true, "Enable PIR")
 		version   = flag.Bool("version", false, "display version")
 	)
 	flag.Parse()
-
+	_ = brc
+	_ = tty
+	_ = baud
+	_ = res
 	// Print version and exit.
 	if *version {
 		fmt.Printf("Version commit hash %s\n", githash)
@@ -51,16 +54,9 @@ func main() {
 	glog.Infof("Starting Sonny ver %s build on %s", githash, buildtime)
 	defer glog.Flush()
 
-	// Initialize PIC Controller.
-	var ctrl *devices.Controller
-	var err error
-	if *enPic {
-		ctrl, err = devices.NewController(*tty, *baud)
-		if err != nil {
-			glog.Fatalf("Error creating new controller %v", err)
-
-		}
-		ctrl.Start()
+	// Initialize GPIO.
+	if err := embd.InitGPIO(); err != nil {
+		glog.Fatalf("Failed to initialize GPIO %v", err)
 	}
 
 	// Initialize I2C.
@@ -68,16 +64,20 @@ func main() {
 		panic(err)
 	}
 	defer embd.CloseI2C()
+	i2c := embd.NewI2CBus(byte(*I2CBus))
 
-	// Initialize GPIO.
-	if err := embd.InitGPIO(); err != nil {
-		glog.Fatalf("Failed to initialize GPIO %v", err)
+	// TODO: Initialize Roomba
+
+	// Initialize PIC Controller.
+	var ctrl *devices.Controller
+	if *enPic {
+		ctrl = devices.NewController(i2c, byte(*picAddr))
 	}
 
 	// Initialize magnetometer.
 	var mag *hmc5883l.HMC5883L
 	if *enCompass {
-		mag = hmc5883l.New(embd.NewI2CBus(byte(*magBus)))
+		mag = hmc5883l.New(i2c)
 		if err := mag.Run(); err != nil {
 			glog.Fatalf("Failed to start magnetometer %v", err)
 		}
@@ -110,10 +110,10 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(dev, false, *res)
+	/*h := httphandler.New(dev, false, *res)
 	if err := h.Start(); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
-	}
+	}*/
 
 	for {
 		time.Sleep(time.Millisecond * 20)
