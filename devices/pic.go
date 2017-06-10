@@ -38,27 +38,32 @@ func (m *Controller) send(deviceID byte, pkt []byte) error {
 	return nil
 }
 
+// recv reads bytes from deviceID.
 func (m *Controller) recv(deviceID byte) ([]byte, error) {
 
-	header, err := m.bus.ReadByteFromReg(0x07, deviceID)
+	header, err := m.bus.ReadByteFromReg(m.address, deviceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read header: %v", err)
 	}
 
-	if (header >> 4) == 0 {
-		return nil, fmt.Errorf("got a zero sized header. Dropping quietly")
+	pktSz := header >> 4
+	if (pktSz) == 0 {
+		return nil, fmt.Errorf("got a zero sized packet.")
 	}
-	pkt := make([]byte, (header >> 4))
 
+	pkt := make([]byte, (pktSz))
 	if err = m.bus.ReadFromReg(m.address, deviceID, pkt); err != nil {
 		return nil, fmt.Errorf("failed to read packet: %v", err)
 	}
+
 	if !p.VerifyChecksum(pkt, p.Checksum(header)) {
 		return nil, fmt.Errorf("checksum failed")
 	}
+
 	if p.StatusCode(pkt[0]) == p.ERR {
 		return nil, p.Error(pkt[1])
 	}
+
 	return pkt, nil
 }
 
@@ -66,8 +71,8 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 func (m *Controller) Ping() (err error) {
 	pkt := []byte{p.CMD_PING}
 
-	if err := m.send(p.DEV_ADMIN, pkt); err != nil {
-		return fmt.Errorf("unable to send command: %v", err)
+	if er := m.send(p.DEV_ADMIN, pkt); er != nil {
+		return fmt.Errorf("unable to send command: %v", er)
 	}
 	_, err = m.recv(p.DEV_ADMIN)
 	return
@@ -80,8 +85,8 @@ func (m *Controller) LEDOn(on bool) (err error) {
 		cmd = p.CMD_OFF
 	}
 	pkt := []byte{cmd}
-	if err := m.send(p.DEV_LED, pkt); err != nil {
-		return fmt.Errorf("unable to send command: %v", err)
+	if er := m.send(p.DEV_LED, pkt); er != nil {
+		return fmt.Errorf("unable to send command: %v", er)
 	}
 	_, err = m.recv(p.DEV_LED)
 	return
@@ -95,8 +100,8 @@ func (m *Controller) LEDBlink(duration uint16, times byte) (err error) {
 		times,
 	}
 
-	if err := m.send(p.DEV_LED, pkt); err != nil {
-		return fmt.Errorf("unable to send command: %v", err)
+	if er := m.send(p.DEV_LED, pkt); er != nil {
+		return fmt.Errorf("unable to send command: %v", er)
 	}
 	_, err = m.recv(p.DEV_LED)
 	return
@@ -132,69 +137,66 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 		servo,
 	}
 
-	if err := m.send(p.DEV_SERVO, pkt); err != nil {
-		return fmt.Errorf("unable to send command: %v", err)
+	if er := m.send(p.DEV_SERVO, pkt); er != nil {
+		return fmt.Errorf("unable to send command: %v", er)
 	}
 	_, err = m.recv(p.DEV_SERVO)
 	return
 }
 
-/*
 // DHT11 returns the temperature in 'C and humidity %.
 func (m *Controller) DHT11() (temp, humidity uint8, err error) {
-	ret := make(chan result)
-	m.in <- request{
-		pkt: []byte{p.CMD_STATE<<4 | p.DEV_DHT11},
-		ret: ret,
-	}
-	res := <-ret
-	if err = res.err; err != nil {
+	pkt := []byte{p.CMD_STATE}
+
+	if er := m.send(p.DEV_DHT11, pkt); er != nil {
+		err = fmt.Errorf("unable to send command: %v", er)
 		return
 	}
 
-	humidity = uint8(res.pkt[1])
-	temp = uint8(res.pkt[3])
+	pkt, err = m.recv(p.DEV_DHT11)
+	if err != nil {
+		return
+	}
+	humidity = uint8(pkt[1])
+	temp = uint8(pkt[3])
 	return
 }
 
 // LDR returns the ADC light value of the LDR sensor.
 func (m *Controller) LDR() (adc uint16, err error) {
-	ret := make(chan result)
-	m.in <- request{
-		pkt: []byte{p.CMD_STATE<<4 | p.DEV_LDR},
+	pkt := []byte{p.CMD_STATE}
 
-		ret: ret,
-	}
-	res := <-ret
-	if err = res.err; err != nil {
+	if er := m.send(p.DEV_LDR, pkt); er != nil {
+		err = fmt.Errorf("unable to send command: %v", er)
 		return
 	}
 
-	adc = uint16(res.pkt[1])
-	adc = adc<<8 | uint16(res.pkt[2])
+	pkt, err = m.recv(p.DEV_LDR)
+	if err != nil {
+		return
+	}
+
+	adc = uint16(pkt[1])<<8 | uint16(pkt[2])
 	return
 }
 
 // Accelerometer returns the ADC values from the accelerometer.
 func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
+	pkt := []byte{p.CMD_STATE}
 
-	ret := make(chan result)
-	m.in <- request{
-		pkt: []byte{p.CMD_STATE<<4 | p.DEV_ACCEL},
-		ret: ret,
-	}
-
-	res := <-ret
-	if err = res.err; err != nil {
+	if er := m.send(p.DEV_ACCEL, pkt); er != nil {
+		err = fmt.Errorf("unable to send command: %v", er)
 		return
 	}
 
-	x := uint16(res.pkt[1])
-	x = x<<8 | uint16(res.pkt[2])
-	y := uint16(res.pkt[3])
-	y = y<<8 | uint16(res.pkt[4])
-	z := uint16(res.pkt[5])
-	z = z<<8 | uint16(res.pkt[6])
+	pkt, err = m.recv(p.DEV_ACCEL)
+	if err != nil {
+		return
+	}
+
+	x := uint16(pkt[1])<<8 | uint16(pkt[2])
+	y := uint16(pkt[3])<<8 | uint16(pkt[4])
+	z := uint16(pkt[5])<<8 | uint16(pkt[6])
 
 	gx = (float32(x)*Vdd/1023 - Vdd/2) / 0.8
 	gy = (float32(y)*Vdd/1023 - Vdd/2) / 0.8
@@ -204,37 +206,38 @@ func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 }
 
 // BattState returns the voltage reading for the battery.
-func (m *Controller) BattState() (float32, error) {
-	ret := make(chan result)
-	m.in <- request{
-		pkt: []byte{p.CMD_STATE<<4 | p.DEV_BATT},
-		ret: ret,
-	}
-	res := <-ret
-	if res.err != nil {
-		return 0, res.err
+func (m *Controller) BattState() (batt float32, err error) {
+	pkt := []byte{p.CMD_STATE}
+
+	if er := m.send(p.DEV_BATT, pkt); er != nil {
+		err = fmt.Errorf("unable to send command: %v", er)
+		return
 	}
 
-	var adc uint16
-	adc = uint16(res.pkt[1])
-	adc = adc<<8 | uint16(res.pkt[2])
-	return 2095.104 / float32(adc), nil
+	pkt, err = m.recv(p.DEV_BATT)
+	if err != nil {
+		return
+	}
+
+	adc := uint16(pkt[1])<<8 | uint16(pkt[2])
+	batt = 2095.104 / float32(adc)
+	return
 }
 
 // Distance returns the distance reading from the ultrasonic sensor.
-func (m *Controller) Distance() (uint16, error) {
-	ret := make(chan result)
-	m.in <- request{
-		pkt: []byte{p.CMD_STATE<<4 | p.DEV_US020},
-		ret: ret,
-	}
-	res := <-ret
-	if res.err != nil {
-		return 0, res.err
+func (m *Controller) Distance() (dist uint16, err error) {
+	pkt := []byte{p.CMD_STATE}
+
+	if er := m.send(p.DEV_US020, pkt); er != nil {
+		err = fmt.Errorf("unable to send command: %v", er)
+		return
 	}
 
-	var dist uint16
-	dist = uint16(res.pkt[1])
-	dist = dist<<8 | uint16(res.pkt[2])
-	return dist, nil
-}*/
+	pkt, err = m.recv(p.DEV_US020)
+	if err != nil {
+		return
+	}
+
+	dist = uint16(pkt[1])<<8 | uint16(pkt[2])
+	return
+}

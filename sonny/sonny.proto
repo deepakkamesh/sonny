@@ -5,13 +5,12 @@ package sonny;
 import "empty.proto";
 
 // DevicesRPC service definition.
-// TODO: Add motor control.
 service DevicesRPC {
 	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {} // Ping the Controller.
 	rpc LEDBlink(LEDBlinkReq) returns (google.protobuf.Empty) {} // Blink LED.
 	rpc LEDOn(LEDOnReq) returns (google.protobuf.Empty) {} // Turn on LED.
   rpc ServoRotate(ServoReq) returns (google.protobuf.Empty) {} // Rotate Servo.
-/*	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
+	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
 	rpc PIRDetect(google.protobuf.Empty) returns (PIRRet) {} // Get PIR sensor.
 	rpc Distance(google.protobuf.Empty) returns (USRet) {} // Ultrasonic Distance.
 	rpc ForwardSweep(SweepReq) returns (SweepRet) {} // Ultrasonic Distance.
@@ -20,7 +19,7 @@ service DevicesRPC {
 	rpc LDR(google.protobuf.Empty) returns (LDRRet) {} // LDR level.
 	rpc DHT11(google.protobuf.Empty) returns (DHT11Ret) {} // Temp, Humidity.
 	rpc Move(MoveReq) returns (MoveRet) {} // Motor Move back or Forward.
-  rpc Turn(TurnReq) returns (TurnRet) {}// Turn right or left.*/
+  rpc Turn(TurnReq) returns (TurnRet) {}// Turn right or left.
 }
 
 
