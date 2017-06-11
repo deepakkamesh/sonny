@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+<script type="text/javascript" src="rover.func.js">
+</script>
+
+<head>
+    <style>
+        div.container {
+            width: 980px;
+            border: 1px solid gray;
+            margin: auto;
+        }
+
+        header,
+        footer {
+            padding: 1em;
+            color: white;
+            background-color: black;
+            clear: left;
+            text-align: center;
+        }
+
+        nav {
+            float: left;
+            max-width: 160px;
+            margin: 0;
+            padding: 1em;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        nav ul a {
+            text-decoration: none;
+        }
+
+        article {
+            margin-left: 425px;
+            border-left: 1px solid gray;
+            padding: 1em;
+            overflow: hidden;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+        }
+
+        button {
+            mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored
+        }
+    </style>
+</head>
+
+<body>
+    <div id="info-popup" class="mdl-js-snackbar mdl-snackbar">
+        <div class="mdl-snackbar__text"></div>
+        <button class="mdl-snackbar__action" type="button"></button>
+    </div>
+    <div class="container">
+        <header>
+            <h1>Sonny Control Panel</h1>
+        </header>
+        <nav>
+            <img width=400 src="http://10.0.0.30:8888/?action=stream" />
+
+        </nav>
+        <article>
+            <table width=100%>
+                <tr>
+                    <td>
+                        <h4>Rover Control</h4>
+                        <ul>
+                            &emsp;&emsp;&emsp;&emsp;
+
+
+                            <!-- Colored FAB button with ripple -->
+                            <button id="motor-forward" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_up</li>
+                                </button>
+                            <br/>
+                            <br/>
+                            <button id="motor-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_left</li>
+                                </button> &emsp;&emsp;&emsp;&emsp;
+
+
+                            <button id="motor-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_right</li>
+                                </button>
+                            <br/>
+                            <br/> &emsp;&emsp;&emsp;&emsp;
+
+
+                            <button id="motor-back" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_down</li>
+                                </button>
+                            <br/>
+                        </ul>
+                    </td>
+                    <td>
+                        <h4>Servo Control</h4>
+                        <ul>
+                            &emsp;&emsp;&emsp;&emsp;
+
+
+                            <!-- Colored FAB button with ripple -->
+                            <button id="servo-up" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_up</li>
+                                </button>
+                            <br/>
+                            <br/>
+                            <button id="servo-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_left</li>
+                                </button> &emsp;&emsp;&emsp;&emsp;
+
+
+                            <button id="servo-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_right</li>
+                                </button>
+                            <br/>
+                            <br/> &emsp;&emsp;&emsp;&emsp;
+
+
+                            <button id="servo-down" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                                    <li class="material-icons">keyboard_arrow_down</li>
+                                </button>
+                            <br/>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+        </article>
+        <table width=100%>
+            <tr>
+                <td style="font-size:20px;font-weight:bold;">Sensor</td>
+                <td style="font-size:20px;font-weight:bold;">Switches</td>
+            </tr>
+            <tr>
+                <td>
+                    Ping Controller:
+                    <span id="ping"></span>
+                </td>
+                <td>
+                    <label for="master_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="master_en" class="mdl-switch__input">
+                               <span class="mdl-switch__label">Master Enable</span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Servo Angles:
+                    <span id="servo-angle"></span>
+                </td>
+                <td>
+                    <label for="led" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="led" class="mdl-switch__input">
+                            <span class="mdl-switch__label">LED</span>
+                        </label>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    Ultrasonic Distance:
+                    <span id="distance"></span>
+                </td>
+                <td>
+                    <label for="distance_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="distance_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Battery Level:
+                    <span id="batt"></span>
+                </td>
+                <td>
+                    <label for="batt_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="batt_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Heading:
+                    <span id="heading"></span>
+                </td>
+                <td>
+                    <label for="heading_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="heading_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Acceleration:
+                    <span id="accel"></span>
+                </td>
+                <td>
+                    <label for="accel_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="accel_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Temp & Humidity:
+                    <span id="temp"></span>
+                </td>
+                <td>
+                    <label for="temp_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="temp_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    LDR:
+                    <span id="ldr"></span>
+                </td>
+                <td>
+                    <label for="ldr_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="ldr_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    PIR:
+                    <span id="pir"></span>
+                </td>
+                <td>
+                    <label for="pir_en" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="pir_en" class="mdl-switch__input">
+                            <span class="mdl-switch__label"></span>
+                        </label>
+                </td>
+            </tr>
+            <!-- Copy & Paste following lines of code to add addition sensor & switches -->
+            <tr>
+                <td>
+                    B1
+                </td>
+                <td>
+                    <label for="switch3" class="mdl-switch mdl-js-switch">
+                            <input type="checkbox" id="switch3" class="mdl-switch__input">
+                            <span class="mdl-switch__label">LED off/on</span>
+                        </label>
+                </td>
+            </tr>
+            <!---  End --->
+        </table>
+        <footer>Copyright &copy; Deepak_Chandra@moonlight.com</footer>
+    </div>
+</body>
+
+</html>
