@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
+	"github.com/deepakkamesh/sonny/httphandler"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
@@ -110,10 +111,10 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	/*h := httphandler.New(dev, false, *res)
+	h := httphandler.New(dev, false, *res)
 	if err := h.Start(); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
-	}*/
+	}
 
 	for {
 		time.Sleep(time.Millisecond * 20)

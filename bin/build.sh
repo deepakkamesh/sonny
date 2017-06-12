@@ -33,6 +33,17 @@ fi
 
 # Push binary to remote if previous step completed.
 if ! [ -z "$3" ]; then
-  echo "Pushing binary to machine $3"
-	scp $2 $3:~/
+ 	if [ $4 == "all" ]; then
+  	echo "Pushing binary to machine $3"
+		scp $2 $3:~/
+  	echo "Pushing resources to machine $3"
+		scp -r ../resources $3:~/
+	elif [ $4 == "res" ]; then
+  	echo "Pushing resources to machine $3"
+		scp -r ../resources $3:~/
+	elif [ $4 == "bin" ]; then
+  	echo "Pushing binary to machine $3"
+		scp $2 $3:~/
+	fi
 fi
+

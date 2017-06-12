@@ -8,8 +8,8 @@ $(document).ready(function() {
         $("#rb_batt_temp").empty()
         $("#rb_batt_temp").append("w")
 
-        $("#servo").empty()
-        $("#servo").append(count++)
+        //$("#servo-vert").empty()
+        //$("#servo-vert").append(count++)
         document.getElementById("batt_metrics").getElementsByTagName("tr")[3].style.backgroundColor = "red";
 
 
@@ -63,6 +63,13 @@ $(document).ready(function() {
         });
     });
 
+    var driveVelSel = document.querySelector('#drive_velocity_sel');
+    driveVelSel.addEventListener('click', function() {
+        $("#drive_velocity_sel_disp").empty()
+        $("#drive_velocity_sel_disp").append($('#drive_velocity_sel').val());
+    });
+
+
     // Servo Controls.
     var servoDownButton = document.querySelector('#servo-down');
     servoDownButton.addEventListener('click', function() {
@@ -74,8 +81,10 @@ $(document).ready(function() {
                 });
                 return
             }
-            $("#servo-angle").empty();
-            $("#servo-angle").append("Horiz:" + ret.Data['horiz'] + " Vert:" + ret.Data['vert']);
+            $("#servo-up-tip").empty();
+            $("#servo-up-tip").append(ret.Data['vert']);
+            $("#servo-down-tip").empty();
+            $("#servo-down-tip").append(ret.Data['vert']);
         });
     });
 
@@ -89,8 +98,10 @@ $(document).ready(function() {
                 });
                 return
             }
-            $("#servo-angle").empty();
-            $("#servo-angle").append("Horiz:" + ret.Data['horiz'] + " Vert:" + ret.Data['vert']);
+            $("#servo-down-tip").empty();
+            $("#servo-down-tip").append(ret.Data['vert']);
+            $("#servo-up-tip").empty();
+            $("#servo-up-tip").append(ret.Data['vert']);
         });
     });
 
@@ -104,8 +115,10 @@ $(document).ready(function() {
                 });
                 return
             }
-            $("#servo-angle").empty();
-            $("#servo-angle").append("Horiz:" + ret.Data['horiz'] + " Vert:" + ret.Data['vert']);
+            $("#servo-left-tip").empty();
+            $("#servo-left-tip").append(ret.Data['horiz']);
+            $("#servo-right-tip").empty();
+            $("#servo-right-tip").append(ret.Data['horiz']);
         });
     });
 
@@ -119,10 +132,20 @@ $(document).ready(function() {
                 });
                 return
             }
-            $("#servo-angle").empty();
-            $("#servo-angle").append("Horiz:" + ret.Data['horiz'] + " Vert:" + ret.Data['vert']);
+            $("#servo-left-tip").empty();
+            $("#servo-left-tip").append(ret.Data['horiz']);
+            $("#servo-right-tip").empty();
+            $("#servo-right-tip").append(ret.Data['horiz']);
         });
     });
+
+    var servoAngleDeltaSel = document.querySelector('#servo_angle_step');
+    servoAngleDeltaSel.addEventListener('click', function() {
+        $("#servo_angle_step_disp").empty()
+        $("#servo_angle_step_disp").append($('#servo_angle_step').val());
+    });
+
+
     /*
         var LEDButton = document.querySelector('#led');
         LEDButton.addEventListener('click', function() {
@@ -148,6 +171,15 @@ $(document).ready(function() {
 
 /* Chart and graphs */
 $(function() {
+
+    /* CAtch keyboard */
+    $(document).keyup(function(e) {
+        if (e.which === 38) {
+            alert("d")
+            //up was pressed
+        }
+    });
+
     /* spark lines */
     $('.inlinesparkline').sparkline();
 

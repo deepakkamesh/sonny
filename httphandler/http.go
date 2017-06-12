@@ -3,7 +3,6 @@ package httphandler
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -44,7 +43,6 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 
 func (m *Server) Start() error {
 
-	http.HandleFunc("/", m.ServeIndex)
 	http.HandleFunc("/api/ping/", m.Ping)
 	http.HandleFunc("/api/ledon/", m.LEDOn)
 	http.HandleFunc("/api/ledblink/", m.LEDBlink)
@@ -58,19 +56,11 @@ func (m *Server) Start() error {
 	http.HandleFunc("/api/pir/", m.PIRDetect)
 	http.HandleFunc("/api/move/", m.Move)
 
-	return http.ListenAndServe(":8080", nil)
-}
+	// Serve static content from resources dir.
+	fs := http.FileServer(http.Dir(m.resources))
+	http.Handle("/", fs)
 
-func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	// TODO: change to http.ServeFile.
-	idx, err := ioutil.ReadFile(m.resources + "/index.html")
-	if err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
-	}
-	if _, err = w.Write(idx); err != nil {
-		glog.Warning("Unable to write http response")
-	}
+	return http.ListenAndServe(":8080", nil)
 }
 
 // writeResponse writes the response json object to w. If unable to marshal
@@ -78,6 +68,7 @@ func (m *Server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 func writeResponse(w http.ResponseWriter, resp *response) {
 	js, e := json.Marshal(resp)
 	if e != nil {
+
 		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -169,7 +160,7 @@ func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dir := strings.ToLower(r.Form.Get("dir")) // Motor button { up, down, left, right}.
+	//dir := strings.ToLower(r.Form.Get("dir")) // Motor button { up, down, left, right}.
 	/*
 		switch dir {
 		case "forward":
@@ -438,10 +429,10 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	case "down":
 		servo = 2
 		m.servoAngle[servo] += delta
-	case "left":
+	case "right":
 		servo = 1
 		m.servoAngle[servo] -= delta
-	case "right":
+	case "left":
 		servo = 1
 		m.servoAngle[servo] += delta
 	}
