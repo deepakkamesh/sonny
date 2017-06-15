@@ -6,7 +6,6 @@ import (
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
-	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
 	"golang.org/x/net/context"

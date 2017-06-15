@@ -3,14 +3,16 @@ package httphandler
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
-	_ "github.com/kidoman/embd/host/chip"
+	"github.com/gorilla/websocket"
 	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
 )
@@ -28,6 +30,12 @@ type Server struct {
 type response struct {
 	Err  string
 	Data interface{}
+}
+
+// sensor data struct.
+type sensorData struct {
+	Err    string
+	Roomba map[int]int
 }
 
 func New(d *rpc.Devices, ssl bool, resources string) *Server {
@@ -48,13 +56,16 @@ func (m *Server) Start() error {
 	http.HandleFunc("/api/ledblink/", m.LEDBlink)
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
 	http.HandleFunc("/api/distance/", m.Distance)
+	http.HandleFunc("/api/move/", m.Move)
+	http.HandleFunc("/datastream", m.dataStream) // Websocket Handler.
+
+	// State functions. TODO: Move to websock.
 	http.HandleFunc("/api/batt/", m.BattState)
 	http.HandleFunc("/api/accel/", m.Accelerometer)
 	http.HandleFunc("/api/head/", m.Heading)
 	http.HandleFunc("/api/temp/", m.DHT11)
 	http.HandleFunc("/api/ldr/", m.LDR)
 	http.HandleFunc("/api/pir/", m.PIRDetect)
-	http.HandleFunc("/api/move/", m.Move)
 
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
@@ -74,6 +85,43 @@ func writeResponse(w http.ResponseWriter, resp *response) {
 	}
 	glog.V(2).Infof("Writing json response %s", js)
 	w.Write(js)
+}
+
+// dataStream is the websocket server that streams rover stats.
+func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
+	upgrader := websocket.Upgrader{}
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		glog.Warningf("failed to upgrade conn:%v", err)
+		return
+	}
+	defer c.Close()
+
+	ra := rand.New(rand.NewSource(99))
+	for {
+		// TODO: Gen ran data;
+
+		data := map[int]int{}
+		for i := 7; i < 58; i++ {
+			data[i] = ra.Intn(255)
+		}
+
+		m := &sensorData{
+			Err:    "none",
+			Roomba: data,
+		}
+		jsMsg, err := json.Marshal(m)
+		if err != nil {
+			glog.Errorf("failed to unmarshall:%v", err)
+		}
+
+		err = c.WriteMessage(websocket.TextMessage, jsMsg)
+		if err != nil {
+			glog.Errorf("failed to write:%v", err)
+			break
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
 }
 
 // Ping is a http wrapper for devices.Ping.

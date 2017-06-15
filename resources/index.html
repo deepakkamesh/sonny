@@ -136,7 +136,7 @@
             <div class="mdl-grid demo-content">
                 <!-- Camera Out -->
                 <div class="mdl-cell mdl-cell--6-col">
-                    <img width=100% src="http://10.0.0.30:8888/?action=stream" />
+                    <!--TODO img width=100% src="http://10.0.0.30:8888/?action=stream" /-->
                 </div>
 
                 <!-- Servo Buttons -->
@@ -231,7 +231,7 @@
                         <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="roomba_power">
                         <input type="checkbox" id="roomba_power" class="mdl-switch__input" unchecked>
                         <span class="mdl-switch__label">Power</span>
-                    </label>
+                   		  </label>
                     </ul>
                     <ul>
                         <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="mode_safe">
@@ -271,26 +271,37 @@
                         <tbody>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Temp ('C)</td>
-                                <td id="rb_batt_temp">25
-                                    <span class="inlinesparkline">1,4,4,7,5,9,10</span>
+                                <td>
+                                    <span id="rb_batt_temp">25</span>
+                                    <span class="rb_batt_temp_spark"></span>
                                 </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Volts (mV)</td>
-                                <td id="rb_batt_volt">50</td>
+                                <td>
+                                    <span id="rb_batt_volt">50</span>
+                                    <span class="rb_batt_volt_spark"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Amps (mA)</td>
-                                <td id="rb_batt_current">10
-                                    <span class="inlinesparkline">1,4,5,9,10</span>
+                                <td>
+                                    <span id="rb_batt_current">10</span>
+                                    <span class="rb_batt_current_spark"></span>
                                 </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Charge</td>
                                 <td id="rb_batt_charge_state">charge</td>
+
                             </tr>
                         </tbody>
                     </table>
+                    <br/>
+                    <div id="rb_batt_charge_bar" class="mdl-progress mdl-js-progress"></div>
+                    <div class="mdl-tooltip" data-mdl-for="rb_batt_charge_bar">
+                        <span id="rb_batt_charge_tip">10% 123/334 Mah</span>
+                    </div>
                 </div>
 
                 <!-- Roomba Motor Currents / Velocity -->
@@ -302,7 +313,7 @@
 
                 <!-- Roomba Overcurrent -->
                 <div class="mdl-cell mdl-cell--2-col">
-                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="overcurrent_sensor" width=100%>
+                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_overcurrent_sensor" width=100%>
                         <thead>
                             <tr>
                                 <th class="mdl-data-table__cell--non-numeric">Overcurrent</th>
@@ -327,7 +338,7 @@
 
                 <!-- Roomba Cliff Sensors -->
                 <div class="mdl-cell mdl-cell--2-col">
-                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="cliff_sensor" width=100%>
+                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_cliff_sensor" width=100%>
                         <thead>
                             <tr>
                                 <th class="mdl-data-table__cell--non-numeric">Cliff Sensors</th>
@@ -336,23 +347,35 @@
                         <tbody>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Left</td>
-                                <td>0 </td>
+                                <td>
+                                    <span id="rb_cliff_left"></span>
+                                    <span class="rb_cliff_left_spark"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Front Left</td>
-                                <td>50</td>
+                                <td>
+                                    <span id="rb_cliff_front_left"></span>
+                                    <span class="rb_cliff_front_left_spark"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Front Right</td>
-                                <td>10</td>
+                                <td>
+                                    <span id="rb_cliff_front_right"></span>
+                                    <span class="rb_cliff_front_right_spark"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Right</td>
-                                <td>0</td>
+                                <td>
+                                    <span id="rb_cliff_right"></span>
+                                    <span class="rb_cliff_right_spark"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Wall</td>
-                                <td>0</td>
+                                <td></td>
                             </tr>
                         </tbody>
                     </table>
@@ -431,15 +454,22 @@
                         <tbody>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Omni</td>
-                                <td>LEft Field </td>
+                                <td>
+                                    <span id="rb_ir_omni"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Left</td>
-                                <td>LEft Field </td>
+                                <td>
+                                    <span id="rb_ir_left"></span>
+                                </td>
+
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Right</td>
-                                <td>Right Field </td>
+                                <td>
+                                    <span id="rb_ir_right"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

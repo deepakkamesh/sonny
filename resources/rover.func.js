@@ -1,3 +1,33 @@
+// Constants for roomba.
+var CHARGING_STATE = {
+    0: "No Charge",
+    1: "Recond.",
+    2: "Charging",
+    3: "Trickle",
+    4: "Waiting",
+    5: "Fault",
+}
+
+var OI_MODE = {
+    0: "Off",
+    1: "Passive",
+    2: "Safe",
+    3: "Full",
+}
+
+var IR_CODE_NAMES = {
+    0: "No IR Detected",
+    161: "Force Field",
+    164: "Green Buoy",
+    165: "Green Buoy and Force Field",
+    168: "Red Buoy",
+    169: "Red Buoy and Force Field",
+    172: "Red and Green Buoy",
+    173: "Red, Green Buoy and Force Field",
+}
+
+
+
 $(document).ready(function() {
     //setInterval("RegularTasks()", 1000);
     var count = 0;
@@ -11,6 +41,8 @@ $(document).ready(function() {
         //$("#servo-vert").empty()
         //$("#servo-vert").append(count++)
         document.getElementById("batt_metrics").getElementsByTagName("tr")[3].style.backgroundColor = "red";
+        // alert("dd");
+        // document.getElementById("batt_metrics").getElementsByTagName("tr")[3].style.backgroundColor = "transparent";
 
 
         $.post('/api/move/_?dir=back', "", function(data, status) {
@@ -145,29 +177,224 @@ $(document).ready(function() {
         $("#servo_angle_step_disp").append($('#servo_angle_step').val());
     });
 
-
     /*
-        var LEDButton = document.querySelector('#led');
-        LEDButton.addEventListener('click', function() {
-            var action = '';
-            if (document.getElementById('led').checked) {
-                action = 'on';
-            } else {
-                action = 'off';
-            }
+       var LEDButton = document.querySelector('#led');
+       LEDButton.addEventListener('click', function() {
+           var action = '';
+           if (document.getElementById('led').checked) {
+               action = 'on';
+           } else {
+               action = 'off';
+           }
 
-            $.post('/api/ledon/_?cmd=' + action, "", function(data, status) {
-                ret = JSON.parse(data)
-                if (ret.Err != '') {
-                    infoContainer.MaterialSnackbar.showSnackbar({
-                        message: ret.Err
-                    });
-                    return
-                }
-            });
-        });*/
+           $.post('/api/ledon/_?cmd=' + action, "", function(data, status) {
+               ret = JSON.parse(data)
+               if (ret.Err != '') {
+                   infoContainer.MaterialSnackbar.showSnackbar({
+                       message: ret.Err
+                   });
+                   return
+               }
+           });
+       });*/
+
+
 
 });
+
+// updateSpark updates the value of the tag and also the associated sparkline spark. 
+// list is the buffer used to store the values.
+function updateSpark(tag, list, spark, data, cnt) {
+    $(tag).empty();
+    $(tag).append(data);
+
+    if (spark == "") {
+        return
+    }
+
+    if (typeof list[tag] == "undefined") {
+        list[tag] = [];
+    }
+    if (list[tag].length > 20) {
+        list[tag].shift();
+    }
+
+    if (cnt % 3 == 0) {
+        list[tag].push(data);
+        $(spark).sparkline(list[tag]);
+    }
+}
+
+// Handle websocket registrations and update Rover data panels.
+$(document).ready(function() {
+
+    var rb_batt_temp_list = [],
+        rb_batt_volt_list = [],
+        rb_batt_current_list = [],
+        msgCount = 0,
+        dataBuf = {},
+        battCharge = 0,
+        battPer = 0;
+
+    ws = new WebSocket("ws://" + window.location.host + "/datastream");
+
+    ws.onopen = function(evt) {}
+
+    ws.onclose = function(evt) {
+        ws = null;
+    }
+
+    ws.onmessage = function(evt) {
+        st = JSON.parse(evt.data);
+        rbData = st.Roomba;
+        for (var pktID in rbData) {
+            pkt = rbData[pktID];
+            switch (pktID) {
+                case "7":
+                    for (var i = 0; i < 4; i++) {
+                        document.getElementById("rb_wheel_sensor").getElementsByTagName("tr")[i + 1].style.backgroundColor = "transparent";
+                        if (pkt & (1 << i)) {
+                            document.getElementById("rb_wheel_sensor").getElementsByTagName("tr")[i + 1].style.backgroundColor = "red";
+                        }
+                    }
+
+                case "8":
+                    if (pkt == 1) {
+                        document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[5].style.backgroundColor = "red";
+                        continue;
+                    }
+                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[5].style.backgroundColor = "transparent";
+
+                case "9":
+                    if (pkt == 1) {
+                        document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[1].style.backgroundColor = "red";
+                        continue;
+                    }
+                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[1].style.backgroundColor = "transparent";
+
+                case "10":
+                    if (pkt == 1) {
+                        document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[2].style.backgroundColor = "red";
+                        continue;
+                    }
+                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[2].style.backgroundColor = "transparent";
+
+                case "11":
+                    if (pkt == 1) {
+                        document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[3].style.backgroundColor = "red";
+                        continue;
+                    }
+                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[3].style.backgroundColor = "transparent";
+
+                case "12":
+                    if (pkt == 1) {
+                        document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "red";
+                        continue;
+                    }
+                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "transparent"
+
+                case "13":
+                    // Virtual Wall
+
+                case "14":
+                    for (var i = 0; i < 4; i++) {
+                        document.getElementById("rb_overcurrent_sensor").getElementsByTagName("tr")[i + 1].style.backgroundColor = "transparent";
+                    }
+                    if (pkt & 1) {
+                        document.getElementById("rb_overcurrent_sensor").getElementsByTagName("tr")[3].style.backgroundColor = "red";
+                    }
+                    if (pkt & 4) {
+                        document.getElementById("rb_overcurrent_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "red";
+                    }
+                    if (pkt & 8) {
+                        document.getElementById("rb_overcurrent_sensor").getElementsByTagName("tr")[1].style.backgroundColor = "red";
+                    }
+                    if (pkt & 16) {
+                        document.getElementById("rb_overcurrent_sensor").getElementsByTagName("tr")[2].style.backgroundColor = "red";
+                    }
+
+                case "15":
+                    // Dirt sensor.
+
+                case "16":
+                    //unused.
+
+                case "17":
+                    updateSpark("#rb_ir_omni", dataBuf, "", IR_CODE_NAMES[pkt], msgCount);
+                    break;
+
+                case "18":
+                    // Buttons.
+
+                case "19":
+                    //Distance.
+
+                case "20":
+                    //Angle
+
+                case "21":
+                    updateSpark("#rb_batt_charge_state", dataBuf, "", CHARGING_STATE[pkt], msgCount);
+                    break;
+
+                case "22":
+                    updateSpark("#rb_batt_volt", dataBuf, ".rb_batt_volt_spark", pkt, msgCount);
+                    break;
+
+                case "23":
+                    updateSpark("#rb_batt_current", dataBuf, ".rb_batt_current_spark", pkt, msgCount);
+                    break;
+
+                case "24":
+                    updateSpark("#rb_batt_temp", dataBuf, ".rb_batt_temp_spark", pkt, msgCount);
+                    break;
+
+                case "25":
+                    battCharge = pkt;
+                    break;
+
+                case "26":
+
+                    if (battCharge > pkt) continue; // TODO: Remove later. 
+
+
+                    battPer = Math.round(battCharge * 100 / pkt);
+                    document.querySelector('.mdl-js-progress').MaterialProgress.setProgress(battPer);
+
+                    $("#rb_batt_charge_tip").empty();
+                    $("#rb_batt_charge_tip").append(battPer + "% " + battCharge + "/" + pkt);
+
+
+                case "28":
+                    updateSpark("#rb_cliff_left", [], "", pkt, msgCount);
+
+                case "29":
+                    updateSpark("#rb_cliff_front_left", [], "", pkt, msgCount);
+
+                case "30":
+                    updateSpark("#rb_cliff_front_right", [], "", pkt, msgCount);
+
+                case "31":
+                    updateSpark("#rb_cliff_right", [], "", pkt, msgCount);
+
+                case "52":
+                    updateSpark("#rb_ir_left", dataBuf, "", IR_CODE_NAMES[pkt], msgCount);
+                    break;
+
+                case "53":
+                    updateSpark("#rb_ir_right", dataBuf, "", IR_CODE_NAMES[pkt], msgCount);
+                    break;
+
+            }
+        }
+        msgCount++;
+    }
+
+    ws.onerror = function(evt) {
+        print("ERROR: " + evt.data);
+    }
+
+});
+
 
 /* Chart and graphs */
 $(function() {
@@ -179,6 +406,8 @@ $(function() {
             //up was pressed
         }
     });
+
+
 
     /* spark lines */
     $('.inlinesparkline').sparkline();
@@ -244,6 +473,9 @@ $(function() {
 
 
 });
+
+// readRoverData opens a websocket
+function readRoverData() {}
 
 function RegularTasks() {
     var infoContainer = document.querySelector('#info-popup');

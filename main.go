@@ -13,7 +13,6 @@ import (
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
 	"github.com/kidoman/embd"
-	_ "github.com/kidoman/embd/host/chip"
 	"github.com/kidoman/embd/sensor/hcsr501"
 	"github.com/kidoman/embd/sensor/hmc5883l"
 	"google.golang.org/grpc"
@@ -37,7 +36,8 @@ func main() {
 		I2CBus    = flag.Int("i2c_bus", 2, "I2C bus for Compass")
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")
 		enPic     = flag.Bool("en_pic", false, "Enable PIC")
-		enPir     = flag.Bool("en_pir", true, "Enable PIR")
+		enIO      = flag.Bool("en_io", false, "Enable CHIP IO (GPIO, I2C). Enable before other pic, pir etc")
+		enPir     = flag.Bool("en_pir", false, "Enable PIR")
 		version   = flag.Bool("version", false, "display version")
 	)
 	flag.Parse()
@@ -55,29 +55,31 @@ func main() {
 	glog.Infof("Starting Sonny ver %s build on %s", githash, buildtime)
 	defer glog.Flush()
 
-	// Initialize GPIO.
-	if err := embd.InitGPIO(); err != nil {
-		glog.Fatalf("Failed to initialize GPIO %v", err)
-	}
+	var i2c embd.I2CBus
+	if *enIO {
+		// Initialize GPIO.
+		if err := embd.InitGPIO(); err != nil {
+			glog.Fatalf("Failed to initialize GPIO %v", err)
+		}
 
-	// Initialize I2C.
-	if err := embd.InitI2C(); err != nil {
-		panic(err)
+		// Initialize I2C.
+		if err := embd.InitI2C(); err != nil {
+			panic(err)
+		}
+		defer embd.CloseI2C()
+		i2c = embd.NewI2CBus(byte(*I2CBus))
 	}
-	defer embd.CloseI2C()
-	i2c := embd.NewI2CBus(byte(*I2CBus))
-
 	// TODO: Initialize Roomba
 
 	// Initialize PIC Controller.
 	var ctrl *devices.Controller
-	if *enPic {
+	if *enPic && *enIO {
 		ctrl = devices.NewController(i2c, byte(*picAddr))
 	}
 
 	// Initialize magnetometer.
 	var mag *hmc5883l.HMC5883L
-	if *enCompass {
+	if *enCompass && *enIO {
 		mag = hmc5883l.New(i2c)
 		if err := mag.Run(); err != nil {
 			glog.Fatalf("Failed to start magnetometer %v", err)
@@ -86,7 +88,7 @@ func main() {
 
 	// Initialize PIR sensor.
 	var pir *hcsr501.HCSR501
-	if *enPir {
+	if *enPir && *enIO {
 		gpio, err := embd.NewDigitalPin(*pirPin)
 		if err != nil {
 			glog.Fatalf("Unable to initialize pin %v error %v", *pirPin, err)
