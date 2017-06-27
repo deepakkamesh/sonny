@@ -234,7 +234,62 @@ $(document).ready(function() {
         msgCount = 0,
         dataBuf = {},
         battCharge = 0,
-        battPer = 0;
+        battPer = 0,
+        total_velocity = 0,
+        right_velocity = 0,
+        left_velocity = 0,
+        rb_main_curr = 0,
+        rb_left_curr = 0,
+        rb_right_curr = 0,
+        rb_side_curr = 0;
+
+    motor_velocity_chart = Morris.Bar({
+        element: 'velocity_chart',
+        data: [{
+                y: 'Total',
+                a: 100,
+            },
+            {
+                y: 'Left',
+                a: 75,
+            },
+            {
+                y: 'Right',
+                a: 50,
+            },
+        ],
+        hideHover: 'auto',
+        xkey: 'y',
+        ykeys: ['a'],
+        labels: ['mm/S', ]
+    });
+
+
+    motor_curr_chart = Morris.Bar({
+        element: 'motor_current_chart',
+        data: [{
+                y: 'Left',
+                curr: 100,
+            },
+            {
+                y: 'Right',
+                curr: 75,
+            },
+            {
+                y: 'Main',
+                curr: -50,
+            },
+            {
+                y: 'Side',
+                curr: 75,
+            },
+        ],
+        hideHover: 'auto',
+        xkey: 'y',
+        ykeys: ['curr'],
+        labels: ['mA', ]
+    });
+
 
     ws = new WebSocket("ws://" + window.location.host + "/datastream");
 
@@ -257,6 +312,7 @@ $(document).ready(function() {
                             document.getElementById("rb_wheel_sensor").getElementsByTagName("tr")[i + 1].style.backgroundColor = "red";
                         }
                     }
+                    break;
 
                 case "8":
                     if (pkt == 1) {
@@ -264,6 +320,7 @@ $(document).ready(function() {
                         continue;
                     }
                     document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[5].style.backgroundColor = "transparent";
+                    break;
 
                 case "9":
                     if (pkt == 1) {
@@ -271,6 +328,7 @@ $(document).ready(function() {
                         continue;
                     }
                     document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[1].style.backgroundColor = "transparent";
+                    break;
 
                 case "10":
                     if (pkt == 1) {
@@ -278,6 +336,7 @@ $(document).ready(function() {
                         continue;
                     }
                     document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[2].style.backgroundColor = "transparent";
+                    break;
 
                 case "11":
                     if (pkt == 1) {
@@ -285,16 +344,19 @@ $(document).ready(function() {
                         continue;
                     }
                     document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[3].style.backgroundColor = "transparent";
+                    break;
 
                 case "12":
                     if (pkt == 1) {
                         document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "red";
                         continue;
                     }
-                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "transparent"
+                    document.getElementById("rb_cliff_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "transparent";
+                    break;
 
                 case "13":
                     // Virtual Wall
+                    break;
 
                 case "14":
                     for (var i = 0; i < 4; i++) {
@@ -312,12 +374,15 @@ $(document).ready(function() {
                     if (pkt & 16) {
                         document.getElementById("rb_overcurrent_sensor").getElementsByTagName("tr")[2].style.backgroundColor = "red";
                     }
+                    break;
 
                 case "15":
                     // Dirt sensor.
+                    break;
 
                 case "16":
                     //unused.
+                    break;
 
                 case "17":
                     updateSpark("#rb_ir_omni", dataBuf, "", IR_CODE_NAMES[pkt], msgCount);
@@ -325,12 +390,15 @@ $(document).ready(function() {
 
                 case "18":
                     // Buttons.
+                    break;
 
                 case "19":
                     //Distance.
+                    break;
 
                 case "20":
                     //Angle
+                    break;
 
                 case "21":
                     updateSpark("#rb_batt_charge_state", dataBuf, "", CHARGING_STATE[pkt], msgCount);
@@ -353,28 +421,131 @@ $(document).ready(function() {
                     break;
 
                 case "26":
-
                     if (battCharge > pkt) continue; // TODO: Remove later. 
-
-
                     battPer = Math.round(battCharge * 100 / pkt);
                     document.querySelector('.mdl-js-progress').MaterialProgress.setProgress(battPer);
-
                     $("#rb_batt_charge_tip").empty();
                     $("#rb_batt_charge_tip").append(battPer + "% " + battCharge + "/" + pkt);
+                    break;
 
+                case "27":
+                    updateSpark("#rb_wall", [], "", pkt, msgCount);
+                    break;
 
                 case "28":
                     updateSpark("#rb_cliff_left", [], "", pkt, msgCount);
+                    break;
 
                 case "29":
                     updateSpark("#rb_cliff_front_left", [], "", pkt, msgCount);
+                    break;
 
                 case "30":
                     updateSpark("#rb_cliff_front_right", [], "", pkt, msgCount);
+                    break;
 
                 case "31":
                     updateSpark("#rb_cliff_right", [], "", pkt, msgCount);
+                    break;
+
+                case "32":
+                    //unused.
+                    break;
+
+                case "33":
+                    //unused.
+                    break;
+
+                case "34":
+                    // Charge Source
+                    break;
+
+                case "35":
+                    updateSpark("#rb_oi_mode", [], "", OI_MODE[pkt], msgCount);
+                    break;
+
+                case "36":
+                    // Song Number.
+                    break;
+
+                case "37":
+                    //Song Playing
+                    break;
+
+                case "38":
+                    // OI stream num pkt.
+                    break;
+
+                case "39":
+                    total_velocity = pkt;
+                    break;
+
+                case "40":
+                    break;
+
+                case "41":
+                    right_velocity = pkt;
+                    break;
+
+                case "42":
+                    left_velocity = pkt;
+                    break;
+
+                case "43":
+                    // encoder counts.
+                    break;
+
+                case "44":
+                    // encoder counts left.
+                    break;
+
+                case "45":
+                    for (var i = 0; i < 6; i++) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[i + 1].style.backgroundColor = "transparent";
+                    }
+                    if (pkt & 1) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[1].style.backgroundColor = "red";
+                    }
+                    if (pkt & 2) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[2].style.backgroundColor = "red";
+                    }
+                    if (pkt & 4) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[3].style.backgroundColor = "red";
+                    }
+                    if (pkt & 8) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[4].style.backgroundColor = "red";
+                    }
+                    if (pkt & 16) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[5].style.backgroundColor = "red";
+                    }
+                    if (pkt & 32) {
+                        document.getElementById("rb_bump_sensor").getElementsByTagName("tr")[6].style.backgroundColor = "red";
+                    }
+                    break;
+
+                case "46":
+                    updateSpark("#rb_bump_left", [], "", pkt, msgCount);
+                    break;
+
+                case "47":
+                    updateSpark("#rb_bump_front_left", [], "", pkt, msgCount);
+                    break;
+
+                case "48":
+                    updateSpark("#rb_bump_center_left", [], "", pkt, msgCount);
+                    break;
+
+                case "49":
+                    updateSpark("#rb_bump_center_right", [], "", pkt, msgCount);
+                    break;
+
+                case "50":
+                    updateSpark("#rb_bump_front_right", [], "", pkt, msgCount);
+                    break;
+
+                case "51":
+                    updateSpark("#rb_bump_right", [], "", pkt, msgCount);
+                    break;
 
                 case "52":
                     updateSpark("#rb_ir_left", dataBuf, "", IR_CODE_NAMES[pkt], msgCount);
@@ -384,9 +555,59 @@ $(document).ready(function() {
                     updateSpark("#rb_ir_right", dataBuf, "", IR_CODE_NAMES[pkt], msgCount);
                     break;
 
+                case "54":
+                    rb_left_curr = pkt;
+                    break;
+
+                case "55":
+                    rb_right_curr = pkt;
+                    break;
+
+                case "56":
+                    rb_main_curr = pkt;
+                    break;
+
+                case "57":
+                    rb_side_curr = pkt;
+                    break;
+
+
             }
         }
         msgCount++;
+
+        motor_velocity_chart.setData([{
+                y: 'Total',
+                a: total_velocity,
+            },
+            {
+                y: 'Left',
+                a: left_velocity,
+            },
+            {
+                y: 'Right',
+                a: right_velocity,
+            },
+        ]);
+
+        motor_curr_chart.setData([{
+                y: 'Left',
+                curr: rb_left_curr,
+            },
+            {
+                y: 'Right',
+                curr: rb_right_curr,
+            },
+            {
+                y: 'Main',
+                curr: rb_main_curr,
+            },
+            {
+                y: 'Side',
+                curr: rb_side_curr,
+            },
+        ]);
+
     }
 
     ws.onerror = function(evt) {
@@ -423,52 +644,6 @@ $(function() {
     $('.inlinebar').sparkline('html', {
         type: 'bar',
         barColor: 'red'
-    });
-
-    Morris.Bar({
-        element: 'motor_current_chart',
-        data: [{
-                y: 'Left',
-                curr: 100,
-            },
-            {
-                y: 'Right',
-                curr: 75,
-            },
-            {
-                y: 'Main',
-                curr: -50,
-            },
-            {
-                y: 'Side',
-                curr: 75,
-            },
-        ],
-        hideHover: 'auto',
-        xkey: 'y',
-        ykeys: ['curr'],
-        labels: ['mA', ]
-    });
-
-    Morris.Bar({
-        element: 'velocity_chart',
-        data: [{
-                y: 'Total',
-                a: 100,
-            },
-            {
-                y: 'Left',
-                a: 75,
-            },
-            {
-                y: 'Right',
-                a: 50,
-            },
-        ],
-        hideHover: 'auto',
-        xkey: 'y',
-        ykeys: ['a'],
-        labels: ['mm/S', ]
     });
 
 

@@ -77,7 +77,11 @@
     <div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-drawer mdl-layout--fixed-header">
         <header class="demo-header mdl-layout__header mdl-color--grey-100 mdl-color-text--grey-600">
             <div class="mdl-layout__header-row">
-                <span class="mdl-layout-title">Home</span>
+                <span class="mdl-layout-title">Rover Control Panel
+
+                <span id="rb_oi_mode">unknown</span>
+
+                </span>
                 <div class="mdl-layout-spacer"></div>
                 <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
                     <label class="mdl-button mdl-js-button mdl-button--icon" for="search">
@@ -375,7 +379,10 @@
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Wall</td>
-                                <td></td>
+                                <td>
+                                    <span id="rb_wall"></span>
+                                    <span class="rb_wall_spark"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -383,7 +390,7 @@
 
                 <!-- Roomba Bump Sensors -->
                 <div class="mdl-cell mdl-cell--3-col">
-                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="bump_sensor" width=100%>
+                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_bump_sensor" width=100%>
                         <thead>
                             <tr>
                                 <th class="mdl-data-table__cell--non-numeric">Bump Sensors</th>
@@ -392,27 +399,39 @@
                         <tbody>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Left</td>
-                                <td>0 </td>
+                                <td>
+                                    <span id="rb_bump_left"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Front Left</td>
-                                <td>50</td>
+                                <td>
+                                    <span id="rb_bump_front_left"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Center Left</td>
-                                <td>50</td>
+                                <td>
+                                    <span id="rb_bump_center_left"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Center Right</td>
-                                <td>50</td>
+                                <td>
+                                    <span id="rb_bump_center_right"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Front Right</td>
-                                <td>10</td>
+                                <td>
+                                    <span id="rb_bump_front_right"></span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="mdl-data-table__cell--non-numeric">Right</td>
-                                <td>0</td>
+                                <td>
+                                    <span id="rb_bump_right"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
