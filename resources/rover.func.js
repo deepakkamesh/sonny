@@ -608,6 +608,36 @@ $(document).ready(function() {
             },
         ]);
 
+        ctrlData = st.Controller;
+        for (var pktID in ctrlData) {
+            pkt = ctrlData[pktID];
+            switch (pktID) {
+                case "0": // Temp.
+                    updateSpark("#temp", dataBuf, ".temp_spark", pkt, msgCount);
+                    break;
+
+                case "1": // Humidity.
+                    updateSpark("#humidity", dataBuf, ".humidity_spark", pkt, msgCount);
+                    break;
+
+                case "2": // LDR.
+                    updateSpark("#light", dataBuf, ".light_spark", pkt, msgCount);
+                    break;
+
+                case "3": // PIR.
+                    updateSpark("#pir", [], "", pkt, msgCount);
+                    break;
+
+                case "4": // Heading.
+                    updateSpark("#heading", [], "", pkt, msgCount);
+                    break;
+
+                case "5": // Controller Volts.
+                    updateSpark("#ctrl_volt", dataBuf, ".ctrl_volt_spark", pkt, msgCount);
+                    break;
+            }
+        }
+
     }
 
     ws.onerror = function(evt) {

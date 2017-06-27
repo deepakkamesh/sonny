@@ -34,8 +34,9 @@ type response struct {
 
 // sensor data struct.
 type sensorData struct {
-	Err    string
-	Roomba map[int]int
+	Err        string
+	Roomba     map[int]int
+	Controller map[int]int
 }
 
 func New(d *rpc.Devices, ssl bool, resources string) *Server {
@@ -106,10 +107,17 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			data[i] = ra.Intn(255)
 		}
 
-		m := &sensorData{
-			Err:    "none",
-			Roomba: data,
+		data1 := map[int]int{}
+		for i := 0; i < 10; i++ {
+			data1[i] = ra.Intn(255)
 		}
+
+		m := &sensorData{
+			Err:        "none",
+			Roomba:     data,
+			Controller: data1,
+		}
+
 		jsMsg, err := json.Marshal(m)
 		if err != nil {
 			glog.Errorf("failed to unmarshall:%v", err)
@@ -120,7 +128,7 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("failed to write:%v", err)
 			break
 		}
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
