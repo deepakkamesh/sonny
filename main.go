@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/httphandler"
 	"github.com/deepakkamesh/sonny/rpc"
@@ -25,26 +26,23 @@ var (
 
 func main() {
 
-	// Setup Flags.
 	var (
-		baud      = flag.Int("baud", 115200, "TTY Baud rate")
-		brc       = flag.String("brc", "LCD-D23", "GPIO port for roomba BRC for keepalive")
-		picAddr   = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
-		tty       = flag.String("tty", "/dev/ttyS0", "tty port")
-		res       = flag.String("resources", "./resources", "resources directory")
-		pirPin    = flag.String("pir_pin", "132", "PIR gpio pin")
-		I2CBus    = flag.Int("i2c_bus", 2, "I2C bus for Compass")
+		brc     = flag.String("brc", "LCD-D23", "GPIO port for roomba BRC for keepalive")
+		picAddr = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
+		tty     = flag.String("tty", "/dev/ttyS0", "tty port")
+		res     = flag.String("resources", "./resources", "resources directory")
+		pirPin  = flag.String("pir_pin", "132", "PIR gpio pin")
+		I2CBus  = flag.Int("i2c_bus", 2, "I2C bus for Compass")
+
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")
+		enRoomba  = flag.Bool("en_roomba", false, "Enable Roomba")
 		enPic     = flag.Bool("en_pic", false, "Enable PIC")
 		enIO      = flag.Bool("en_io", false, "Enable CHIP IO (GPIO, I2C). Enable before other pic, pir etc")
 		enPir     = flag.Bool("en_pir", false, "Enable PIR")
 		version   = flag.Bool("version", false, "display version")
 	)
 	flag.Parse()
-	_ = brc
-	_ = tty
-	_ = baud
-	_ = res
+
 	// Print version and exit.
 	if *version {
 		fmt.Printf("Version commit hash %s\n", githash)
@@ -69,7 +67,18 @@ func main() {
 		defer embd.CloseI2C()
 		i2c = embd.NewI2CBus(byte(*I2CBus))
 	}
-	// TODO: Initialize Roomba
+
+	// Initialize Roomba.
+	var rb *roomba.Roomba
+	if *enRoomba {
+		var err error
+		if rb, err = roomba.MakeRoomba(*tty, *brc); err != nil {
+			glog.Fatalf("Failed to initialize roomba: %v", err)
+		}
+		if err = rb.Start(true); err != nil {
+			glog.Fatalf("Failed to start roomba: %v", err)
+		}
+	}
 
 	// Initialize PIC Controller.
 	var ctrl *devices.Controller
@@ -98,9 +107,10 @@ func main() {
 
 	// Build device list.
 	dev := &rpc.Devices{
-		Ctrl: ctrl,
-		Mag:  mag,
-		Pir:  pir,
+		Ctrl:   ctrl,
+		Mag:    mag,
+		Pir:    pir,
+		Roomba: rb,
 	}
 
 	// Startup RPC service.

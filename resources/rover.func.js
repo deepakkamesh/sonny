@@ -31,74 +31,111 @@ var IR_CODE_NAMES = {
 $(document).ready(function() {
     //setInterval("RegularTasks()", 1000);
     var count = 0;
-    var infoContainer = document.querySelector('#info-popup');
+
+
+
+
+
 
     var motorBackButton = document.querySelector('#motor-back');
     motorBackButton.addEventListener('click', function() {
-        $("#rb_batt_temp").empty()
-        $("#rb_batt_temp").append("w")
-
-        //$("#servo-vert").empty()
-        //$("#servo-vert").append(count++)
-        document.getElementById("batt_metrics").getElementsByTagName("tr")[3].style.backgroundColor = "red";
-        // alert("dd");
-        // document.getElementById("batt_metrics").getElementsByTagName("tr")[3].style.backgroundColor = "transparent";
-
-
-        $.post('/api/move/_?dir=back', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+        $.post('/api/move/_?dir=bwd', "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
         });
     });
 
+    $(document).keydown(function(e) {
+        if (e.which === 40) {
+            $.post('/api/move/_?dir=bwd', "", function(data, status) {
+                if (data.Err != '') {
+                    console.log(data.Err);
+                    return
+                }
+            });
+        }
+    });
+
     var motorForwardButton = document.querySelector('#motor-forward');
     motorForwardButton.addEventListener('click', function() {
-        $.post('/api/move/_?dir=forward', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+        $.post('/api/move/_?dir=fwd', "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
         });
+    });
+
+    $(document).keydown(function(e) {
+        if (e.which === 38) {
+            $.post('/api/move/_?dir=fwd', "", function(data, status) {
+                if (data.Err != '') {
+                    console.log(data.Err);
+                    return
+                }
+            });
+        }
     });
 
     var motorLeftButton = document.querySelector('#motor-left');
     motorLeftButton.addEventListener('click', function() {
         $.post('/api/move/_?dir=left', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
         });
+    });
+
+    $(document).keydown(function(e) {
+        if (e.which === 37) {
+            $.post('/api/move/_?dir=left', "", function(data, status) {
+                if (data.Err != '') {
+                    console.log(data.Err);
+                    return
+                }
+            });
+        }
     });
 
     var motorRightButton = document.querySelector('#motor-right');
     motorRightButton.addEventListener('click', function() {
         $.post('/api/move/_?dir=right', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
         });
     });
 
+    $(document).keydown(function(e) {
+        if (e.which === 39) {
+            $.post('/api/move/_?dir=right', "", function(data, status) {
+                if (data.Err != '') {
+                    console.log(data.Err);
+                    return
+                }
+            });
+        }
+    });
+
+
+
     var driveVelSel = document.querySelector('#drive_velocity_sel');
     driveVelSel.addEventListener('click', function() {
+        val = $('#drive_velocity_sel').val();
         $("#drive_velocity_sel_disp").empty()
-        $("#drive_velocity_sel_disp").append($('#drive_velocity_sel').val());
+        $("#drive_velocity_sel_disp").append(val);
+
+        $.post('/api/setparam/_?velocity=' + val, "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+
     });
 
 
@@ -106,75 +143,108 @@ $(document).ready(function() {
     var servoDownButton = document.querySelector('#servo-down');
     servoDownButton.addEventListener('click', function() {
         $.post('/api/servorotate/_?dir=down', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
             $("#servo-up-tip").empty();
-            $("#servo-up-tip").append(ret.Data['vert']);
+            $("#servo-up-tip").append(data.Data['vert']);
             $("#servo-down-tip").empty();
-            $("#servo-down-tip").append(ret.Data['vert']);
+            $("#servo-down-tip").append(data.Data['vert']);
         });
     });
 
     var servoUpButton = document.querySelector('#servo-up');
     servoUpButton.addEventListener('click', function() {
         $.post('/api/servorotate/_?dir=up', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
             $("#servo-down-tip").empty();
-            $("#servo-down-tip").append(ret.Data['vert']);
+            $("#servo-down-tip").append(data.Data['vert']);
             $("#servo-up-tip").empty();
-            $("#servo-up-tip").append(ret.Data['vert']);
+            $("#servo-up-tip").append(data.Data['vert']);
         });
     });
 
     var servoLeftButton = document.querySelector('#servo-left');
     servoLeftButton.addEventListener('click', function() {
         $.post('/api/servorotate/_?dir=left', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
             $("#servo-left-tip").empty();
-            $("#servo-left-tip").append(ret.Data['horiz']);
+            $("#servo-left-tip").append(data.Data['horiz']);
             $("#servo-right-tip").empty();
-            $("#servo-right-tip").append(ret.Data['horiz']);
+            $("#servo-right-tip").append(data.Data['horiz']);
         });
     });
 
     var servoRightButton = document.querySelector('#servo-right');
     servoRightButton.addEventListener('click', function() {
         $.post('/api/servorotate/_?dir=right', "", function(data, status) {
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
+            if (data.Err != '') {
+                console.log(data.Err);
                 return
             }
             $("#servo-left-tip").empty();
-            $("#servo-left-tip").append(ret.Data['horiz']);
+            $("#servo-left-tip").append(data.Data['horiz']);
             $("#servo-right-tip").empty();
-            $("#servo-right-tip").append(ret.Data['horiz']);
+            $("#servo-right-tip").append(data.Data['horiz']);
         });
     });
 
     var servoAngleDeltaSel = document.querySelector('#servo_angle_step');
     servoAngleDeltaSel.addEventListener('click', function() {
-        $("#servo_angle_step_disp").empty()
-        $("#servo_angle_step_disp").append($('#servo_angle_step').val());
+        val = $('#servo_angle_step').val();
+        $("#servo_angle_step_disp").empty();
+        $("#servo_angle_step_disp").append(val);
+
+        $.post('/api/setparam/_?servoDelta=' + val, "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+    });
+
+    var roombaPowerBtn = document.querySelector('#roomba_power');
+    roombaPowerBtn.addEventListener('click', function() {
+        var action = '';
+        if (document.getElementById('roomba_power').checked) {
+            action = 'power_on';
+        } else {
+            action = 'power_off';
+        }
+
+        $.post('/api/roomba_cmd/_?cmd=' + action, "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+    });
+
+    $("#mode_full, #mode_safe, #mode_passive").change(function() {
+        mode = $('input[name=roomba_mode]:checked').val();
+        $.post('/api/roomba_cmd/_?cmd=' + mode, "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+    });
+
+    var seekDockBtn = document.querySelector('#seek_dock_btn');
+    seekDockBtn.addEventListener('click', function() {
+        $.post('/api/roomba_cmd/_?cmd=seek_dock', "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
     });
 
     /*
@@ -189,16 +259,14 @@ $(document).ready(function() {
 
            $.post('/api/ledon/_?cmd=' + action, "", function(data, status) {
                ret = JSON.parse(data)
-               if (ret.Err != '') {
+               if (data.Err != '') {
                    infoContainer.MaterialSnackbar.showSnackbar({
-                       message: ret.Err
+                       message: data.Err
                    });
                    return
                }
            });
        });*/
-
-
 
 });
 
@@ -301,6 +369,9 @@ $(document).ready(function() {
 
     ws.onmessage = function(evt) {
         st = JSON.parse(evt.data);
+        if (st.Err != "") {
+            console.log(st.Err);
+        }
         rbData = st.Roomba;
         for (var pktID in rbData) {
             pkt = rbData[pktID];
@@ -421,7 +492,6 @@ $(document).ready(function() {
                     break;
 
                 case "26":
-                    if (battCharge > pkt) continue; // TODO: Remove later. 
                     battPer = Math.round(battCharge * 100 / pkt);
                     document.querySelector('.mdl-js-progress').MaterialProgress.setProgress(battPer);
                     $("#rb_batt_charge_tip").empty();
@@ -633,7 +703,7 @@ $(document).ready(function() {
                     break;
 
                 case "5": // Controller Volts.
-                    updateSpark("#ctrl_volt", dataBuf, ".ctrl_volt_spark", pkt, msgCount);
+                    updateSpark("#ctrl_volt", dataBuf, ".ctrl_volt_spark", parseFloat(pkt).toFixed(2), msgCount);
                     break;
             }
         }
@@ -647,11 +717,12 @@ $(document).ready(function() {
 });
 
 
-/* Chart and graphs */
+// TODO: Remove function.
+/*
 $(function() {
 
-    /* CAtch keyboard */
-    $(document).keyup(function(e) {
+    // CAtch keyboard 
+    $(document).keydown(function(e) {
         if (e.which === 38) {
             alert("d")
             //up was pressed
@@ -660,7 +731,7 @@ $(function() {
 
 
 
-    /* spark lines */
+    // spark lines 
     $('.inlinesparkline').sparkline();
 
     var myvalues = [10, 8, 5, 7, 4, 4, 1];
@@ -678,9 +749,6 @@ $(function() {
 
 
 });
-
-// readRoverData opens a websocket
-function readRoverData() {}
 
 function RegularTasks() {
     var infoContainer = document.querySelector('#info-popup');
@@ -809,4 +877,4 @@ function RegularTasks() {
             $("#pir").append(ret.Data);
         });
     }
-}
+}*/

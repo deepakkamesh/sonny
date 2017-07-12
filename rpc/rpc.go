@@ -3,6 +3,7 @@ package rpc
 import (
 	"errors"
 
+	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
@@ -12,22 +13,25 @@ import (
 )
 
 type Devices struct {
-	Ctrl *devices.Controller
-	Mag  *hmc5883l.HMC5883L
-	Pir  *hcsr501.HCSR501
+	Ctrl   *devices.Controller
+	Mag    *hmc5883l.HMC5883L
+	Pir    *hcsr501.HCSR501
+	Roomba *roomba.Roomba
 }
 
 type Server struct {
-	ctrl *devices.Controller
-	mag  *hmc5883l.HMC5883L
-	pir  *hcsr501.HCSR501
+	ctrl   *devices.Controller
+	mag    *hmc5883l.HMC5883L
+	pir    *hcsr501.HCSR501
+	roomba *roomba.Roomba
 }
 
 func New(d *Devices) *Server {
 	return &Server{
-		ctrl: d.Ctrl,
-		mag:  d.Mag,
-		pir:  d.Pir,
+		ctrl:   d.Ctrl,
+		mag:    d.Mag,
+		pir:    d.Pir,
+		roomba: d.Roomba,
 	}
 }
 

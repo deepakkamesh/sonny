@@ -7,6 +7,12 @@ BUILDTIME="`date '+%Y-%m-%d_%I:%M:%S%p'`"
 GITHASH="`git rev-parse --short=7 HEAD`"
 VER="-X main.buildtime=$BUILDTIME -X main.githash=$GITHASH"
 
+# help
+if [ "$1" == "help" ]; then
+	echo "build.sh < arm | noarm > < main | cli > < ip address > <all | res | bin >"
+	exit
+fi
+
 # Fix binary paths
 if [ "$2" == "main" ]; then
 	BINARY="../main.go"
@@ -35,15 +41,16 @@ fi
 if ! [ -z "$3" ]; then
  	if [ $4 == "all" ]; then
   	echo "Pushing binary to machine $3"
-		scp $2 $3:~/
+		scp $2 $3:~/sonny/
   	echo "Pushing resources to machine $3"
-		scp -r ../resources $3:~/
+		scp -r ../resources $3:~/sonny/
 	elif [ $4 == "res" ]; then
   	echo "Pushing resources to machine $3"
-		scp -r ../resources $3:~/
+		scp -r ../resources $3:~/sonny/
+		#scp run_sonny.sh $3:~/sonny/
 	elif [ $4 == "bin" ]; then
   	echo "Pushing binary to machine $3"
-		scp $2 $3:~/
+		scp $2 $3:~/sonny/
 	fi
 fi
 

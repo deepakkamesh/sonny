@@ -140,10 +140,10 @@
             <div class="mdl-grid demo-content">
                 <!-- Camera Out -->
                 <div class="mdl-cell mdl-cell--6-col">
-                    <!--TODO img width=100% src="http://10.0.0.30:8888/?action=stream" /-->
+                    <img width=100% src="http://10.0.0.30:8888/?action=stream">
                 </div>
 
-                <!-- Servo Buttons -->
+                <!-- Drive Buttons -->
                 <div class="mdl-cell mdl-cell--3-col">
                     <h4 align=center> Drive Control </h4>
 
@@ -178,7 +178,7 @@
                     </span>
                 </div>
 
-                <!-- Drive Controls -->
+                <!-- Servo Controls -->
                 <div class="mdl-cell mdl-cell--3-col">
                     <h4 align=center> Servo Control </h4>
 
@@ -207,7 +207,7 @@
                         </button>
                     </ul>
                     <!-- Angle selector for drive -->
-                    <input id="servo_angle_step" class="mdl-slider mdl-js-slider" type="range" min="0" max="180" value="90" tabindex="0">
+                    <input id="servo_angle_step" class="mdl-slider mdl-js-slider" type="range" min="0" max="180" value="10" tabindex="0">
                     <span class="mdl-chip">
 											 <span class="mdl-chip__text" id="servo_angle_step_disp">Select Servo Step</span>
                     </span>
@@ -233,31 +233,31 @@
                     <h5 align=center>Roomba Mode</h5>
                     <ul>
                         <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="roomba_power">
-                        <input type="checkbox" id="roomba_power" class="mdl-switch__input" unchecked>
+                        <input type="checkbox" id="roomba_power" class="mdl-switch__input" checked>
                         <span class="mdl-switch__label">Power</span>
                    		  </label>
                     </ul>
                     <ul>
                         <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="mode_safe">
-									      <input type="radio" id="mode_safe" class="mdl-radio__button" name="roomba_mode" value="safe" checked>
+									      <input type="radio" id="mode_safe" class="mdl-radio__button" name="roomba_mode" value="safe_mode">
 												<span class="mdl-radio__label">Safe Mode</span>
 										</label>
                     </ul>
                     <ul>
                         <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="mode_passive">
-										        <input type="radio" id="mode_passive" class="mdl-radio__button" name="roomba_mode" value="passive">
+										        <input type="radio" id="mode_passive" class="mdl-radio__button" name="roomba_mode" value="passive_mode" checked>
 									          <span class="mdl-radio__label">Passive Mode</span>
 										    </label>
                     </ul>
                     <ul>
 
                         <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="mode_full">
-										        <input type="radio" id="mode_full" class="mdl-radio__button" name="roomba_mode" value="full">
+										        <input type="radio" id="mode_full" class="mdl-radio__button" name="roomba_mode" value="full_mode">
 									          <span class="mdl-radio__label">Full Mode</span>
 										    </label>
                     </ul>
                     <ul>
-                        <button class="mdl-button mdl-js-ripple-effect mmdl-js-button mdl-button--raised ">
+                        <button id="seek_dock_btn" class="mdl-button mdl-js-button mdl-button--raised ">
                          Seek Dock 
                     </button>
                     </ul>
@@ -315,26 +315,33 @@
                     <div style="height: 45%;" id="velocity_chart" class="graph"></div>
                 </div>
 
-                <!-- Roomba Overcurrent -->
+                <!-- Roomba IR Sensors-->
                 <div class="mdl-cell mdl-cell--2-col">
-                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_overcurrent_sensor" width=100%>
+                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_ir_sensor" width=100%>
                         <thead>
                             <tr>
-                                <th class="mdl-data-table__cell--non-numeric">Overcurrent</th>
+                                <th class="mdl-data-table__cell--non-numeric">IR Codes</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Right Motor</td>
+                                <td class="mdl-data-table__cell--non-numeric">Omni</td>
+                                <td>
+                                    <span id="rb_ir_omni"></span>
+                                </td>
                             </tr>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Left Motor</td>
+                                <td class="mdl-data-table__cell--non-numeric">Left</td>
+                                <td>
+                                    <span id="rb_ir_left"></span>
+                                </td>
+
                             </tr>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Side Motor</td>
-                            </tr>
-                            <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Main Motor</td>
+                                <td class="mdl-data-table__cell--non-numeric">Right</td>
+                                <td>
+                                    <span id="rb_ir_right"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -462,37 +469,29 @@
                     </table>
                 </div>
 
-                <!-- Roomba IR Sensors-->
+                <!-- Roomba Overcurrent -->
                 <div class="mdl-cell mdl-cell--2-col">
-                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_ir_sensor" width=100%>
+                    <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_overcurrent_sensor" width=100%>
                         <thead>
                             <tr>
-                                <th class="mdl-data-table__cell--non-numeric">IR Codes</th>
+                                <th class="mdl-data-table__cell--non-numeric">Overcurrent</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Omni</td>
-                                <td>
-                                    <span id="rb_ir_omni"></span>
-                                </td>
+                                <td class="mdl-data-table__cell--non-numeric">Right Motor</td>
                             </tr>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Left</td>
-                                <td>
-                                    <span id="rb_ir_left"></span>
-                                </td>
-
+                                <td class="mdl-data-table__cell--non-numeric">Left Motor</td>
                             </tr>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Right</td>
-                                <td>
-                                    <span id="rb_ir_right"></span>
-                                </td>
+                                <td class="mdl-data-table__cell--non-numeric">Side Motor</td>
+                            </tr>
+                            <tr>
+                                <td class="mdl-data-table__cell--non-numeric">Main Motor</td>
                             </tr>
                         </tbody>
                     </table>
-
                 </div>
 
                 <!-- Environmental Sensors -->
@@ -505,14 +504,14 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Temp</td>
+                                <td class="mdl-data-table__cell--non-numeric">Temp ('C)</td>
                                 <td>
                                     <span id="temp"></span>
                                     <span class="temp_spark"></span>
                                 </td>
                             </tr>
                             <tr>
-                                <td class="mdl-data-table__cell--non-numeric">Humidity</td>
+                                <td class="mdl-data-table__cell--non-numeric">Humidity (%)</td>
                                 <td>
                                     <span id="humidity"></span>
                                     <span class="humidity_spark"></span>
@@ -548,10 +547,6 @@
                     </table>
                 </div>
 
-
-                <div class="mdl-cell mdl-cell--2-col">
-                    somethine
-                </div>
 
 
             </div>

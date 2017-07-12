@@ -3,12 +3,13 @@ package httphandler
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	roomba "github.com/deepakkamesh/go-roomba"
+	"github.com/deepakkamesh/go-roomba/constants"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
@@ -21,12 +22,16 @@ type Server struct {
 	ctrl       *devices.Controller
 	mag        *hmc5883l.HMC5883L
 	pir        *hcsr501.HCSR501
+	roomba     *roomba.Roomba
 	ssl        bool
 	resources  string
 	servoAngle map[byte]int // Map to hold state of each servo.
+	servoDelta uint8
+	velocity   int16
+	timer      *time.Timer
 }
 
-// Struct to return JSON/
+// Struct to return JSON.
 type response struct {
 	Err  string
 	Data interface{}
@@ -35,38 +40,39 @@ type response struct {
 // sensor data struct.
 type sensorData struct {
 	Err        string
-	Roomba     map[int]int
-	Controller map[int]int
+	Roomba     map[byte]int16
+	Controller map[byte]float32
 }
 
 func New(d *rpc.Devices, ssl bool, resources string) *Server {
+	t := time.NewTimer(500 * time.Millisecond)
+	t.Stop()
+
 	return &Server{
 		ctrl:       d.Ctrl,
 		mag:        d.Mag,
 		pir:        d.Pir,
+		roomba:     d.Roomba,
 		ssl:        ssl,
 		resources:  resources,
 		servoAngle: map[byte]int{1: 90, 2: 90},
+		servoDelta: 10,
+		velocity:   100,
+		timer:      t,
 	}
+
 }
 
 func (m *Server) Start() error {
 
+	http.HandleFunc("/api/setparam/", m.SetParam)
 	http.HandleFunc("/api/ping/", m.Ping)
 	http.HandleFunc("/api/ledon/", m.LEDOn)
 	http.HandleFunc("/api/ledblink/", m.LEDBlink)
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
-	http.HandleFunc("/api/distance/", m.Distance)
 	http.HandleFunc("/api/move/", m.Move)
-	http.HandleFunc("/datastream", m.dataStream) // Websocket Handler.
-
-	// State functions. TODO: Move to websock.
-	http.HandleFunc("/api/batt/", m.BattState)
-	http.HandleFunc("/api/accel/", m.Accelerometer)
-	http.HandleFunc("/api/head/", m.Heading)
-	http.HandleFunc("/api/temp/", m.DHT11)
-	http.HandleFunc("/api/ldr/", m.LDR)
-	http.HandleFunc("/api/pir/", m.PIRDetect)
+	http.HandleFunc("/api/roomba_cmd/", m.RoombaCmd)
+	http.HandleFunc("/datastream", m.dataStream) // Websocket  data stream Handler.
 
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
@@ -80,7 +86,6 @@ func (m *Server) Start() error {
 func writeResponse(w http.ResponseWriter, resp *response) {
 	js, e := json.Marshal(resp)
 	if e != nil {
-
 		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -98,24 +103,14 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
-	ra := rand.New(rand.NewSource(99))
 	for {
-		// TODO: Gen ran data;
-
-		data := map[int]int{}
-		for i := 7; i < 58; i++ {
-			data[i] = ra.Intn(255)
-		}
-
-		data1 := map[int]int{}
-		for i := 0; i < 10; i++ {
-			data1[i] = ra.Intn(255)
-		}
+		envData, errStr1 := m.getEnvData()
+		rbData, errStr2 := m.getRoombaData()
 
 		m := &sensorData{
-			Err:        "none",
-			Roomba:     data,
-			Controller: data1,
+			Err:        errStr1 + errStr2,
+			Roomba:     rbData,
+			Controller: envData,
 		}
 
 		jsMsg, err := json.Marshal(m)
@@ -128,7 +123,7 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("failed to write:%v", err)
 			break
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(800 * time.Millisecond)
 	}
 }
 
@@ -155,48 +150,149 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (m *Server) Distance(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not initialized"),
-		})
-		return
-	}
-	d, err := m.ctrl.Distance()
-	if err != nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: distance query failed %v", err),
-		})
-		return
+// getRoombaData returns the current value of the roomba sensors.
+func (m *Server) getRoombaData() (data map[byte]int16, errStr string) {
+
+	if m.roomba == nil {
+		return nil, "roomba not initialized"
 	}
 
-	writeResponse(w, &response{
-		Data: d,
-	})
+	data = make(map[byte]int16)
+
+	sg := []byte{constants.SENSOR_GROUP_6, constants.SENSOR_GROUP_101}
+	pg := [][]byte{constants.PACKET_GROUP_6, constants.PACKET_GROUP_101}
+
+	// Iterate through the packet groups. Sensor group 100 does not work as advertised.
+	// Use sensor group, 6 and 101 instead.
+	for grp := 0; grp < 2; grp++ {
+		d, e := m.roomba.Sensors(sg[grp])
+		if e != nil {
+			errStr = errStr + e.Error()
+			glog.Errorf("Failed to read sensors: %v", e)
+		}
+
+		i := byte(0)
+		for _, p := range pg[grp] {
+			pktL := constants.SENSOR_PACKET_LENGTH[p]
+
+			if pktL == 1 {
+				data[p] = int16(d[i])
+			}
+			if pktL == 2 {
+				v := int16(d[i])<<8 | int16(d[i+1])
+				data[p] = v
+			}
+			i = i + pktL
+		}
+	}
+	return
 }
 
-// Accelerometer is the http wrapper for ctrl.Accelerator.
-func (m *Server) Accelerometer(w http.ResponseWriter, r *http.Request) {
+// getEnvData queries the environment sensors and returns a map with with the data.
+func (m *Server) getEnvData() (data map[byte]float32, errStr string) {
+
+	data = make(map[byte]float32)
+
+	for i := 0; i < 6; i++ {
+		switch i {
+		case 0:
+			if m.ctrl == nil {
+				errStr = errStr + " controller not initialized"
+				continue
+			}
+
+			t, h, err := m.ctrl.DHT11()
+			if err != nil {
+				glog.Errorf("Failed to read DHT11: %v", err)
+				errStr = errStr + err.Error()
+				continue
+			}
+			data[0] = float32(t)*1.8 + 32
+			data[1] = float32(h)
+
+		case 2:
+			if m.ctrl == nil {
+				errStr = errStr + " controller not initialized"
+				continue
+			}
+			l, err := m.ctrl.LDR()
+			if err != nil {
+				glog.Errorf("Failed to read LDR: %v", err)
+				errStr = errStr + err.Error()
+				continue
+			}
+			data[2] = float32(l)
+
+		case 3:
+			if m.pir == nil {
+				errStr = errStr + " PIR  not initialized"
+				continue
+			}
+			v, err := m.pir.Detect()
+			if err != nil {
+				glog.Errorf("Failed to read PIR: %v", err)
+				errStr = errStr + err.Error()
+				continue
+			}
+			if v {
+				data[3] = float32(1)
+				continue
+			}
+			data[3] = float32(0)
+
+		case 4:
+			if m.mag == nil {
+				errStr = errStr + " compass not initialized"
+				continue
+			}
+			h, err := m.mag.Heading()
+			if err != nil {
+				glog.Errorf("Failed to read Compass: %v", err)
+				errStr = errStr + err.Error()
+				continue
+			}
+			data[4] = float32(h)
+
+		case 5:
+			if m.ctrl == nil {
+				errStr = errStr + " controller not initialized"
+				continue
+			}
+			b, err := m.ctrl.BattState()
+			if err != nil {
+				glog.Errorf("Failed to read controller batt state: %v", err)
+				errStr = errStr + err.Error()
+				continue
+			}
+			data[5] = float32(b)
+
+		}
+	}
+	return
+}
+
+// SetParam sets http console params.
+func (m *Server) SetParam(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: controller not initialized"),
-		})
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
 		return
 	}
 
-	x, y, z, err := m.ctrl.Accelerometer()
-	if err != nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: failed to read accelerometer %v", err),
-		})
-		return
+	if v := r.Form.Get("servoDelta"); v != "" {
+		val, _ := strconv.ParseUint(v, 10, 8)
+		m.servoDelta = uint8(val)
+	}
+
+	if v := r.Form.Get("velocity"); v != "" {
+		val, _ := strconv.ParseInt(v, 10, 16)
+		m.velocity = int16(val)
 	}
 
 	writeResponse(w, &response{
-		Data: []float32{x, y, z},
+		Err:  "",
+		Data: "OK",
 	})
 }
 
@@ -216,159 +312,45 @@ func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//dir := strings.ToLower(r.Form.Get("dir")) // Motor button { up, down, left, right}.
-	/*
-		switch dir {
-		case "forward":
-			// TODO: Remove hardcoded values for turns and duty percent.
-			if _, _, err := m.ctrl.Move(20, true, 90); err != nil {
-				writeResponse(w, &response{
-					Err: fmt.Sprintf("Error: motor failed %v", err),
-				})
-				return
-			}
-		case "back":
-			if _, _, err := m.ctrl.Move(20, false, 90); err != nil {
-				writeResponse(w, &response{
-					Err: fmt.Sprintf("Error: motor failed %v", err),
-				})
-				return
-			}
-		case "left":
-			if _, _, err := m.ctrl.Turn(10, 1, 90); err != nil {
-				writeResponse(w, &response{
-					Err: fmt.Sprintf("Error: motor failed %v", err),
-				})
-				return
-			}
-		case "right":
-			if _, _, err := m.ctrl.Turn(10, 0, 90); err != nil {
-				writeResponse(w, &response{
-					Err: fmt.Sprintf("Error: motor failed %v", err),
-				})
-				return
-			}
-		} */
-}
+	dir := strings.ToLower(r.Form.Get("dir")) // Motor button { up, down, left, right}
+	var err error
 
-// Heading is a http wrapper for mag.HEading.
-func (m *Server) Heading(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	/*	err = m.roomba.Drive(-100, 32767)
+		time.Sleep(500 * time.Millisecond)
+		m.roomba.Drive(0, 0)*/
 
-	if m.mag == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: magnetometer not initialized"),
-		})
-		return
+	switch dir {
+	case "fwd":
+		err = m.roomba.Drive(m.velocity, 32767)
+
+	case "bwd":
+		err = m.roomba.Drive(-1*m.velocity, 32767)
+
+	case "right":
+		err = m.roomba.Drive(m.velocity, -1)
+
+	case "left":
+		err = m.roomba.Drive(m.velocity, 1)
 	}
 
-	h, err := m.mag.Heading()
 	if err != nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: failed to read magnetometer %v", err),
+			Err: fmt.Sprintf("Error: motor failed %v", err),
 		})
+		glog.Errorf("Failed to run motor: %v", err)
 		return
 	}
 
-	writeResponse(w, &response{
-		Data: h,
-	})
-}
-
-// Heading is a http wrapper for mag.HEading.
-func (m *Server) DHT11(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: controller not initialized"),
-		})
-		return
+	//time.Sleep(500 * time.Millisecond)
+	//m.roomba.Drive(0, 0)
+	if run := m.timer.Reset(500 * time.Millisecond); !run {
+		glog.V(2).Info("start timer")
+		go func() {
+			<-m.timer.C
+			glog.V(2).Infof("timer expired stop")
+			m.roomba.Drive(0, 0)
+		}()
 	}
-
-	t, h, err := m.ctrl.DHT11()
-	if err != nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: failed to read DHT11 %v", err),
-		})
-		return
-	}
-
-	writeResponse(w, &response{
-		Data: []uint16{uint16(t), uint16(h)},
-	})
-}
-
-// LDR is a http wrapper for ctrl.LDR
-func (m *Server) LDR(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: controller not initialized"),
-		})
-		return
-	}
-
-	v, err := m.ctrl.LDR()
-	if err != nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: failed to read controller %v", err),
-		})
-		return
-	}
-
-	writeResponse(w, &response{
-		Data: v,
-	})
-}
-
-// PIRDetect is a http wrapper for pir.Detect.
-func (m *Server) PIRDetect(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.pir == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: PIR not initialized"),
-		})
-		return
-	}
-
-	v, err := m.pir.Detect()
-	if err != nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: failed to read pir %v", err),
-		})
-		return
-	}
-
-	writeResponse(w, &response{
-		Data: v,
-	})
-}
-
-// BattState is the http wrapper for ctrl.BattState
-func (m *Server) BattState(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not initialized"),
-		})
-		return
-	}
-
-	val, err := m.ctrl.BattState()
-	if err != nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: failed to get battery level %v", err),
-		})
-		return
-	}
-
-	writeResponse(w, &response{
-		Data: val,
-	})
 }
 
 // LEDBlink is the http wrapper for devices.LEDBlink().
@@ -459,7 +441,7 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 // ServoRotate is the http wrapper for devices.ServoRotate().
 func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "application/json")
 
 	if m.ctrl == nil {
 		writeResponse(w, &response{
@@ -475,7 +457,7 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 
 	dir := strings.ToLower(r.Form.Get("dir")) // Servo button { up, down, left, right}.
 
-	const delta = 10
+	delta := int(m.servoDelta)
 	var servo byte
 
 	switch dir {
@@ -519,4 +501,54 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, &response{
 		Data: map[string]int{"horiz": m.servoAngle[byte(1)], "vert": m.servoAngle[byte(2)]},
 	})
+}
+
+// RoombaCmd sets the roomba mode.
+func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if m.roomba == nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Roomba not initialized"),
+		})
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error parsing form %v", err),
+		})
+		return
+	}
+
+	cmd := strings.ToLower(r.Form.Get("cmd"))
+	var err error
+	glog.V(2).Infof("HTTP command %v", cmd)
+
+	switch cmd {
+	case "safe_mode":
+		err = m.roomba.Safe()
+
+	case "full_mode":
+		err = m.roomba.Full()
+
+	case "passive_mode":
+		err = m.roomba.Passive()
+
+	case "power_off":
+		m.roomba.Start(false)
+		err = m.roomba.Power()
+
+	case "power_on":
+		err = m.roomba.Start(true)
+
+	case "seek_dock":
+		err = m.roomba.SeekDock()
+	}
+
+	if err != nil {
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error changing mode %v", err),
+		})
+	}
 }
