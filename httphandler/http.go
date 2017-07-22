@@ -2,6 +2,7 @@ package httphandler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -29,6 +30,8 @@ type Server struct {
 	servoDelta uint8
 	velocity   int16
 	timer      *time.Timer
+	data       *sensorData
+	connCount  int // Count of websockets.
 }
 
 // Struct to return JSON.
@@ -59,6 +62,10 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 		servoDelta: 10,
 		velocity:   100,
 		timer:      t,
+		data: &sensorData{
+			Controller: make(map[byte]float32),
+			Roomba:     make(map[byte]int16),
+		},
 	}
 
 }
@@ -77,7 +84,7 @@ func (m *Server) Start() error {
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
 	http.Handle("/", fs)
-
+	go m.dataCollector()
 	return http.ListenAndServe(":8080", nil)
 }
 
@@ -93,6 +100,149 @@ func writeResponse(w http.ResponseWriter, resp *response) {
 	w.Write(js)
 }
 
+// dataCollector collects sensor data from the various sensors on the rover. Its runs
+// as a goroutine independent of the websocket routine. This allows different intervals
+// for different sensors. It also polls sensors only if there is a client connected.
+func (m *Server) dataCollector() {
+	t5s := time.NewTicker(5 * time.Second)
+	t500ms := time.NewTicker(500 * time.Millisecond)
+	t300ms := time.NewTicker(300 * time.Millisecond)
+	t100ms := time.NewTicker(100 * time.Millisecond)
+
+	// Each sensor reading is an anonymous function for readability and code flow.
+	for {
+		// Read sensors only when there is a connected websocket.
+		if m.connCount == 0 {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		select {
+		case <-t5s.C:
+			// DHT11 sensor.
+			func() {
+				if m.ctrl == nil {
+					glog.V(3).Infof("Controller not initialized")
+					return
+				}
+				t, h, err := m.ctrl.DHT11()
+				if err != nil {
+					glog.Warningf("Failed to read DHT11: %v", err)
+					return
+				}
+				m.data.Controller[0] = float32(t)*1.8 + 32
+				m.data.Controller[1] = float32(h)
+			}()
+
+		case <-t500ms.C:
+			// LDR sensor.
+			time.Sleep(50 * time.Millisecond)
+			func() {
+				if m.ctrl == nil {
+					return
+				}
+				l, err := m.ctrl.LDR()
+				if err != nil {
+					glog.Warningf("Failed to read LDR: %v", err)
+					return
+				}
+				m.data.Controller[2] = float32(l)
+			}()
+			time.Sleep(50 * time.Millisecond)
+			// Controller battery voltage.
+			func() {
+				if m.ctrl == nil {
+					return
+				}
+				b, err := m.ctrl.BattState()
+				if err != nil {
+					glog.Errorf("Failed to read controller batt state: %v", err)
+					return
+				}
+				m.data.Controller[5] = float32(b)
+			}()
+
+		case <-t300ms.C:
+			// Compass.
+			func() {
+				if m.mag == nil {
+					return
+				}
+				h, err := m.mag.Heading()
+				if err != nil {
+					glog.Warningf("Failed to read Compass: %v", err)
+					return
+				}
+				m.data.Controller[4] = float32(h)
+			}()
+			// PIR sensor.
+			func() {
+				if m.pir == nil {
+					return
+				}
+				v, err := m.pir.Detect()
+				if err != nil {
+					glog.Warningf("Failed to read PIR: %v", err)
+					return
+				}
+				if v {
+					m.data.Controller[3] = float32(1)
+				} else {
+					m.data.Controller[3] = float32(0)
+				}
+			}()
+
+		case <-t100ms.C:
+			// Roomba data.
+			func() {
+				d, err := m.getRoombaSensors()
+				if err != nil {
+					glog.Warningf("Failed to read roomba sensors: %v", err)
+					return
+				}
+				m.data.Roomba = d
+			}()
+
+		}
+	}
+}
+
+// getRoombaSensors returns the current value of the roomba sensors.
+func (m *Server) getRoombaSensors() (data map[byte]int16, err error) {
+
+	if m.roomba == nil {
+		return nil, errors.New("roomba not initialized")
+	}
+
+	data = make(map[byte]int16)
+
+	sg := []byte{constants.SENSOR_GROUP_6, constants.SENSOR_GROUP_101}
+	pg := [][]byte{constants.PACKET_GROUP_6, constants.PACKET_GROUP_101}
+
+	// Iterate through the packet groups. Sensor group 100 does not work as advertised.
+	// Use sensor group, 6 and 101 instead.
+	for grp := 0; grp < 2; grp++ {
+		d, e := m.roomba.Sensors(sg[grp])
+		if e != nil {
+			return nil, e
+		}
+		i := byte(0)
+		for _, p := range pg[grp] {
+			pktL := constants.SENSOR_PACKET_LENGTH[p]
+
+			if pktL == 1 {
+				data[p] = int16(d[i])
+			}
+			if pktL == 2 {
+				v := int16(d[i])<<8 | int16(d[i+1])
+				data[p] = v
+			}
+			i = i + pktL
+		}
+	}
+	return
+}
+
 // dataStream is the websocket server that streams rover stats.
 func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{}
@@ -101,29 +251,27 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 		glog.Warningf("failed to upgrade conn:%v", err)
 		return
 	}
-	defer c.Close()
+
+	m.connCount++
+
+	defer func() {
+		c.Close()
+		m.connCount--
+	}()
 
 	for {
-		envData, errStr1 := m.getEnvData()
-		rbData, errStr2 := m.getRoombaData()
-
-		m := &sensorData{
-			Err:        errStr1 + errStr2,
-			Roomba:     rbData,
-			Controller: envData,
-		}
-
-		jsMsg, err := json.Marshal(m)
+		jsMsg, err := json.Marshal(m.data)
 		if err != nil {
-			glog.Errorf("failed to unmarshall:%v", err)
+			glog.Errorf("Failed to unmarshall: %v", err)
+			continue
 		}
 
 		err = c.WriteMessage(websocket.TextMessage, jsMsg)
 		if err != nil {
-			glog.Errorf("failed to write:%v", err)
-			break
+			glog.Errorf("Failed to write: %v", err)
+			return
 		}
-		time.Sleep(800 * time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
 	}
 }
 
@@ -148,127 +296,6 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, &response{
 		Data: "OK",
 	})
-}
-
-// getRoombaData returns the current value of the roomba sensors.
-func (m *Server) getRoombaData() (data map[byte]int16, errStr string) {
-
-	if m.roomba == nil {
-		return nil, "roomba not initialized"
-	}
-
-	data = make(map[byte]int16)
-
-	sg := []byte{constants.SENSOR_GROUP_6, constants.SENSOR_GROUP_101}
-	pg := [][]byte{constants.PACKET_GROUP_6, constants.PACKET_GROUP_101}
-
-	// Iterate through the packet groups. Sensor group 100 does not work as advertised.
-	// Use sensor group, 6 and 101 instead.
-	for grp := 0; grp < 2; grp++ {
-		d, e := m.roomba.Sensors(sg[grp])
-		if e != nil {
-			errStr = errStr + e.Error()
-			glog.Errorf("Failed to read sensors: %v", e)
-		}
-
-		i := byte(0)
-		for _, p := range pg[grp] {
-			pktL := constants.SENSOR_PACKET_LENGTH[p]
-
-			if pktL == 1 {
-				data[p] = int16(d[i])
-			}
-			if pktL == 2 {
-				v := int16(d[i])<<8 | int16(d[i+1])
-				data[p] = v
-			}
-			i = i + pktL
-		}
-	}
-	return
-}
-
-// getEnvData queries the environment sensors and returns a map with with the data.
-func (m *Server) getEnvData() (data map[byte]float32, errStr string) {
-
-	data = make(map[byte]float32)
-
-	for i := 0; i < 6; i++ {
-		switch i {
-		case 0:
-			if m.ctrl == nil {
-				errStr = errStr + " controller not initialized"
-				continue
-			}
-
-			t, h, err := m.ctrl.DHT11()
-			if err != nil {
-				glog.Errorf("Failed to read DHT11: %v", err)
-				errStr = errStr + err.Error()
-				continue
-			}
-			data[0] = float32(t)*1.8 + 32
-			data[1] = float32(h)
-
-		case 2:
-			if m.ctrl == nil {
-				errStr = errStr + " controller not initialized"
-				continue
-			}
-			l, err := m.ctrl.LDR()
-			if err != nil {
-				glog.Errorf("Failed to read LDR: %v", err)
-				errStr = errStr + err.Error()
-				continue
-			}
-			data[2] = float32(l)
-
-		case 3:
-			if m.pir == nil {
-				errStr = errStr + " PIR  not initialized"
-				continue
-			}
-			v, err := m.pir.Detect()
-			if err != nil {
-				glog.Errorf("Failed to read PIR: %v", err)
-				errStr = errStr + err.Error()
-				continue
-			}
-			if v {
-				data[3] = float32(1)
-				continue
-			}
-			data[3] = float32(0)
-
-		case 4:
-			if m.mag == nil {
-				errStr = errStr + " compass not initialized"
-				continue
-			}
-			h, err := m.mag.Heading()
-			if err != nil {
-				glog.Errorf("Failed to read Compass: %v", err)
-				errStr = errStr + err.Error()
-				continue
-			}
-			data[4] = float32(h)
-
-		case 5:
-			if m.ctrl == nil {
-				errStr = errStr + " controller not initialized"
-				continue
-			}
-			b, err := m.ctrl.BattState()
-			if err != nil {
-				glog.Errorf("Failed to read controller batt state: %v", err)
-				errStr = errStr + err.Error()
-				continue
-			}
-			data[5] = float32(b)
-
-		}
-	}
-	return
 }
 
 // SetParam sets http console params.
@@ -300,9 +327,9 @@ func (m *Server) SetParam(w http.ResponseWriter, r *http.Request) {
 func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if m.ctrl == nil {
+	if m.roomba == nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: controller not initialized"),
+			Err: fmt.Sprintf("Error: roomba not initialized"),
 		})
 		return
 	}
@@ -341,13 +368,9 @@ func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//time.Sleep(500 * time.Millisecond)
-	//m.roomba.Drive(0, 0)
 	if run := m.timer.Reset(500 * time.Millisecond); !run {
-		glog.V(2).Info("start timer")
 		go func() {
 			<-m.timer.C
-			glog.V(2).Infof("timer expired stop")
 			m.roomba.Drive(0, 0)
 		}()
 	}

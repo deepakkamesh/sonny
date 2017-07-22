@@ -26,17 +26,9 @@ var IR_CODE_NAMES = {
     173: "Red, Green Buoy and Force Field",
 }
 
-
-
 $(document).ready(function() {
     //setInterval("RegularTasks()", 1000);
     var count = 0;
-
-
-
-
-
-
     var motorBackButton = document.querySelector('#motor-back');
     motorBackButton.addEventListener('click', function() {
         $.post('/api/move/_?dir=bwd', "", function(data, status) {
@@ -246,27 +238,6 @@ $(document).ready(function() {
             }
         });
     });
-
-    /*
-       var LEDButton = document.querySelector('#led');
-       LEDButton.addEventListener('click', function() {
-           var action = '';
-           if (document.getElementById('led').checked) {
-               action = 'on';
-           } else {
-               action = 'off';
-           }
-
-           $.post('/api/ledon/_?cmd=' + action, "", function(data, status) {
-               ret = JSON.parse(data)
-               if (data.Err != '') {
-                   infoContainer.MaterialSnackbar.showSnackbar({
-                       message: data.Err
-                   });
-                   return
-               }
-           });
-       });*/
 
 });
 
@@ -683,7 +654,7 @@ $(document).ready(function() {
             pkt = ctrlData[pktID];
             switch (pktID) {
                 case "0": // Temp.
-                    updateSpark("#temp", dataBuf, ".temp_spark", pkt, msgCount);
+                    updateSpark("#temp", dataBuf, ".temp_spark", parseFloat(pkt).toFixed(2), msgCount);
                     break;
 
                 case "1": // Humidity.
@@ -695,11 +666,11 @@ $(document).ready(function() {
                     break;
 
                 case "3": // PIR.
-                    updateSpark("#pir", [], "", pkt, msgCount);
+                    updateSpark("#pir", dataBuf, ".pir_spark", pkt, msgCount);
                     break;
 
                 case "4": // Heading.
-                    updateSpark("#heading", [], "", pkt, msgCount);
+                    updateSpark("#heading", [], "", parseFloat(pkt).toFixed(2), msgCount);
                     break;
 
                 case "5": // Controller Volts.

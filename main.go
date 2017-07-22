@@ -31,7 +31,7 @@ func main() {
 		picAddr = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
 		tty     = flag.String("tty", "/dev/ttyS0", "tty port")
 		res     = flag.String("resources", "./resources", "resources directory")
-		pirPin  = flag.String("pir_pin", "132", "PIR gpio pin")
+		pirPin  = flag.String("pir_pin", "CSID0", "PIR gpio pin")
 		I2CBus  = flag.Int("i2c_bus", 2, "I2C bus for Compass")
 
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")

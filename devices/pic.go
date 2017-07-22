@@ -48,7 +48,7 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 
 	pktSz := header >> 4
 	if (pktSz) == 0 {
-		return nil, fmt.Errorf("got a zero sized packet.")
+		return nil, fmt.Errorf("got a zero sized packet. Header %b", header)
 	}
 
 	pkt := make([]byte, (pktSz))
