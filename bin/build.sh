@@ -41,16 +41,19 @@ fi
 if ! [ -z "$3" ]; then
  	if [ $4 == "all" ]; then
   	echo "Pushing binary to machine $3"
-		scp $2 $3:~/sonny/
+		#scp $2 $3:~/sonny/
+		rsync -avz -e "ssh -o StrictHostKeyChecking=no" --progress $2 $3:~/sonny
   	echo "Pushing resources to machine $3"
-		scp -r ../resources $3:~/sonny/
+		#scp -r ../resources $3:~/sonny/
+		rsync -avz -e "ssh -o StrictHostKeyChecking=no" --progress ../resources $3:~/sonny
 	elif [ $4 == "res" ]; then
   	echo "Pushing resources to machine $3"
-		scp -r ../resources $3:~/sonny/
-		#scp run_sonny.sh $3:~/sonny/
+		#scp -r ../resources $3:~/sonny/
+		rsync -avz -e "ssh -o StrictHostKeyChecking=no" --progress ../resources $3:~/sonny
 	elif [ $4 == "bin" ]; then
   	echo "Pushing binary to machine $3"
-		scp $2 $3:~/sonny/
+		#scp $2 $3:~/sonny/
+		rsync -avz -e "ssh -o StrictHostKeyChecking=no" --progress $2 $3:~/sonny
 	fi
 fi
 
