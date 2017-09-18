@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -13,8 +15,9 @@ import (
 )
 
 func main() {
-
-	conn, err := grpc.Dial("10.0.0.30:2233", grpc.WithInsecure())
+	host := flag.String("host:port", "10.0.0.30:2233", "port")
+	flag.Parse()
+	conn, err := grpc.Dial(*host, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("failed to connect to rpc endpoint: %v", err)
 	}
@@ -104,199 +107,197 @@ func main() {
 				return nil
 			},
 		},
-
-		/*
-				{
-					Name:    "MotorTurn",
-					Aliases: []string{"turn"},
-					Usage:   "Turn Motor",
-					Flags: []cli.Flag{
-						cli.IntFlag{
-							Name:  "turns,t",
-							Usage: "Number of Turns",
-						},
-						cli.UintFlag{
-							Name:  "rotateType,r",
-							Usage: "right_sync = 0, left_sync, right_async, left_async",
-						},
-						cli.UintFlag{
-							Name:  "dutyPercent, d",
-							Usage: "Duty percentage 0 - 100",
-						},
-					},
-					Action: func(c *cli.Context) error {
-						r, err := ctrl.Turn(context.Background(), &pb.TurnReq{
-							Turns:       int32(c.Int("turns")),
-							RotateType:  uint32(c.Uint("rotateType")),
-							DutyPercent: uint32(c.Uint("dutyPercent")),
-						})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
-						return nil
-					},
+		{
+			Name:    "MotorTurn",
+			Aliases: []string{"turn"},
+			Usage:   "Turn Motor",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "turns,t",
+					Usage: "Number of Turns",
 				},
-				{
-					Name:    "MotorMove",
-					Aliases: []string{"move"},
-					Usage:   "Move motor",
-					Flags: []cli.Flag{
-						cli.IntFlag{
-							Name:  "turns,t",
-							Usage: "Number of Turns",
-						},
-						cli.BoolFlag{
-							Name:  "forward,f",
-							Usage: "Forward or default backward",
-						},
-						cli.UintFlag{
-							Name:  "dutyPercent, d",
-							Usage: "Duty percentage 0 - 100",
-						},
-					},
-					Action: func(c *cli.Context) error {
-						r, err := ctrl.Move(context.Background(), &pb.MoveReq{
-							Turns:       int32(c.Int("turns")),
-							Fwd:         bool(c.Bool("forward")),
-							DutyPercent: uint32(c.Uint("dutyPercent")),
-						})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
-						return nil
-					},
+				cli.UintFlag{
+					Name:  "rotateType,r",
+					Usage: "right_sync = 0, left_sync, right_async, left_async",
 				},
-				{
-					Name:    "PIRDetect",
-					Aliases: []string{"pir"},
-					Usage:   "PIR Sensor",
-					Action: func(c *cli.Context) error {
-						h, err := ctrl.PIRDetect(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("PIR Sensor %v", h.On)
-						return nil
-					},
+				cli.UintFlag{
+					Name:  "dutyPercent, d",
+					Usage: "Duty percentage 0 - 100",
 				},
-				{
-					Name:    "ForwardSweep",
-					Aliases: []string{"sweep"},
-					Usage:   "Forward Sweep ultrasonic sensor",
-					Flags: []cli.Flag{
-						cli.IntFlag{
-							Name:  "angle,a",
-							Usage: "Increment Angle",
-						},
-					},
-					Action: func(c *cli.Context) error {
-						d, err := ctrl.ForwardSweep(context.Background(), &pb.SweepReq{
-							Angle: int32(c.Int("angle")),
-						})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Sweep %v", d.Distance)
-						return nil
-					},
+			},
+			Action: func(c *cli.Context) error {
+				r, err := ctrl.Turn(context.Background(), &pb.TurnReq{
+					Turns:       int32(c.Int("turns")),
+					RotateType:  uint32(c.Uint("rotateType")),
+					DutyPercent: uint32(c.Uint("dutyPercent")),
+				})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
+				return nil
+			},
+		},
+		{
+			Name:    "MotorMove",
+			Aliases: []string{"move"},
+			Usage:   "Move motor",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "turns,t",
+					Usage: "Number of Turns",
 				},
-				{
-					Name:    "Distance",
-					Aliases: []string{"dist"},
-					Usage:   "Distance from ultrasonic sensor",
-					Action: func(c *cli.Context) error {
-						d, err := ctrl.Distance(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Distance %v", d.Distance)
-						return nil
-					},
+				cli.BoolFlag{
+					Name:  "forward,f",
+					Usage: "Forward or default backward",
 				},
-				{
-					Name:    "Acceleration",
-					Aliases: []string{"accel"},
-					Usage:   "Acceleration from Accelerometer",
-					Action: func(c *cli.Context) error {
-						a, err := ctrl.Accelerometer(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Acceleration X=%0.00v,Y=%0.00v,Z=%0.00v", a.X, a.Y, a.Z)
-						return nil
-					},
+				cli.UintFlag{
+					Name:  "dutyPercent, d",
+					Usage: "Duty percentage 0 - 100",
 				},
-				{
-					Name:    "Heading",
-					Aliases: []string{"head"},
-					Usage:   "Magnetic Heading",
-					Action: func(c *cli.Context) error {
-						h, err := ctrl.Heading(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Heading %v", h.Heading)
-						return nil
-					},
+			},
+			Action: func(c *cli.Context) error {
+				r, err := ctrl.Move(context.Background(), &pb.MoveReq{
+					Turns:       int32(c.Int("turns")),
+					Fwd:         bool(c.Bool("forward")),
+					DutyPercent: uint32(c.Uint("dutyPercent")),
+				})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
+				return nil
+			},
+		},
+		{
+			Name:    "PIRDetect",
+			Aliases: []string{"pir"},
+			Usage:   "PIR Sensor",
+			Action: func(c *cli.Context) error {
+				h, err := ctrl.PIRDetect(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("PIR Sensor %v", h.On)
+				return nil
+			},
+		},
+		{
+			Name:    "ForwardSweep",
+			Aliases: []string{"sweep"},
+			Usage:   "Forward Sweep ultrasonic sensor",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "angle,a",
+					Usage: "Increment Angle",
 				},
-				{
-					Name:    "temp_humidity",
-					Aliases: []string{"temp"},
-					Usage:   "Returns temperature and humidity",
-					Action: func(c *cli.Context) error {
-						p, err := ctrl.DHT11(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Temp %v C  Humidity %v%%", p.Temp, p.Humidity)
-						return nil
-					},
+			},
+			Action: func(c *cli.Context) error {
+				d, err := ctrl.ForwardSweep(context.Background(), &pb.SweepReq{
+					Angle: int32(c.Int("angle")),
+				})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Sweep %v", d.Distance)
+				return nil
+			},
+		},
+		{
+			Name:    "Distance",
+			Aliases: []string{"dist"},
+			Usage:   "Distance from ultrasonic sensor",
+			Action: func(c *cli.Context) error {
+				d, err := ctrl.Distance(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Distance %v", d.Distance)
+				return nil
+			},
+		},
+		{
+			Name:    "Acceleration",
+			Aliases: []string{"accel"},
+			Usage:   "Acceleration from Accelerometer",
+			Action: func(c *cli.Context) error {
+				a, err := ctrl.Accelerometer(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Acceleration X=%0.00v,Y=%0.00v,Z=%0.00v", a.X, a.Y, a.Z)
+				return nil
+			},
+		},
+		{
+			Name:    "Heading",
+			Aliases: []string{"head"},
+			Usage:   "Magnetic Heading",
+			Action: func(c *cli.Context) error {
+				h, err := ctrl.Heading(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Heading %v", h.Heading)
+				return nil
+			},
+		},
+		{
+			Name:    "temp_humidity",
+			Aliases: []string{"temp"},
+			Usage:   "Returns temperature and humidity",
+			Action: func(c *cli.Context) error {
+				p, err := ctrl.DHT11(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Temp %v C  Humidity %v%%", p.Temp, p.Humidity)
+				return nil
+			},
+		},
+		{
+			Name:    "battery",
+			Aliases: []string{"batt"},
+			Usage:   "Returns battery voltage",
+			Action: func(c *cli.Context) error {
+				p, err := ctrl.BattState(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Volt %v", p.Volt)
+				return nil
+			},
+		},
+		{
+			Name:    "light_level",
+			Aliases: []string{"ldr"},
+			Usage:   "Returns light level",
+			Action: func(c *cli.Context) error {
+				p, err := ctrl.LDR(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					return cli.NewExitError(err.Error(), 1)
+				}
+				log.Printf("Light %v", p.Adc)
+				return nil
+			},
+		},
+		{
+			Name:    "complete",
+			Aliases: []string{"c"},
+			Usage:   "complete a task on the list",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "lang, l",
+					Value:  "english",
+					Usage:  "language for the greeting",
+					EnvVar: "LEGACY_COMPAT_LANG,APP_LANG,LANG",
 				},
-				{
-					Name:    "battery",
-					Aliases: []string{"batt"},
-					Usage:   "Returns battery voltage",
-					Action: func(c *cli.Context) error {
-						p, err := ctrl.BattState(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Volt %v", p.Volt)
-						return nil
-					},
-				},
-				{
-					Name:    "light_level",
-					Aliases: []string{"ldr"},
-					Usage:   "Returns light level",
-					Action: func(c *cli.Context) error {
-						p, err := ctrl.LDR(context.Background(), &google_pb.Empty{})
-						if err != nil {
-							return cli.NewExitError(err.Error(), 1)
-						}
-						log.Printf("Light %v", p.Adc)
-						return nil
-					},
-				},
-			{
-					Name:    "complete",
-					Aliases: []string{"c"},
-					Usage:   "complete a task on the list",
-					Flags: []cli.Flag{
-						cli.StringFlag{
-							Name:   "lang, l",
-							Value:  "english",
-							Usage:  "language for the greeting",
-							EnvVar: "LEGACY_COMPAT_LANG,APP_LANG,LANG",
-						},
-					},
-					Action: func(c *cli.Context) error {
-						fmt.Println("completed task: ", c.Args().First())
-						return nil
-					},
-				},*/
+			},
+			Action: func(c *cli.Context) error {
+				fmt.Println("completed task: ", c.Args().First())
+				return nil
+			},
+		},
 	}
 	app.Run(os.Args)
 

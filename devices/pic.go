@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	p "github.com/deepakkamesh/sonny/protocol"
+	"github.com/golang/glog"
 	"github.com/kidoman/embd"
 )
 
@@ -224,20 +225,20 @@ func (m *Controller) BattState() (batt float32, err error) {
 	return
 }
 
-// Distance returns the distance reading from the ultrasonic sensor.
+// Distance returns the distance reading from the lidar.
 func (m *Controller) Distance() (dist uint16, err error) {
 	pkt := []byte{p.CMD_STATE}
 
-	if er := m.send(p.DEV_US020, pkt); er != nil {
+	if er := m.send(p.DEV_LIDAR, pkt); er != nil {
 		err = fmt.Errorf("unable to send command: %v", er)
 		return
 	}
 
-	pkt, err = m.recv(p.DEV_US020)
+	pkt, err = m.recv(p.DEV_LIDAR)
 	if err != nil {
 		return
 	}
-
+	glog.Infof("Packet %x %x", pkt[1], pkt[2])
 	dist = uint16(pkt[1])<<8 | uint16(pkt[2])
 	return
 }

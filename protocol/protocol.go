@@ -20,6 +20,7 @@ const (
 	DEV_MOTOR       byte = 0x7
 	DEV_DHT11       byte = 0x8
 	DEV_US020       byte = 0x9
+	DEV_LIDAR       byte = 0xA
 
 	// Command definitions.
 	CMD_ON      byte = 0x1

@@ -19,6 +19,7 @@
         <itemPath>mcc_generated_files/fvr.h</itemPath>
         <itemPath>mcc_generated_files/tmr2.h</itemPath>
         <itemPath>mcc_generated_files/i2c2.h</itemPath>
+        <itemPath>mcc_generated_files/i2c1.h</itemPath>
       </logicalFolder>
       <itemPath>protocol.h</itemPath>
       <itemPath>admin_device.h</itemPath>
@@ -31,6 +32,7 @@
       <itemPath>dht11_device.h</itemPath>
       <itemPath>us020_device.h</itemPath>
       <itemPath>host_controller.h</itemPath>
+      <itemPath>lidar_device.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -54,6 +56,7 @@
         <itemPath>mcc_generated_files/fvr.c</itemPath>
         <itemPath>mcc_generated_files/tmr2.c</itemPath>
         <itemPath>mcc_generated_files/i2c2.c</itemPath>
+        <itemPath>mcc_generated_files/i2c1.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>admin_device.c</itemPath>
@@ -66,6 +69,7 @@
       <itemPath>dht11_device.c</itemPath>
       <itemPath>us020_device.c</itemPath>
       <itemPath>host_controller.c</itemPath>
+      <itemPath>lidar_device.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

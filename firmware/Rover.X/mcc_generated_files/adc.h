@@ -13,7 +13,7 @@
   @Description
     This header file provides APIs for driver for ADC.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.3
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:
@@ -96,7 +96,7 @@ typedef enum
     AX =  0x0,
     AY =  0x1,
     AZ =  0x2,
-    LDR =  0xF,
+    LDR =  0xE,
     channel_CTMU =  0x1D,
     channel_DAC =  0x1E,
     channel_FVRBuf2 =  0x1F

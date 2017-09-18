@@ -6,7 +6,9 @@
 
 extern Queue CmdQ[MAX_DEVICES];
 #define TIMEOUT 25
-
+/* To enable US020 uncomment below
+ * US_TRIG and US_ECHO should be configured as output and input respectively
+ */
 void US020Task(void) {
   static uint32_t ticks = 0;
   static uint16_t dist = 0;
@@ -24,9 +26,9 @@ void US020Task(void) {
   // State Machine.
   switch (state) {
     case SEND_TRIGGER:
-      US_TRIG_SetHigh();
+    // US_TRIG_SetHigh(); 
       __delay_us(10);
-      US_TRIG_SetLow();
+     // US_TRIG_SetLow();
       ticks = TickGet();
       state = WAIT_HIGH;
       break;
@@ -37,9 +39,9 @@ void US020Task(void) {
         state = RESET;
         break;
       }
-      if (!US_ECHO_GetValue()) {
+    /*  if (!US_ECHO_GetValue()) {
         break;
-      }
+      }*/
       ticks = TickGet();
       state = MEASURE_ECHO;
       break;
@@ -50,9 +52,9 @@ void US020Task(void) {
         state = RESET;
         break;
       }
-      if (US_ECHO_GetValue()) {
+    /*  if (US_ECHO_GetValue()) {
         break;
-      }
+      }*/
       dist = (uint16_t) ((TickGet() - ticks)*1000 / TICK_MILLISECOND / 58.3);
       state = SEND_RESPONSE;
       break;

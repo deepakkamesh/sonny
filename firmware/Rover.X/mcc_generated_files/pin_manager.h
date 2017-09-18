@@ -13,7 +13,7 @@
   @Description:
     This header file provides implementations for pin APIs for all pins selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.3
         Device            :  PIC18F26K22
         Version           :  1.01
     The generated drivers are tested against the following:
@@ -182,46 +182,38 @@
 #define LED1_SetDigitalMode() do { ANSELBbits.ANSB3 = 0; } while(0)
 
 // get/set LDR aliases
-#define LDR_TRIS               TRISCbits.TRISC3
-#define LDR_LAT                LATCbits.LATC3
-#define LDR_PORT               PORTCbits.RC3
-#define LDR_ANS                ANSELCbits.ANSC3
-#define LDR_SetHigh()            do { LATCbits.LATC3 = 1; } while(0)
-#define LDR_SetLow()             do { LATCbits.LATC3 = 0; } while(0)
-#define LDR_Toggle()             do { LATCbits.LATC3 = ~LATCbits.LATC3; } while(0)
-#define LDR_GetValue()           PORTCbits.RC3
-#define LDR_SetDigitalInput()    do { TRISCbits.TRISC3 = 1; } while(0)
-#define LDR_SetDigitalOutput()   do { TRISCbits.TRISC3 = 0; } while(0)
-#define LDR_SetAnalogMode()  do { ANSELCbits.ANSC3 = 1; } while(0)
-#define LDR_SetDigitalMode() do { ANSELCbits.ANSC3 = 0; } while(0)
+#define LDR_TRIS               TRISCbits.TRISC2
+#define LDR_LAT                LATCbits.LATC2
+#define LDR_PORT               PORTCbits.RC2
+#define LDR_ANS                ANSELCbits.ANSC2
+#define LDR_SetHigh()            do { LATCbits.LATC2 = 1; } while(0)
+#define LDR_SetLow()             do { LATCbits.LATC2 = 0; } while(0)
+#define LDR_Toggle()             do { LATCbits.LATC2 = ~LATCbits.LATC2; } while(0)
+#define LDR_GetValue()           PORTCbits.RC2
+#define LDR_SetDigitalInput()    do { TRISCbits.TRISC2 = 1; } while(0)
+#define LDR_SetDigitalOutput()   do { TRISCbits.TRISC2 = 0; } while(0)
+#define LDR_SetAnalogMode()  do { ANSELCbits.ANSC2 = 1; } while(0)
+#define LDR_SetDigitalMode() do { ANSELCbits.ANSC2 = 0; } while(0)
 
-// get/set US_TRIG aliases
-#define US_TRIG_TRIS               TRISCbits.TRISC4
-#define US_TRIG_LAT                LATCbits.LATC4
-#define US_TRIG_PORT               PORTCbits.RC4
-#define US_TRIG_ANS                ANSELCbits.ANSC4
-#define US_TRIG_SetHigh()            do { LATCbits.LATC4 = 1; } while(0)
-#define US_TRIG_SetLow()             do { LATCbits.LATC4 = 0; } while(0)
-#define US_TRIG_Toggle()             do { LATCbits.LATC4 = ~LATCbits.LATC4; } while(0)
-#define US_TRIG_GetValue()           PORTCbits.RC4
-#define US_TRIG_SetDigitalInput()    do { TRISCbits.TRISC4 = 1; } while(0)
-#define US_TRIG_SetDigitalOutput()   do { TRISCbits.TRISC4 = 0; } while(0)
-#define US_TRIG_SetAnalogMode()  do { ANSELCbits.ANSC4 = 1; } while(0)
-#define US_TRIG_SetDigitalMode() do { ANSELCbits.ANSC4 = 0; } while(0)
+// get/set RC3 procedures
+#define RC3_SetHigh()    do { LATCbits.LATC3 = 1; } while(0)
+#define RC3_SetLow()   do { LATCbits.LATC3 = 0; } while(0)
+#define RC3_Toggle()   do { LATCbits.LATC3 = ~LATCbits.LATC3; } while(0)
+#define RC3_GetValue()         PORTCbits.RC3
+#define RC3_SetDigitalInput()   do { TRISCbits.TRISC3 = 1; } while(0)
+#define RC3_SetDigitalOutput()  do { TRISCbits.TRISC3 = 0; } while(0)
+#define RC3_SetAnalogMode() do { ANSELCbits.ANSC3 = 1; } while(0)
+#define RC3_SetDigitalMode()do { ANSELCbits.ANSC3 = 0; } while(0)
 
-// get/set US_ECHO aliases
-#define US_ECHO_TRIS               TRISCbits.TRISC5
-#define US_ECHO_LAT                LATCbits.LATC5
-#define US_ECHO_PORT               PORTCbits.RC5
-#define US_ECHO_ANS                ANSELCbits.ANSC5
-#define US_ECHO_SetHigh()            do { LATCbits.LATC5 = 1; } while(0)
-#define US_ECHO_SetLow()             do { LATCbits.LATC5 = 0; } while(0)
-#define US_ECHO_Toggle()             do { LATCbits.LATC5 = ~LATCbits.LATC5; } while(0)
-#define US_ECHO_GetValue()           PORTCbits.RC5
-#define US_ECHO_SetDigitalInput()    do { TRISCbits.TRISC5 = 1; } while(0)
-#define US_ECHO_SetDigitalOutput()   do { TRISCbits.TRISC5 = 0; } while(0)
-#define US_ECHO_SetAnalogMode()  do { ANSELCbits.ANSC5 = 1; } while(0)
-#define US_ECHO_SetDigitalMode() do { ANSELCbits.ANSC5 = 0; } while(0)
+// get/set RC4 procedures
+#define RC4_SetHigh()    do { LATCbits.LATC4 = 1; } while(0)
+#define RC4_SetLow()   do { LATCbits.LATC4 = 0; } while(0)
+#define RC4_Toggle()   do { LATCbits.LATC4 = ~LATCbits.LATC4; } while(0)
+#define RC4_GetValue()         PORTCbits.RC4
+#define RC4_SetDigitalInput()   do { TRISCbits.TRISC4 = 1; } while(0)
+#define RC4_SetDigitalOutput()  do { TRISCbits.TRISC4 = 0; } while(0)
+#define RC4_SetAnalogMode() do { ANSELCbits.ANSC4 = 1; } while(0)
+#define RC4_SetDigitalMode()do { ANSELCbits.ANSC4 = 0; } while(0)
 
 /**
    @Param

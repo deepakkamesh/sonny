@@ -13,7 +13,7 @@
   @Description:
     This header file provides implementations for driver APIs for all modules selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15.1
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.3
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
@@ -114,14 +114,15 @@ void SYSTEM_Initialize(void)
     INTERRUPT_Initialize();
     PIN_MANAGER_Initialize();
     OSCILLATOR_Initialize();
+    I2C1_Initialize();
     I2C2_Initialize();
     FVR_Initialize();
     CCP4_Initialize();
     CCP5_Initialize();
     ADC_Initialize();
     TMR3_Initialize();
-    TMR2_Initialize();
     TMR5_Initialize();
+    TMR2_Initialize();
     TMR0_Initialize();
 }
 

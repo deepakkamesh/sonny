@@ -54,6 +54,7 @@
 #include "batt_device.h"
 #include "dht11_device.h"
 #include "us020_device.h"
+#include "lidar_device.h"
 #include "tick.h"
 
 /*
@@ -95,10 +96,12 @@ void main(void) {
   // Disable the Peripheral Interrupts
   //INTERRUPT_PeripheralInterruptDisable();
 
+  // Post Interrupt Enable Initialization.
+    LidarInit();
+
   __delay_ms(5);
 
   while (1) {
-
     AdminTask();
     LedTask();
     ServoTask();
@@ -107,6 +110,7 @@ void main(void) {
     BattTask();
     DHT11Task();
     US020Task();
+    LidarTask();
   }
 }
 /**

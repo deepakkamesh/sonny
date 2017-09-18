@@ -105,6 +105,12 @@ extern "C" {
    * Byte1 - MSB of distance in centimeters
    * Byte2 - LSB of distance in centimeters.
    */
+#define DEV_LIDAR 0xA
+  /* Lidar Garmin V3
+   * CMD_STATE:
+   * Return
+   * 
+   */
   // Command definitions.    
 #define CMD_ON 0x1
 #define CMD_PING 0x2
