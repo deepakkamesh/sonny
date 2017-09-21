@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	host := flag.String("host:port", "10.0.0.30:2233", "port")
+	host := flag.String("host:port", "10.0.0.130:2233", "port")
 	flag.Parse()
 	conn, err := grpc.Dial(*host, grpc.WithInsecure())
 	if err != nil {

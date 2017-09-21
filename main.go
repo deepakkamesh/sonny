@@ -27,12 +27,12 @@ var (
 func main() {
 
 	var (
-		brc     = flag.String("brc", "LCD-D23", "GPIO port for roomba BRC for keepalive")
+		brc     = flag.String("brc", "LCD-D22", "GPIO port for roomba BRC for keepalive")
 		picAddr = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
 		tty     = flag.String("tty", "/dev/ttyS0", "tty port")
 		res     = flag.String("resources", "./resources", "resources directory")
 		pirPin  = flag.String("pir_pin", "CSID0", "PIR gpio pin")
-		I2CBus  = flag.Int("i2c_bus", 2, "I2C bus for Compass")
+		I2CBus  = flag.Int("i2c_bus", 1, "I2C bus")
 
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")
 		enRoomba  = flag.Bool("en_roomba", false, "Enable Roomba")
@@ -71,6 +71,7 @@ func main() {
 	// Initialize Roomba.
 	var rb *roomba.Roomba
 	if *enRoomba {
+		glog.V(1).Infof("Enabling Roomba...")
 		var err error
 		if rb, err = roomba.MakeRoomba(*tty, *brc); err != nil {
 			glog.Fatalf("Failed to initialize roomba: %v", err)
@@ -78,6 +79,12 @@ func main() {
 		if err = rb.Start(true); err != nil {
 			glog.Fatalf("Failed to start roomba: %v", err)
 		}
+		rb.Safe()
+	}
+	// Power up secondary battery on main brush.
+	time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
+	if err := rb.MainBrush(true, true); err != nil {
+		glog.Fatalf("Failed to turn on main brush: %v ")
 	}
 
 	// Initialize PIC Controller.
@@ -128,7 +135,4 @@ func main() {
 		glog.Fatalf("Failed to listen: %v", err)
 	}
 
-	for {
-		time.Sleep(time.Millisecond * 20)
-	}
 }

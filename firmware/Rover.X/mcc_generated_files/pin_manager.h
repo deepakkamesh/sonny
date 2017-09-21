@@ -135,22 +135,17 @@
 #define RB0_SetAnalogMode() do { ANSELBbits.ANSB0 = 1; } while(0)
 #define RB0_SetDigitalMode()do { ANSELBbits.ANSB0 = 0; } while(0)
 
-// get/set SCL2 aliases
-#define SCL2_TRIS               TRISBbits.TRISB1
-#define SCL2_LAT                LATBbits.LATB1
-#define SCL2_PORT               PORTBbits.RB1
-#define SCL2_WPU                WPUBbits.WPUB1
-#define SCL2_ANS                ANSELBbits.ANSB1
-#define SCL2_SetHigh()            do { LATBbits.LATB1 = 1; } while(0)
-#define SCL2_SetLow()             do { LATBbits.LATB1 = 0; } while(0)
-#define SCL2_Toggle()             do { LATBbits.LATB1 = ~LATBbits.LATB1; } while(0)
-#define SCL2_GetValue()           PORTBbits.RB1
-#define SCL2_SetDigitalInput()    do { TRISBbits.TRISB1 = 1; } while(0)
-#define SCL2_SetDigitalOutput()   do { TRISBbits.TRISB1 = 0; } while(0)
-#define SCL2_SetPullup()      do { WPUBbits.WPUB1 = 1; } while(0)
-#define SCL2_ResetPullup()    do { WPUBbits.WPUB1 = 0; } while(0)
-#define SCL2_SetAnalogMode()  do { ANSELBbits.ANSB1 = 1; } while(0)
-#define SCL2_SetDigitalMode() do { ANSELBbits.ANSB1 = 0; } while(0)
+// get/set RB1 procedures
+#define RB1_SetHigh()    do { LATBbits.LATB1 = 1; } while(0)
+#define RB1_SetLow()   do { LATBbits.LATB1 = 0; } while(0)
+#define RB1_Toggle()   do { LATBbits.LATB1 = ~LATBbits.LATB1; } while(0)
+#define RB1_GetValue()         PORTBbits.RB1
+#define RB1_SetDigitalInput()   do { TRISBbits.TRISB1 = 1; } while(0)
+#define RB1_SetDigitalOutput()  do { TRISBbits.TRISB1 = 0; } while(0)
+#define RB1_SetPullup()     do { WPUBbits.WPUB1 = 1; } while(0)
+#define RB1_ResetPullup()   do { WPUBbits.WPUB1 = 0; } while(0)
+#define RB1_SetAnalogMode() do { ANSELBbits.ANSB1 = 1; } while(0)
+#define RB1_SetDigitalMode()do { ANSELBbits.ANSB1 = 0; } while(0)
 
 // get/set RB2 procedures
 #define RB2_SetHigh()    do { LATBbits.LATB2 = 1; } while(0)
@@ -194,26 +189,6 @@
 #define LDR_SetDigitalOutput()   do { TRISCbits.TRISC2 = 0; } while(0)
 #define LDR_SetAnalogMode()  do { ANSELCbits.ANSC2 = 1; } while(0)
 #define LDR_SetDigitalMode() do { ANSELCbits.ANSC2 = 0; } while(0)
-
-// get/set RC3 procedures
-#define RC3_SetHigh()    do { LATCbits.LATC3 = 1; } while(0)
-#define RC3_SetLow()   do { LATCbits.LATC3 = 0; } while(0)
-#define RC3_Toggle()   do { LATCbits.LATC3 = ~LATCbits.LATC3; } while(0)
-#define RC3_GetValue()         PORTCbits.RC3
-#define RC3_SetDigitalInput()   do { TRISCbits.TRISC3 = 1; } while(0)
-#define RC3_SetDigitalOutput()  do { TRISCbits.TRISC3 = 0; } while(0)
-#define RC3_SetAnalogMode() do { ANSELCbits.ANSC3 = 1; } while(0)
-#define RC3_SetDigitalMode()do { ANSELCbits.ANSC3 = 0; } while(0)
-
-// get/set RC4 procedures
-#define RC4_SetHigh()    do { LATCbits.LATC4 = 1; } while(0)
-#define RC4_SetLow()   do { LATCbits.LATC4 = 0; } while(0)
-#define RC4_Toggle()   do { LATCbits.LATC4 = ~LATCbits.LATC4; } while(0)
-#define RC4_GetValue()         PORTCbits.RC4
-#define RC4_SetDigitalInput()   do { TRISCbits.TRISC4 = 1; } while(0)
-#define RC4_SetDigitalOutput()  do { TRISCbits.TRISC4 = 0; } while(0)
-#define RC4_SetAnalogMode() do { ANSELCbits.ANSC4 = 1; } while(0)
-#define RC4_SetDigitalMode()do { ANSELCbits.ANSC4 = 0; } while(0)
 
 /**
    @Param

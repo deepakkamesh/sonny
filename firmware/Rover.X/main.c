@@ -97,7 +97,7 @@ void main(void) {
   //INTERRUPT_PeripheralInterruptDisable();
 
   // Post Interrupt Enable Initialization.
-    LidarInit();
+   // LidarInit();
 
   __delay_ms(5);
 
@@ -110,7 +110,7 @@ void main(void) {
     BattTask();
     DHT11Task();
     US020Task();
-    LidarTask();
+  //  LidarTask();
   }
 }
 /**

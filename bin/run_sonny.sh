@@ -12,6 +12,7 @@ $LOC/main \
 				-alsologtostderr=true \
 				-logtostderr=false \
 				-en_pic \
+				-en_roomba \
 				-en_io \
 				-en_compass=false \
 				-v=2 
