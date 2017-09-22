@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 
+	"gobot.io/x/gobot"
+	"gobot.io/x/gobot/drivers/i2c"
+
 	p "github.com/deepakkamesh/sonny/protocol"
 	"github.com/golang/glog"
-	"github.com/kidoman/embd"
 )
 
 const (
@@ -17,32 +19,51 @@ const (
 )
 
 type Controller struct {
-	bus     embd.I2CBus // Initialized I2C bus.
-	address byte        // I2c Address of the pic controller.
+	name       string
+	connector  i2c.Connector
+	connection i2c.Connection
+	i2c.Config
 }
 
 // NewController returns a new initialized controller.
-func NewController(bus embd.I2CBus, address byte) *Controller {
-	return &Controller{
-		bus:     bus,
-		address: address,
+func NewController(a i2c.Connector, options ...func(i2c.Config)) *Controller {
+
+	d := &Controller{
+		name:      gobot.DefaultName("PIC"),
+		connector: a,
+		Config:    i2c.NewConfig(),
 	}
+
+	for _, option := range options {
+		option(d)
+	}
+	return d
 }
 
-// sendCmd sends a command, parameters to deviceID.
+// Start initialized the PIC.
+func (h *Controller) Start() (err error) {
+	bus := h.GetBusOrDefault(h.connector.GetDefaultBus())
+	address := h.GetAddressOrDefault(0x7)
+
+	h.connection, err = h.connector.GetConnection(address, bus)
+	if err != nil {
+		return err
+	}
+	return
+}
+
+// send sends a command, parameters to deviceID.
 func (m *Controller) send(deviceID byte, pkt []byte) error {
 	d := []byte{p.Header(pkt)}
 	d = append(d, pkt...)
-	if err := m.bus.WriteToReg(m.address, deviceID, d); err != nil {
+	if err := m.connection.WriteBlockData(deviceID, d); err != nil {
 		return err
 	}
 	return nil
 }
 
-// recv reads bytes from deviceID.
 func (m *Controller) recv(deviceID byte) ([]byte, error) {
-
-	header, err := m.bus.ReadByteFromReg(m.address, deviceID)
+	header, err := m.connection.ReadByteData(deviceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read header: %v", err)
 	}
@@ -53,7 +74,7 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 	}
 
 	pkt := make([]byte, (pktSz))
-	if err = m.bus.ReadFromReg(m.address, deviceID, pkt); err != nil {
+	if _, err = m.connection.Read(pkt); err != nil {
 		return nil, fmt.Errorf("failed to read packet: %v", err)
 	}
 
@@ -66,6 +87,7 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 	}
 
 	return pkt, nil
+
 }
 
 // Ping returns nil if the controller is available.

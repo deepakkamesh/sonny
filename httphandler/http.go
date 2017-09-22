@@ -9,20 +9,21 @@ import (
 	"strings"
 	"time"
 
+	"gobot.io/x/gobot/drivers/i2c"
+
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/go-roomba/constants"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
-	"github.com/kidoman/embd/sensor/hcsr501"
-	"github.com/kidoman/embd/sensor/hmc5883l"
 )
 
 type Server struct {
 	ctrl       *devices.Controller
-	mag        *hmc5883l.HMC5883L
-	pir        *hcsr501.HCSR501
+	lidar      *i2c.LIDARLiteDriver
+	mag        *i2c.HMC6352Driver
+	pir        *int
 	roomba     *roomba.Roomba
 	ssl        bool
 	resources  string
@@ -53,6 +54,7 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 
 	return &Server{
 		ctrl:       d.Ctrl,
+		lidar:      d.Lidar,
 		mag:        d.Mag,
 		pir:        d.Pir,
 		roomba:     d.Roomba,
@@ -168,7 +170,10 @@ func (m *Server) dataCollector() {
 				if m.mag == nil {
 					return
 				}
-				h, err := m.mag.Heading()
+				// TODO: to be implemented.
+				//h, err := m.mag.Heading()
+				h := 0
+				var err error
 				if err != nil {
 					glog.Warningf("Failed to read Compass: %v", err)
 					return
@@ -180,16 +185,7 @@ func (m *Server) dataCollector() {
 				if m.pir == nil {
 					return
 				}
-				v, err := m.pir.Detect()
-				if err != nil {
-					glog.Warningf("Failed to read PIR: %v", err)
-					return
-				}
-				if v {
-					m.data.Controller[3] = float32(1)
-				} else {
-					m.data.Controller[3] = float32(0)
-				}
+				m.data.Controller[3] = float32(*m.pir)
 			}()
 
 		case <-t100ms.C:
@@ -341,10 +337,6 @@ func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 
 	dir := strings.ToLower(r.Form.Get("dir")) // Motor button { up, down, left, right}
 	var err error
-
-	/*	err = m.roomba.Drive(-100, 32767)
-		time.Sleep(500 * time.Millisecond)
-		m.roomba.Drive(0, 0)*/
 
 	switch dir {
 	case "fwd":

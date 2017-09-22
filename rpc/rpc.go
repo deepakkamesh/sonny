@@ -7,22 +7,25 @@ import (
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
-	"github.com/kidoman/embd/sensor/hcsr501"
-	"github.com/kidoman/embd/sensor/hmc5883l"
+	"gobot.io/x/gobot/drivers/i2c"
+	"gobot.io/x/gobot/platforms/chip"
 	"golang.org/x/net/context"
 )
 
 type Devices struct {
 	Ctrl   *devices.Controller
-	Mag    *hmc5883l.HMC5883L
-	Pir    *hcsr501.HCSR501
+	Lidar  *i2c.LIDARLiteDriver
+	Mag    *i2c.HMC6352Driver
+	Pir    *int
 	Roomba *roomba.Roomba
+	Chip   *chip.Adaptor
 }
 
 type Server struct {
 	ctrl   *devices.Controller
-	mag    *hmc5883l.HMC5883L
-	pir    *hcsr501.HCSR501
+	lidar  *i2c.LIDARLiteDriver
+	mag    *i2c.HMC6352Driver
+	pir    *int
 	roomba *roomba.Roomba
 }
 
@@ -49,6 +52,7 @@ func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, 
 		return &google_pb.Empty{}, errors.New("controller not enabled")
 	}
 	return &google_pb.Empty{}, m.ctrl.LEDOn(in.On)
+
 }
 
 // LEDBlink blinks the LED.
@@ -104,7 +108,10 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 	if m.mag == nil {
 		return nil, errors.New("magnetometer not enabled")
 	}
-	heading, err := m.mag.Heading()
+	// TODO: To be implemented.
+	//heading, err := m.mag.Heading()
+	heading := 0.0
+	var err error
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +123,7 @@ func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, 
 	if m.ctrl == nil {
 		return nil, errors.New("controller not enabled")
 	}
-	d, err := m.ctrl.Distance()
+	d, err := m.lidar.Distance()
 	if err != nil {
 		return nil, err
 	}
@@ -146,17 +153,18 @@ func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRe
 	return &pb.SweepRet{Distance: v}, nil
 }
 
-// PIRDetect retuns true if Infrared signal is detected.
+// PIRDetect retuns true if infrared signal is detected.
 func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet, error) {
 
 	if m.pir == nil {
 		return nil, errors.New("PIR Sensor not initialized")
 	}
-	v, err := m.pir.Detect()
-	if err != nil {
-		return nil, err
+
+	if *m.pir == 1 {
+		return &pb.PIRRet{On: true}, nil
 	}
-	return &pb.PIRRet{On: v}, nil
+
+	return &pb.PIRRet{On: false}, nil
 }
 
 // BattState returns the battery level from pic.
