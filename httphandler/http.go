@@ -19,6 +19,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	TEMP byte = iota
+	HUMIDITY
+	LDR
+	PIR
+	MAG
+	BATT
+)
+
 type Server struct {
 	ctrl       *devices.Controller
 	lidar      *i2c.LIDARLiteDriver
@@ -46,6 +55,7 @@ type sensorData struct {
 	Err        string
 	Roomba     map[byte]int16
 	Controller map[byte]float32
+	Enabled    map[byte]bool
 }
 
 func New(d *rpc.Devices, ssl bool, resources string) *Server {
@@ -67,12 +77,20 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 		data: &sensorData{
 			Controller: make(map[byte]float32),
 			Roomba:     make(map[byte]int16),
+			Enabled: map[byte]bool{
+				TEMP:     true,
+				HUMIDITY: true,
+				LDR:      true,
+				PIR:      true,
+				MAG:      true,
+				BATT:     true,
+			},
 		},
 	}
 
 }
 
-func (m *Server) Start() error {
+func (m *Server) Start(hostPort string) error {
 
 	http.HandleFunc("/api/setparam/", m.SetParam)
 	http.HandleFunc("/api/ping/", m.Ping)
@@ -87,7 +105,7 @@ func (m *Server) Start() error {
 	fs := http.FileServer(http.Dir(m.resources))
 	http.Handle("/", fs)
 	go m.dataCollector()
-	return http.ListenAndServe(":8080", nil)
+	return http.ListenAndServe(hostPort, nil)
 }
 
 // writeResponse writes the response json object to w. If unable to marshal
@@ -115,7 +133,7 @@ func (m *Server) dataCollector() {
 	for {
 		// Read sensors only when there is a connected websocket.
 		if m.connCount == 0 {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			continue
 		}
 
@@ -123,6 +141,9 @@ func (m *Server) dataCollector() {
 		case <-t5s.C:
 			// DHT11 sensor.
 			func() {
+				if !m.data.Enabled[TEMP] {
+					return
+				}
 				if m.ctrl == nil {
 					glog.V(3).Infof("Controller not initialized")
 					return
@@ -132,14 +153,18 @@ func (m *Server) dataCollector() {
 					glog.Warningf("Failed to read DHT11: %v", err)
 					return
 				}
-				m.data.Controller[0] = float32(t)*1.8 + 32
-				m.data.Controller[1] = float32(h)
+				m.data.Controller[TEMP] = float32(t)*1.8 + 32
+				m.data.Controller[HUMIDITY] = float32(h)
 			}()
 
 		case <-t500ms.C:
-			// LDR sensor.
+
 			time.Sleep(50 * time.Millisecond)
+			// LDR sensor.
 			func() {
+				if !m.data.Enabled[LDR] {
+					return
+				}
 				if m.ctrl == nil {
 					return
 				}
@@ -148,11 +173,15 @@ func (m *Server) dataCollector() {
 					glog.Warningf("Failed to read LDR: %v", err)
 					return
 				}
-				m.data.Controller[2] = float32(l)
+				m.data.Controller[LDR] = float32(l)
 			}()
 			time.Sleep(50 * time.Millisecond)
+
 			// Controller battery voltage.
 			func() {
+				if !m.data.Enabled[BATT] {
+					return
+				}
 				if m.ctrl == nil {
 					return
 				}
@@ -161,12 +190,15 @@ func (m *Server) dataCollector() {
 					glog.Errorf("Failed to read controller batt state: %v", err)
 					return
 				}
-				m.data.Controller[5] = float32(b)
+				m.data.Controller[BATT] = float32(b)
 			}()
 
 		case <-t300ms.C:
 			// Compass.
 			func() {
+				if !m.data.Enabled[MAG] {
+					return
+				}
 				if m.mag == nil {
 					return
 				}
@@ -178,14 +210,18 @@ func (m *Server) dataCollector() {
 					glog.Warningf("Failed to read Compass: %v", err)
 					return
 				}
-				m.data.Controller[4] = float32(h)
+				m.data.Controller[MAG] = float32(h)
 			}()
+
 			// PIR sensor.
 			func() {
+				if !m.data.Enabled[PIR] {
+					return
+				}
 				if m.pir == nil {
 					return
 				}
-				m.data.Controller[3] = float32(*m.pir)
+				m.data.Controller[PIR] = float32(*m.pir)
 			}()
 
 		case <-t100ms.C:
@@ -543,19 +579,49 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 	switch cmd {
 	case "safe_mode":
 		err = m.roomba.Safe()
+		err = m.roomba.MainBrush(true, true)
 
 	case "full_mode":
 		err = m.roomba.Full()
+		err = m.roomba.MainBrush(true, true)
 
 	case "passive_mode":
 		err = m.roomba.Passive()
+		m.data.Enabled = map[byte]bool{
+			TEMP:     false,
+			HUMIDITY: false,
+			LDR:      false,
+			PIR:      false,
+			MAG:      false,
+			BATT:     false,
+		}
 
 	case "power_off":
 		m.roomba.Start(false)
 		err = m.roomba.Power()
+		err = m.roomba.MainBrush(false, true)
+		m.data.Enabled = map[byte]bool{
+			TEMP:     false,
+			HUMIDITY: false,
+			LDR:      false,
+			PIR:      false,
+			MAG:      false,
+			BATT:     false,
+		}
 
 	case "power_on":
 		err = m.roomba.Start(true)
+		err = m.roomba.Safe()
+		time.Sleep(100 * time.Millisecond)
+		err = m.roomba.MainBrush(true, true)
+		m.data.Enabled = map[byte]bool{
+			TEMP:     true,
+			HUMIDITY: true,
+			LDR:      true,
+			PIR:      true,
+			MAG:      true,
+			BATT:     true,
+		}
 
 	case "seek_dock":
 		err = m.roomba.SeekDock()

@@ -28,15 +28,16 @@ var (
 func main() {
 
 	var (
-		brc         = flag.String("brc", "LCD-D22", "GPIO port for roomba BRC for keepalive")
-		picAddr     = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
-		tty         = flag.String("tty", "/dev/ttyS0", "tty port")
-		res         = flag.String("resources", "./resources", "resources directory")
-		pirPin      = flag.String("pir_pin", "CSID0", "PIR gpio pin")
-		lidarI2CBus = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
-		magI2CBus   = flag.Int("mag_i2c_bus", 1, "I2C bus magnetometer")
-		picI2CBus   = flag.Int("pic_i2c_bus", 1, "I2C bus pic")
-		rpcPort     = flag.String("rpc_port", ":2233", "host:port number for rpc")
+		brc          = flag.String("brc", "LCD-D22", "GPIO port for roomba BRC for keepalive")
+		picAddr      = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
+		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
+		res          = flag.String("resources", "./resources", "resources directory")
+		pirPin       = flag.String("pir_pin", "LCD-D21", "PIR gpio pin")
+		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
+		magI2CBus    = flag.Int("mag_i2c_bus", 2, "I2C bus magnetometer")
+		picI2CBus    = flag.Int("pic_i2c_bus", 2, "I2C bus pic")
+		rpcPort      = flag.String("rpc_port", ":2233", "host:port number for rpc")
+		httpHostPort = flag.String("http_port", ":8080", "host:port number for http")
 
 		enCompass = flag.Bool("en_compass", false, "Enable Compass")
 		enRoomba  = flag.Bool("en_roomba", false, "Enable Roomba")
@@ -81,12 +82,12 @@ func main() {
 			glog.Fatalf("Failed to start roomba: %v", err)
 		}
 		rb.Safe()
-	}
 
-	// Power up secondary battery on main brush.
-	time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
-	if err := rb.MainBrush(true, true); err != nil {
-		glog.Fatalf("Failed to turn on main brush: %v ")
+		// Power up secondary battery on main brush.
+		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
+		if err := rb.MainBrush(true, true); err != nil {
+			glog.Fatalf("Failed to turn on main brush: %v ")
+		}
 	}
 
 	// Initialize PIC I2C Controller.
@@ -126,8 +127,11 @@ func main() {
 		}
 		pirCh := pir.Subscribe()
 		go func() {
-			evt := <-pirCh
-			pirVal = evt.Data.(int)
+			for {
+				evt := <-pirCh
+				pirVal = evt.Data.(int)
+				glog.V(3).Infof("Got pir data %v %v", evt.Name, evt.Data.(int))
+			}
 		}()
 	}
 
@@ -151,7 +155,7 @@ func main() {
 
 	// Startup HTTP service.
 	h := httphandler.New(dev, false, *res)
-	if err := h.Start(); err != nil {
+	if err := h.Start(*httpHostPort); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}
 
