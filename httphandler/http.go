@@ -2,7 +2,6 @@ package httphandler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"gobot.io/x/gobot/drivers/i2c"
 
 	roomba "github.com/deepakkamesh/go-roomba"
-	"github.com/deepakkamesh/go-roomba/constants"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
@@ -227,7 +225,7 @@ func (m *Server) dataCollector() {
 		case <-t100ms.C:
 			// Roomba data.
 			func() {
-				d, err := m.getRoombaSensors()
+				d, err := devices.GetRoombaTelemetry(m.roomba)
 				if err != nil {
 					glog.Warningf("Failed to read roomba sensors: %v", err)
 					return
@@ -237,42 +235,6 @@ func (m *Server) dataCollector() {
 
 		}
 	}
-}
-
-// getRoombaSensors returns the current value of the roomba sensors.
-func (m *Server) getRoombaSensors() (data map[byte]int16, err error) {
-
-	if m.roomba == nil {
-		return nil, errors.New("roomba not initialized")
-	}
-
-	data = make(map[byte]int16)
-
-	sg := []byte{constants.SENSOR_GROUP_6, constants.SENSOR_GROUP_101}
-	pg := [][]byte{constants.PACKET_GROUP_6, constants.PACKET_GROUP_101}
-
-	// Iterate through the packet groups. Sensor group 100 does not work as advertised.
-	// Use sensor group, 6 and 101 instead.
-	for grp := 0; grp < 2; grp++ {
-		d, e := m.roomba.Sensors(sg[grp])
-		if e != nil {
-			return nil, e
-		}
-		i := byte(0)
-		for _, p := range pg[grp] {
-			pktL := constants.SENSOR_PACKET_LENGTH[p]
-
-			if pktL == 1 {
-				data[p] = int16(d[i])
-			}
-			if pktL == 2 {
-				v := int16(d[i])<<8 | int16(d[i+1])
-				data[p] = v
-			}
-			i = i + pktL
-		}
-	}
-	return
 }
 
 // dataStream is the websocket server that streams rover stats.

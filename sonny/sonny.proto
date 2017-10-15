@@ -8,6 +8,8 @@ import "empty.proto";
 service DevicesRPC {
 	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {} // Ping the Controller.
 	rpc LEDBlink(LEDBlinkReq) returns (google.protobuf.Empty) {} // Blink LED.
+  rpc SecondaryPower(SecPowerReq) returns (google.protobuf.Empty) {} // Power controls.
+  rpc I2CBusEn(I2CBusEnReq) returns (google.protobuf.Empty) {} // Power controls.
 	rpc LEDOn(LEDOnReq) returns (google.protobuf.Empty) {} // Turn on LED.
   rpc ServoRotate(ServoReq) returns (google.protobuf.Empty) {} // Rotate Servo.
 	rpc Heading(google.protobuf.Empty) returns (HeadingRet) {} // Get Magnetometer Heading.
@@ -20,8 +22,29 @@ service DevicesRPC {
 	rpc DHT11(google.protobuf.Empty) returns (DHT11Ret) {} // Temp, Humidity.
 	rpc Move(MoveReq) returns (MoveRet) {} // Motor Move back or Forward.
   rpc Turn(TurnReq) returns (TurnRet) {}// Turn right or left.
+	rpc RoombaSensor(google.protobuf.Empty) returns (RoombaSensorRet) {}
+	rpc SetRoombaMode(RoombaModeReq) returns (google.protobuf.Empty) {}
 }
 
+message RoombaModeReq {
+	uint32 mode = 1;
+}
+
+message RoombaSensorRet {
+// int32 volt = 1; // Voltage.
+// int32 battCharge = 2; // Battery Charge.
+// sint32 curr = 3; // Current. 
+map<uint32,int32>Data = 1;
+
+}
+
+message SecPowerReq {
+	bool On = 1;
+}
+
+message I2CBusEnReq {
+	bool On = 1;
+}
 
 message TurnReq {
 	int32 turns = 1;

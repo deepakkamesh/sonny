@@ -9,7 +9,7 @@ import (
 
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/drivers/i2c"
-	"gobot.io/x/gobot/platforms/chip"
+	"gobot.io/x/gobot/platforms/raspi"
 
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
@@ -28,23 +28,26 @@ var (
 func main() {
 
 	var (
-		brc          = flag.String("brc", "LCD-D22", "GPIO port for roomba BRC for keepalive")
+		brc          = flag.String("brc", "7", "GPIO port for roomba BRC for keepalive")
 		picAddr      = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
 		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
 		res          = flag.String("resources", "./resources", "resources directory")
-		pirPin       = flag.String("pir_pin", "LCD-D21", "PIR gpio pin")
+		pirPin       = flag.String("pir_pin", "16", "PIR gpio pin")
+		enI2CPin     = flag.String("i2c_en_pin", "11", "I2C enable pic (high to enable I2C chip)")
 		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
-		magI2CBus    = flag.Int("mag_i2c_bus", 2, "I2C bus magnetometer")
-		picI2CBus    = flag.Int("pic_i2c_bus", 2, "I2C bus pic")
+		magI2CBus    = flag.Int("mag_i2c_bus", 1, "I2C bus magnetometer")
+		picI2CBus    = flag.Int("pic_i2c_bus", 1, "I2C bus pic")
 		rpcPort      = flag.String("rpc_port", ":2233", "host:port number for rpc")
 		httpHostPort = flag.String("http_port", ":8080", "host:port number for http")
 
-		enCompass = flag.Bool("en_compass", false, "Enable Compass")
-		enRoomba  = flag.Bool("en_roomba", false, "Enable Roomba")
-		enPic     = flag.Bool("en_pic", false, "Enable PIC")
-		enPir     = flag.Bool("en_pir", false, "Enable PIR")
-		enLidar   = flag.Bool("en_lidar", false, "Enable Lidar")
-		version   = flag.Bool("version", false, "display version")
+		roombaMode = flag.Uint("roomba_mode", 1, "0=Off 1=Passive 2=Safe 3=Full")
+		enCompass  = flag.Bool("en_compass", false, "Enable Compass")
+		enRoomba   = flag.Bool("en_roomba", false, "Enable Roomba")
+		enPic      = flag.Bool("en_pic", false, "Enable PIC")
+		enPir      = flag.Bool("en_pir", false, "Enable PIR")
+		enLidar    = flag.Bool("en_lidar", false, "Enable Lidar")
+		enSecPower = flag.Bool("en_sec_power", false, "Enable Secondary Power")
+		version    = flag.Bool("version", false, "display version")
 	)
 	flag.Parse()
 
@@ -56,7 +59,8 @@ func main() {
 	}
 
 	glog.Infof("Starting Sonny ver %s build on %s", githash, buildtime)
-	// Log Flush.
+
+	// Log flush Routine.
 	go func() {
 		for {
 			glog.Flush()
@@ -64,36 +68,54 @@ func main() {
 		}
 	}()
 
-	// Initialize CHIP Adaptor.
-	ch := chip.NewAdaptor()
-	if err := ch.Connect(); err != nil {
-		glog.Fatalf("Failed to initialize CHIP:%v", err)
+	// Initialize PI Adaptor.
+	pi := raspi.NewAdaptor()
+	if err := pi.Connect(); err != nil {
+		glog.Fatalf("Failed to initialize Adapter:%v", err)
 	}
 
 	// Initialize Roomba.
 	var rb *roomba.Roomba
 	if *enRoomba {
 		glog.V(1).Infof("Enabling Roomba...")
+
+		// Setup BRC pin for roomba keep-alive.
+		brcPin := gpio.NewDirectPinDriver(pi, *brc)
+		if err := brcPin.Start(); err != nil {
+			glog.Fatalf("Failed to setup BRC pin: %v", err)
+		}
 		var err error
-		if rb, err = roomba.MakeRoomba(*tty, *brc); err != nil {
+		if rb, err = roomba.MakeRoomba(*tty, brcPin); err != nil {
 			glog.Fatalf("Failed to initialize roomba: %v", err)
 		}
 		if err = rb.Start(true); err != nil {
 			glog.Fatalf("Failed to start roomba: %v", err)
 		}
-		rb.Safe()
+		if err = devices.SetRoombaMode(rb, byte(*roombaMode)); err != nil {
+			glog.Fatalf("Failed to set roomba mode:%v", err)
+		}
 
 		// Power up secondary battery on main brush.
-		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
-		if err := rb.MainBrush(true, true); err != nil {
-			glog.Fatalf("Failed to turn on main brush: %v ")
+		if *enSecPower {
+			time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
+			if err := rb.MainBrush(true, true); err != nil {
+				glog.Fatalf("Failed to turn on main brush: %v ")
+			}
+			time.Sleep(500 * time.Millisecond) // Time for secondary systems to come online.
 		}
 	}
+
+	// I2Cen control.
+	enI2C := gpio.NewDirectPinDriver(pi, *enI2CPin)
+	if err := enI2C.Start(); err != nil {
+		glog.Fatalf("Failed to initialize I2C en pin: %v", err)
+	}
+	enI2C.DigitalWrite(1)
 
 	// Initialize PIC I2C Controller.
 	var ctrl *devices.Controller
 	if *enPic {
-		ctrl = devices.NewController(ch,
+		ctrl = devices.NewController(pi,
 			i2c.WithBus(*picI2CBus),
 			i2c.WithAddress(*picAddr))
 		if err := ctrl.Start(); err != nil {
@@ -111,7 +133,7 @@ func main() {
 	// Initialize Lidar.
 	var lidar *i2c.LIDARLiteDriver
 	if *enLidar {
-		lidar = i2c.NewLIDARLiteDriver(ch,
+		lidar = i2c.NewLIDARLiteDriver(pi,
 			i2c.WithBus(*lidarI2CBus))
 		if err := lidar.Start(); err != nil {
 			glog.Fatalf("Failed to initialize lidar: %v")
@@ -121,7 +143,7 @@ func main() {
 	// Initialize PIR sensor.
 	var pirVal int
 	if *enPir {
-		pir := gpio.NewPIRMotionDriver(ch, *pirPin)
+		pir := gpio.NewPIRMotionDriver(pi, *pirPin)
 		if err := pir.Start(); err != nil {
 			glog.Fatalf("Unable to initialize pin %v error %v", *pirPin, err)
 		}
@@ -142,6 +164,7 @@ func main() {
 		Pir:    &pirVal,
 		Roomba: rb,
 		Lidar:  lidar,
+		I2CEn:  enI2C,
 	}
 
 	// Startup RPC service.

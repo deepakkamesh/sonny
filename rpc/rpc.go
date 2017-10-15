@@ -2,23 +2,25 @@ package rpc
 
 import (
 	"errors"
+	"fmt"
 
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
+	"github.com/golang/glog"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
+	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/drivers/i2c"
-	"gobot.io/x/gobot/platforms/chip"
 	"golang.org/x/net/context"
 )
 
 type Devices struct {
-	Ctrl   *devices.Controller
-	Lidar  *i2c.LIDARLiteDriver
-	Mag    *i2c.HMC6352Driver
-	Pir    *int
-	Roomba *roomba.Roomba
-	Chip   *chip.Adaptor
+	Ctrl   *devices.Controller   // PIC controller.
+	Lidar  *i2c.LIDARLiteDriver  // Lidar Lite.
+	Mag    *i2c.HMC6352Driver    // Magnetometer HMC5663.
+	Pir    *int                  // PIR.
+	Roomba *roomba.Roomba        // Roomba controller.
+	I2CEn  *gpio.DirectPinDriver // GPIO port control for I2C Bus.
 }
 
 type Server struct {
@@ -27,6 +29,7 @@ type Server struct {
 	mag    *i2c.HMC6352Driver
 	pir    *int
 	roomba *roomba.Roomba
+	i2cEn  *gpio.DirectPinDriver
 }
 
 func New(d *Devices) *Server {
@@ -35,6 +38,7 @@ func New(d *Devices) *Server {
 		mag:    d.Mag,
 		pir:    d.Pir,
 		roomba: d.Roomba,
+		i2cEn:  d.I2CEn,
 	}
 }
 
@@ -46,13 +50,59 @@ func (m *Server) Ping(ctx context.Context, in *google_pb.Empty) (*google_pb.Empt
 	return &google_pb.Empty{}, m.ctrl.Ping()
 }
 
+// RoombaModeReq sets the roomba mode.
+func (m *Server) SetRoombaMode(ctx context.Context, in *pb.RoombaModeReq) (*google_pb.Empty, error) {
+	if m.roomba == nil {
+		return &google_pb.Empty{}, errors.New("Roomba not enabled")
+	}
+
+	return &google_pb.Empty{}, devices.SetRoombaMode(m.roomba, byte(in.Mode))
+}
+
+// Returns sensor information from Roomba.
+func (m *Server) RoombaSensor(ctx context.Context, in *google_pb.Empty) (*pb.RoombaSensorRet, error) {
+	if m.roomba == nil {
+		return &pb.RoombaSensorRet{}, errors.New("Roomba not enabled")
+	}
+
+	data, err := devices.GetRoombaTelemetry(m.roomba)
+	if err != nil {
+		glog.Error("Failed to get sensor %v", err)
+		return &pb.RoombaSensorRet{}, fmt.Errorf("%v", err)
+	}
+	// Convert to the right data format for proto.
+	dataOnWire := make(map[uint32]int32)
+	for k, v := range data {
+		dataOnWire[uint32(k)] = int32(v)
+	}
+	return &pb.RoombaSensorRet{Data: dataOnWire}, nil
+}
+
+// I2CBusEn enables/disables the I2C master bus.
+func (m *Server) I2CBusEn(ctx context.Context, in *pb.I2CBusEnReq) (*google_pb.Empty, error) {
+	if m.roomba == nil {
+		return &google_pb.Empty{}, errors.New("roomba not enabled")
+	}
+	if in.On {
+		return &google_pb.Empty{}, m.i2cEn.DigitalWrite(1)
+	}
+	return &google_pb.Empty{}, m.i2cEn.DigitalWrite(0)
+}
+
+// SecondaryPower turns on/off the secondary power supply for accessories.
+func (m *Server) SecondaryPower(ctx context.Context, in *pb.SecPowerReq) (*google_pb.Empty, error) {
+	if m.roomba == nil {
+		return &google_pb.Empty{}, errors.New("roomba not enabled")
+	}
+	return &google_pb.Empty{}, m.roomba.MainBrush(in.On, true)
+}
+
 // LEDOn turns on/off the LED indicator.
 func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, error) {
 	if m.ctrl == nil {
 		return &google_pb.Empty{}, errors.New("controller not enabled")
 	}
 	return &google_pb.Empty{}, m.ctrl.LEDOn(in.On)
-
 }
 
 // LEDBlink blinks the LED.
@@ -118,7 +168,7 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 	return &pb.HeadingRet{Heading: heading}, nil
 }
 
-// Distance returns the forward clearance in cm using the ultrasonic sensor.
+// Distance returns the forward clearance in cm using the LIDAR.
 func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, error) {
 	if m.ctrl == nil {
 		return nil, errors.New("controller not enabled")

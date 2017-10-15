@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/deepakkamesh/go-roomba/constants"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/urfave/cli"
@@ -15,8 +16,9 @@ import (
 )
 
 func main() {
-	host := flag.String("host:port", "10.0.0.130:2233", "port")
+	host := flag.String("port", "10.0.0.100:2233", "port")
 	flag.Parse()
+
 	conn, err := grpc.Dial(*host, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("failed to connect to rpc endpoint: %v", err)
@@ -37,6 +39,74 @@ func main() {
 					return cli.NewExitError(err.Error(), 1)
 				}
 				log.Printf("Pinging controller successful")
+				return nil
+			},
+		},
+		{
+			Name:    "RoombaMode",
+			Aliases: []string{"rb_mode"},
+			Usage:   "Set Roomba Mode",
+			Flags: []cli.Flag{
+				cli.UintFlag{
+					Name:  "mode, m",
+					Usage: "Mode  0=Off 1=Passive 2=Safe 3=Full",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				if _, err := ctrl.SetRoombaMode(context.Background(), &pb.RoombaModeReq{Mode: uint32(c.Uint("mode"))}); err != nil {
+					log.Printf("Failed to change Roomba Mode:%v", err)
+				}
+				return nil
+			},
+		},
+		{
+			Name:    "SecondaryPower",
+			Aliases: []string{"sec_power"},
+			Usage:   "Turn on/off the secondary power.",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "on, o",
+					Usage: "Turn on/off secondary power",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				if _, err := ctrl.SecondaryPower(context.Background(), &pb.SecPowerReq{On: c.Bool("on")}); err != nil {
+					log.Printf("Secondary Power control failed %v", err)
+				}
+				return nil
+			},
+		},
+		{
+			Name:    "RoombaSensors",
+			Aliases: []string{"rb_metry"},
+			Usage:   "Get Roomba Telemetry",
+			Action: func(c *cli.Context) error {
+				data, err := ctrl.RoombaSensor(context.Background(), &google_pb.Empty{})
+				if err != nil {
+					log.Printf("Failed to get roomba sensor Data: %v", err)
+				}
+
+				for k, v := range data.Data {
+					fmt.Printf("%25s := %v\n", constants.SENSORS_NAME[byte(k)], v)
+				}
+				return nil
+			},
+		},
+
+		{
+			Name:    "I2CBusEnable",
+			Aliases: []string{"i2c"},
+			Usage:   "Turn on/off the I2C bus chip.",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "on, o",
+					Usage: "Turn on/off I2C bus",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				if _, err := ctrl.I2CBusEn(context.Background(), &pb.I2CBusEnReq{On: c.Bool("on")}); err != nil {
+					log.Printf("I2C Bus Enable failed %v", err)
+				}
 				return nil
 			},
 		},
