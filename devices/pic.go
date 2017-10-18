@@ -67,6 +67,7 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read header: %v", err)
 	}
+	glog.V(3).Infof("Header %v", header)
 
 	pktSz := header >> 4
 	if (pktSz) == 0 {
@@ -77,6 +78,8 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 	if _, err = m.connection.Read(pkt); err != nil {
 		return nil, fmt.Errorf("failed to read packet: %v", err)
 	}
+
+	glog.V(3).Infof("Got Packet size %v, content:%v", len(pkt), pkt)
 
 	if !p.VerifyChecksum(pkt, p.Checksum(header)) {
 		return nil, fmt.Errorf("checksum failed")
@@ -198,7 +201,10 @@ func (m *Controller) LDR() (adc uint16, err error) {
 	if err != nil {
 		return
 	}
-
+	if len(pkt) < 3 {
+		err = fmt.Errorf("expected more bytes")
+		return
+	}
 	adc = uint16(pkt[1])<<8 | uint16(pkt[2])
 	return
 }

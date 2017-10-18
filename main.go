@@ -29,7 +29,7 @@ func main() {
 
 	var (
 		brc          = flag.String("brc", "7", "GPIO port for roomba BRC for keepalive")
-		picAddr      = flag.Int("pic_addr", 0x07, "I2C address of PIC controller")
+		picAddr      = flag.Int("pic_addr", 0x08, "I2C address of PIC controller")
 		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
 		res          = flag.String("resources", "./resources", "resources directory")
 		pirPin       = flag.String("pir_pin", "16", "PIR gpio pin")

@@ -49,7 +49,7 @@ func main() {
 			Flags: []cli.Flag{
 				cli.UintFlag{
 					Name:  "mode, m",
-					Usage: "Mode  0=Off 1=Passive 2=Safe 3=Full",
+					Usage: "Mode Value  0=Off 1=Passive 2=Safe 3=Fulli eg. 'rb_mode -m 2'",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -60,13 +60,13 @@ func main() {
 			},
 		},
 		{
-			Name:    "SecondaryPower",
-			Aliases: []string{"sec_power"},
-			Usage:   "Turn on/off the secondary power.",
+			Name:    "AuxillaryPower",
+			Aliases: []string{"aux_pwr"},
+			Usage:   "Turn on/off the auxillary power.",
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "on, o",
-					Usage: "Turn on/off secondary power",
+					Usage: "Turn on aux power",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -84,6 +84,7 @@ func main() {
 				data, err := ctrl.RoombaSensor(context.Background(), &google_pb.Empty{})
 				if err != nil {
 					log.Printf("Failed to get roomba sensor Data: %v", err)
+					return nil
 				}
 
 				for k, v := range data.Data {
@@ -95,7 +96,7 @@ func main() {
 
 		{
 			Name:    "I2CBusEnable",
-			Aliases: []string{"i2c"},
+			Aliases: []string{"i2c_en"},
 			Usage:   "Turn on/off the I2C bus chip.",
 			Flags: []cli.Flag{
 				cli.BoolFlag{
