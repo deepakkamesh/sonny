@@ -35,10 +35,11 @@ fi
 
 # Compile binary.
 if [ $1 == "arm" ]; then
-	echo "Compiling for ARM"
+	echo "Compiling for ARM $BUILDTIME $GITHASH"
 	GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 go build -ldflags "$VER" $BINARY
 else
-	echo "Compiling on local machine"
+	echo "Compiling on local machine $BUILDTIME $GITHASH"
+
 	go build -ldflags "$VER" $BINARY
 fi
 

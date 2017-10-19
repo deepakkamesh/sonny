@@ -67,7 +67,6 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read header: %v", err)
 	}
-	glog.V(3).Infof("Header %v", header)
 
 	pktSz := header >> 4
 	if (pktSz) == 0 {
@@ -79,7 +78,7 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read packet: %v", err)
 	}
 
-	glog.V(3).Infof("Got Packet size %v, content:%v", len(pkt), pkt)
+	glog.V(3).Infof("Header: %v Packet size %v, content:%v", header, len(pkt), pkt)
 
 	if !p.VerifyChecksum(pkt, p.Checksum(header)) {
 		return nil, fmt.Errorf("checksum failed")
@@ -136,10 +135,11 @@ func (m *Controller) LEDBlink(duration uint16, times byte) (err error) {
 // RotateServo rotates servo by angle.
 func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 	const (
-		deg0      float32 = 0.0007    // 0.7 ms.
-		deg180    float32 = 0.0024    // 2.4 ms.
-		pwmPeriod float32 = 0.020     // 20ms.
-		cycle     float32 = 0.0000005 // = Fosc/4 divided by PWM prescaler.
+		deg0      float32 = 0.0007 // 0.7 ms.
+		deg180    float32 = 0.0024 // 2.4 ms.
+		pwmPeriod float32 = 0.020  // 20ms.
+		// TODO: Update is pic clock is change.
+		cycle float32 = 0.000001 // = Fosc/4 divided by PWM prescaler
 	)
 
 	// Ensure maximums are not exceeded.
