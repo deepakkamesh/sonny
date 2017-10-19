@@ -46,7 +46,7 @@
 
 #include "i2c2.h"
 
-#define I2C2_SLAVE_ADDRESS 0x07 
+#define I2C2_SLAVE_ADDRESS 0x08 
 #define I2C2_SLAVE_MASK    0x7F
 
 typedef enum
@@ -65,7 +65,6 @@ volatile uint8_t    I2C2_slaveWriteData      = 0x55;
  Section: Local Functions
 */
 void I2C2_StatusCallback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state);
-void (*I2C_InterruptHandler)(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state);
 
 
 
@@ -92,7 +91,7 @@ void I2C2_Initialize(void)
     SSP2CON3 = 0x00;
     // MSK0 127; 
     SSP2MSK = (I2C2_SLAVE_MASK << 1);  // adjust UI mask for R/nW bit            
-    // SSPADD 7; 
+    // SSPADD 8; 
     SSP2ADD = (I2C2_SLAVE_ADDRESS << 1);  // adjust UI address for R/nW bit
 
     // clear the slave interrupt flag
@@ -101,9 +100,7 @@ void I2C2_Initialize(void)
     PIE3bits.SSP2IE = 1;
 
 }
-void I2C2_SetCallback(void* InterruptHandler) {
-  I2C_InterruptHandler = InterruptHandler;
-}
+
 void I2C2_ISR ( void )
 {
     uint8_t     i2c_data                = 0x55;
@@ -119,12 +116,12 @@ void I2C2_ISR ( void )
         if((1 == SSP2STATbits.D_nA) && (1 == SSP2CON2bits.ACKSTAT))
         {
             // callback routine can perform any post-read processing
-            I2C_InterruptHandler(I2C2_SLAVE_READ_COMPLETED);
+            I2C2_StatusCallback(I2C2_SLAVE_READ_COMPLETED);
         }
         else
         {
             // callback routine should write data into SSPBUF
-            I2C_InterruptHandler(I2C2_SLAVE_READ_REQUEST);
+            I2C2_StatusCallback(I2C2_SLAVE_READ_REQUEST);
         }
     }
     else if(0 == SSP2STATbits.D_nA)
@@ -132,14 +129,14 @@ void I2C2_ISR ( void )
         // this is an I2C address
 
         // callback routine should prepare to receive data from the master
-        I2C_InterruptHandler(I2C2_SLAVE_WRITE_REQUEST);
+        I2C2_StatusCallback(I2C2_SLAVE_WRITE_REQUEST);
     }
     else
     {
         I2C2_slaveWriteData   = i2c_data;
 
         // callback routine should process I2C2_slaveWriteData from the master
-        I2C_InterruptHandler(I2C2_SLAVE_WRITE_COMPLETED);
+        I2C2_StatusCallback(I2C2_SLAVE_WRITE_COMPLETED);
     }
 
     SSP2CON1bits.CKP    = 1;    // release SCL
@@ -168,7 +165,7 @@ void I2C2_ISR ( void )
     continue from the start of the EEPROM.
 */
 
-void I2C2_StatusCallback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state)
+void I2C2_StatusCallback_EXAMPLE_DONOTUSE(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state)
 {
 
     static uint8_t EEPROM_Buffer[] =

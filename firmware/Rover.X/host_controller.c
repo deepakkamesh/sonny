@@ -11,7 +11,7 @@ Queue CmdQ[MAX_DEVICES];
 Queue SendQ[MAX_DEVICES];
 
 // Local function declarations.
-void I2C2_Callback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state);
+void I2C2_StatusCallback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state);
 
 typedef enum {
   SLAVE_NORMAL_DATA,
@@ -19,8 +19,7 @@ typedef enum {
 } SLAVE_WRITE_DATA_TYPE;
 
 void HostControllerInit(void) {
-  I2C2_SetCallback(I2C2_Callback);
-  // Init Command Queue
+  //Init Command Queue
   uint8_t i;
   for (i = 0; i < MAX_DEVICES; i++) {
     CmdQ[i].free = true;
@@ -31,8 +30,8 @@ void HostControllerInit(void) {
 }
 bool headSnd = true;
 
-void I2C2_Callback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state) {
 
+void I2C2_StatusCallback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state) {
   static uint8_t deviceID = 0, ptr = 0, PktSz = 0, chksum = 0;
   static uint8_t slaveWriteType = SLAVE_NORMAL_DATA;
   static bool headNow = false;

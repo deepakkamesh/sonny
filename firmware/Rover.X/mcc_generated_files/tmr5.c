@@ -69,11 +69,11 @@ void TMR5_Initialize(void)
     //T5GSS T5G_pin; TMR5GE disabled; T5GTM disabled; T5GPOL low; T5GGO done; T5GSPM disabled; 
     T5GCON = 0x00;
 
-    //TMR5H 0; 
-    TMR5H = 0x00;
+    //TMR5H 2; 
+    TMR5H = 0x02;
 
-    //TMR5L 0; 
-    TMR5L = 0x00;
+    //TMR5L 24; 
+    TMR5L = 0x18;
 
     // Load the TMR value to reload variable
     timer5ReloadVal=TMR5;

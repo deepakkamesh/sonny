@@ -139,7 +139,6 @@ void I2C2_ISR ( void );
 
 extern volatile uint8_t    I2C2_slaveWriteData;
 
-void I2C2_SetCallback(void* InterruptHandler);
 
 #ifdef __cplusplus  // Provide C++ Compatibility
 

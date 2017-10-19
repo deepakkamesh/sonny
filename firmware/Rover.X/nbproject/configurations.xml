@@ -17,8 +17,8 @@
         <itemPath>mcc_generated_files/tmr3.h</itemPath>
         <itemPath>mcc_generated_files/tmr5.h</itemPath>
         <itemPath>mcc_generated_files/fvr.h</itemPath>
-        <itemPath>mcc_generated_files/tmr2.h</itemPath>
         <itemPath>mcc_generated_files/i2c2.h</itemPath>
+        <itemPath>mcc_generated_files/tmr2.h</itemPath>
       </logicalFolder>
       <itemPath>protocol.h</itemPath>
       <itemPath>admin_device.h</itemPath>
@@ -52,8 +52,8 @@
         <itemPath>mcc_generated_files/tmr3.c</itemPath>
         <itemPath>mcc_generated_files/tmr5.c</itemPath>
         <itemPath>mcc_generated_files/fvr.c</itemPath>
-        <itemPath>mcc_generated_files/tmr2.c</itemPath>
         <itemPath>mcc_generated_files/i2c2.c</itemPath>
+        <itemPath>mcc_generated_files/tmr2.c</itemPath>
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>admin_device.c</itemPath>

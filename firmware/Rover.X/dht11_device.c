@@ -38,7 +38,7 @@ int16_t ReadByte() {
       return -1;
     }
     dur = TMR2_ReadTimer();
-    if (dur < 40) {
+    if (dur < 20) {
       data = data << 1;
     } else {
       data = data << 1 | 0x1;

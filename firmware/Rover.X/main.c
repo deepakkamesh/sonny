@@ -64,10 +64,9 @@ void main(void) {
   // Initialize the device and subsystems.
   SYSTEM_Initialize();
   InitTicker();
-  ServoInit();
   DHT11Init();
   HostControllerInit();
-  
+
   // If using interrupts in PIC18 High/Low Priority Mode you need to enable the Global High and Low Interrupts
   // If using interrupts in PIC Mid-Range Compatibility Mode you need to enable the Global and Peripheral Interrupts
   // Use the following macros to:
@@ -97,20 +96,19 @@ void main(void) {
   //INTERRUPT_PeripheralInterruptDisable();
 
   // Post Interrupt Enable Initialization.
-   // LidarInit();
-
-  __delay_ms(5);
-
+  // LidarInit();
+  ServoInit();
+  LED1_SetHigh();
   while (1) {
     AdminTask();
     LedTask();
     ServoTask();
-    AccelTask();
     LDRTask();
     BattTask();
     DHT11Task();
-    US020Task();
-  //  LidarTask();
+    // AccelTask();
+    // US020Task();
+    // LidarTask();
   }
 }
 /**

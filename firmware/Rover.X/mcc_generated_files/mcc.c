@@ -72,7 +72,7 @@
 
 // CONFIG4L
 #pragma config STVREN = ON    // Stack Full/Underflow Reset Enable bit->Stack full/underflow will cause Reset
-#pragma config LVP = ON    // Single-Supply ICSP Enable bit->Single-Supply ICSP enabled if MCLRE is also 1
+#pragma config LVP = OFF    // Single-Supply ICSP Enable bit->Single-Supply ICSP disabled
 #pragma config XINST = OFF    // Extended Instruction Set Enable bit->Instruction set extension and Indexed Addressing mode disabled (Legacy mode)
 #pragma config DEBUG = OFF    // Background Debug->Disabled
 
@@ -117,8 +117,8 @@ void SYSTEM_Initialize(void)
     I2C2_Initialize();
     FVR_Initialize();
     ADC_Initialize();
-    CCP4_Initialize();
     CCP5_Initialize();
+    CCP4_Initialize();
     TMR3_Initialize();
     TMR5_Initialize();
     TMR2_Initialize();
@@ -127,8 +127,8 @@ void SYSTEM_Initialize(void)
 
 void OSCILLATOR_Initialize(void)
 {
-    // SCS FOSC; IRCF 16MHz_HFINTOSC; IDLEN disabled; 
-    OSCCON = 0x70;
+    // SCS FOSC; IRCF 8MHz_HFINTOSC/2; IDLEN disabled; 
+    OSCCON = 0x60;
     // PRISD enabled; SOSCGO disabled; MFIOSEL disabled; 
     OSCCON2 = 0x04;
     // INTSRC disabled; PLLEN enabled; TUN 0; 

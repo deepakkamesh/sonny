@@ -69,11 +69,11 @@ void TMR3_Initialize(void)
     //T3GSS T3G_pin; TMR3GE disabled; T3GTM disabled; T3GPOL low; T3GGO done; T3GSPM disabled; 
     T3GCON = 0x00;
 
-    //TMR3H 0; 
-    TMR3H = 0x00;
+    //TMR3H 2; 
+    TMR3H = 0x02;
 
-    //TMR3L 0; 
-    TMR3L = 0x00;
+    //TMR3L 24; 
+    TMR3L = 0x18;
 
     // Load the TMR value to reload variable
     timer3ReloadVal=TMR3;
