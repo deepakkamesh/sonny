@@ -6,7 +6,9 @@
 #include "servo_device.h"
 #include "mcc_generated_files/mcc.h"
 
-
+// Default PWM on/off time periods calculated from goo.gl/7YbEyk
+#define PWM_ON 1500
+#define PWM_OFF 18500
 extern Queue CmdQ[MAX_DEVICES];
 volatile static uint16_t pwm4_on, pwm4_off, pwm5_on, pwm5_off;
 void CCP4_ISR(void);
@@ -57,10 +59,10 @@ void ServoTask(void) {
 
 void ServoInit(void) {
 
-  pwm4_on = 3000;
-  pwm4_off = 37000;
-  pwm5_on = 3000;
-  pwm5_off = 37000;
+  pwm4_on = PWM_ON;
+  pwm4_off = PWM_OFF;
+  pwm5_on = PWM_ON;
+  pwm5_off = PWM_OFF;
   CCP4_SetInterruptHandler(CCP4_ISR);
   CCP5_SetInterruptHandler(CCP5_ISR);
 }
