@@ -9,7 +9,7 @@ VER="-X main.buildtime=$BUILDTIME -X main.githash=$GITHASH"
 
 if [ $# -lt 2 ]; then
 #if [ "$1" == "help" ]; then
-	echo "build.sh < arm | noarm > < main | cli > < ip address > <all | res | bin >"
+	echo "build.sh < arm | noarm > < main | cli | proto > < ip address > <all | res | bin >"
 	exit
 fi
 
@@ -33,14 +33,15 @@ if [ "$2" == "proto" ]; then
 	exit
 fi
 
-# Compile binary.
-if [ $1 == "arm" ]; then
-	echo "Compiling for ARM $BUILDTIME $GITHASH"
-	GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 go build -ldflags "$VER" $BINARY
-else
-	echo "Compiling on local machine $BUILDTIME $GITHASH"
-
-	go build -ldflags "$VER" $BINARY
+# Compile binary if not res only.
+if [ "$4" != "res" ]; then 
+	if [ $1 == "arm" ]; then
+		echo "Compiling for ARM $BUILDTIME $GITHASH"
+		GOOS=linux GOARCH=arm GOARM=6 CGO_ENABLED=0 go build -ldflags "$VER" $BINARY
+	else
+		echo "Compiling on local machine $BUILDTIME $GITHASH"
+		go build -ldflags "$VER" $BINARY
+	fi
 fi
 
 # Push binary to remote if previous step completed.
