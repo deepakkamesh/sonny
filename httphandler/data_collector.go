@@ -48,9 +48,8 @@ func (m *Server) dataCollector() {
 			}()
 
 		case <-t500ms.C:
-
-			time.Sleep(50 * time.Millisecond)
 			// LDR sensor.
+			time.Sleep(50 * time.Millisecond)
 			func() {
 				if !m.data.Enabled[LDR] {
 					return
@@ -65,9 +64,9 @@ func (m *Server) dataCollector() {
 				}
 				m.data.Controller[LDR] = float32(l)
 			}()
-			time.Sleep(50 * time.Millisecond)
 
 			// Controller battery voltage.
+			time.Sleep(50 * time.Millisecond)
 			func() {
 				if !m.data.Enabled[BATT] {
 					return

@@ -88,9 +88,9 @@
             </div>
             <!-- Tabs -->
             <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
-                <a href="#fixed-tab-1" class="mdl-layout__tab is-active">Rover Controls</a>
-                <a href="#fixed-tab-2" class="mdl-layout__tab">Map</a>
-                <a href="#fixed-tab-3" class="mdl-layout__tab">3</a>
+                <a href="#fixed-tab-1" class="mdl-layout__tab is-active">Rover Telemetry</a>
+                <a href="#fixed-tab-2" class="mdl-layout__tab">Manual Navigation</a>
+                <a href="#fixed-tab-3" class="mdl-layout__tab">Auto Pilot</a>
             </div>
             <div class="mdl-layout-spacer"></div>
         </header>
@@ -136,13 +136,13 @@
                    	</button>
                 </ul>
                 <ul>
-                    <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="aux_power">
+                    <label id="aux_power_label" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="aux_power">
                         <input type="checkbox" id="aux_power" class="mdl-switch__input" >
                         <span class="mdl-switch__label">AuxPower</span>
                 	  </label>
                 </ul>
                 <ul>
-                    <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="i2c_en">
+                    <label id="i2c_en_label" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="i2c_en">
                         <input type="checkbox" id="i2c_en" class="mdl-switch__input" >
                         <span class="mdl-switch__label">I2C EN</span>
                 	  </label>
@@ -158,99 +158,29 @@
                 <div class="page-content">
                     <div class="mdl-grid demo-content">
 
-                        <!-- Camera Out -->
-                        <div class="mdl-cell mdl-cell--6-col">
-                            <!-- <img width=100% src="http://10.0.0.30:8888/?action=stream"> -->
-                        </div>
-
-                        <!-- Drive Buttons -->
-                        <div class="mdl-cell mdl-cell--3-col">
-                            <h4 align=center> Drive Control </h4>
-
-                            <ul>
-                                &emsp;&emsp;&emsp;&emsp;
-                                <button id="motor-forward" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                        	<li class="material-icons">keyboard_arrow_up</li>
-                        </button>
-
-                                <br/>
-                                <br/>
-
-                                <button id="motor-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                            <li class="material-icons">keyboard_arrow_left</li>
-                        </button> &emsp;&emsp;&emsp;&emsp;
-
-                                <button id="motor-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                            <li class="material-icons">keyboard_arrow_right</li>
-                        </button>
-
-                                <br/>
-                                <br/> &emsp;&emsp;&emsp;&emsp;
-
-                                <button id="motor-back" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                            <li class="material-icons">keyboard_arrow_down</li>
-                        </button>
-                            </ul>
-                            <!-- Velocity Selector for drive -->
-                            <input id="drive_velocity_sel" class="mdl-slider mdl-js-slider" type="range" min="0" max="400" value="100" tabindex="0">
-                            <span class="mdl-chip">
-											 <span class="mdl-chip__text" id="drive_velocity_sel_disp">Select Speed</span>
-                            </span>
-                        </div>
-
-                        <!-- Servo Controls -->
-                        <div class="mdl-cell mdl-cell--3-col">
-                            <h4 align=center> Servo Control </h4>
-
-                            <ul>
-                                &emsp;&emsp;&emsp;&emsp;
-                                <button id="servo-up" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                        	<li class="material-icons">keyboard_arrow_up</li>
-                        </button>
-
-                                <br/>
-                                <br/>
-
-                                <button id="servo-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                            <li class="material-icons">keyboard_arrow_left</li>
-                        </button> &emsp;&emsp;&emsp;&emsp;
-
-                                <button id="servo-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                            <li class="material-icons">keyboard_arrow_right</li>
-                        </button>
-
-                                <br/>
-                                <br/> &emsp;&emsp;&emsp;&emsp;
-
-                                <button id="servo-down" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
-                            <li class="material-icons">keyboard_arrow_down</li>
-                        </button>
-                            </ul>
-                            <!-- Angle selector for drive -->
-                            <input id="servo_angle_step" class="mdl-slider mdl-js-slider" type="range" min="0" max="180" value="10" tabindex="0">
-                            <span class="mdl-chip">
-											 <span class="mdl-chip__text" id="servo_angle_step_disp">Select Servo Step</span>
-                            </span>
-                        </div>
-
-                        <!-- Servo Angle ToolTips -->
-                        <div class="mdl-tooltip" data-mdl-for="servo-down">
-                            <span id="servo-down-tip">0</span>'
-                        </div>
-                        <div class="mdl-tooltip" data-mdl-for="servo-up">
-                            <span id="servo-up-tip">0</span>'
-                        </div>
-                        <div class="mdl-tooltip" data-mdl-for="servo-left">
-                            <span id="servo-left-tip">10</span>'
-                        </div>
-                        <div class="mdl-tooltip" data-mdl-for="servo-right">
-                            <span id="servo-right-tip">0</span>'
-                        </div>
-
-
-                        <!-- roomba mode selector -->
+                        <!--Roomba Wheel Sensors -->
                         <div class="mdl-cell mdl-cell--2-col">
-                            <h5 align=center>Roomba </h5>
+                            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_wheel_sensor" width=100%>
+                                <thead>
+                                    <tr>
+                                        <th class="mdl-data-table__cell--non-numeric">Wheel Sensors</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="mdl-data-table__cell--non-numeric">Right Bump</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mdl-data-table__cell--non-numeric">Left Bump</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mdl-data-table__cell--non-numeric">Right Drop</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="mdl-data-table__cell--non-numeric">Left Drop</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
                         <!-- Battery metrics -->
@@ -433,32 +363,6 @@
                                 </tbody>
                             </table>
                         </div>
-
-                        <!--Roomba Wheel Sensors -->
-                        <div class="mdl-cell mdl-cell--2-col">
-                            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_wheel_sensor" width=100%>
-                                <thead>
-                                    <tr>
-                                        <th class="mdl-data-table__cell--non-numeric">Wheel Sensors</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="mdl-data-table__cell--non-numeric">Right Bump</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="mdl-data-table__cell--non-numeric">Left Bump</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="mdl-data-table__cell--non-numeric">Right Drop</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="mdl-data-table__cell--non-numeric">Left Drop</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
                         <!-- Roomba Overcurrent -->
                         <div class="mdl-cell mdl-cell--2-col">
                             <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" id="rb_overcurrent_sensor" width=100%>
@@ -545,7 +449,97 @@
             <!-- TAB 2 -->
             <section class="mdl-layout__tab-panel" id="fixed-tab-2">
                 <div class="page-content">
-                    <!-- Your content goes here -->
+                    <div class="mdl-grid demo-content">
+
+                        <!-- Camera Out -->
+                        <div class="mdl-cell mdl-cell--6-col">
+                            <!-- <img width=100% src="http://10.0.0.30:8888/?action=stream"> -->
+                        </div>
+
+                        <!-- Drive Buttons -->
+                        <div class="mdl-cell mdl-cell--3-col">
+                            <h4 align=center> Drive Control </h4>
+
+                            <ul>
+                                &emsp;&emsp;&emsp;&emsp;
+                                <button id="motor-forward" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                        	<li class="material-icons">keyboard_arrow_up</li>
+                        </button>
+
+                                <br/>
+                                <br/>
+
+                                <button id="motor-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                            <li class="material-icons">keyboard_arrow_left</li>
+                        </button> &emsp;&emsp;&emsp;&emsp;
+
+                                <button id="motor-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                            <li class="material-icons">keyboard_arrow_right</li>
+                        </button>
+
+                                <br/>
+                                <br/> &emsp;&emsp;&emsp;&emsp;
+
+                                <button id="motor-back" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                            <li class="material-icons">keyboard_arrow_down</li>
+                        </button>
+                            </ul>
+                            <!-- Velocity Selector for drive -->
+                            <input id="drive_velocity_sel" class="mdl-slider mdl-js-slider" type="range" min="0" max="400" value="100" tabindex="0">
+                            <span class="mdl-chip">
+											 <span class="mdl-chip__text" id="drive_velocity_sel_disp">Select Speed</span>
+                            </span>
+                        </div>
+
+                        <!-- Servo Controls -->
+                        <div class="mdl-cell mdl-cell--3-col">
+                            <h4 align=center> Servo Control </h4>
+
+                            <ul>
+                                &emsp;&emsp;&emsp;&emsp;
+                                <button id="servo-up" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                        	<li class="material-icons">keyboard_arrow_up</li>
+                        </button>
+
+                                <br/>
+                                <br/>
+
+                                <button id="servo-left" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                            <li class="material-icons">keyboard_arrow_left</li>
+                        </button> &emsp;&emsp;&emsp;&emsp;
+
+                                <button id="servo-right" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                            <li class="material-icons">keyboard_arrow_right</li>
+                        </button>
+
+                                <br/>
+                                <br/> &emsp;&emsp;&emsp;&emsp;
+
+                                <button id="servo-down" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+                            <li class="material-icons">keyboard_arrow_down</li>
+                        </button>
+                            </ul>
+                            <!-- Angle selector for drive -->
+                            <input id="servo_angle_step" class="mdl-slider mdl-js-slider" type="range" min="0" max="180" value="10" tabindex="0">
+                            <span class="mdl-chip">
+											 <span class="mdl-chip__text" id="servo_angle_step_disp">Select Servo Step</span>
+                            </span>
+                        </div>
+
+                        <!-- Servo Angle ToolTips -->
+                        <div class="mdl-tooltip" data-mdl-for="servo-down">
+                            <span id="servo-down-tip">0</span>'
+                        </div>
+                        <div class="mdl-tooltip" data-mdl-for="servo-up">
+                            <span id="servo-up-tip">0</span>'
+                        </div>
+                        <div class="mdl-tooltip" data-mdl-for="servo-left">
+                            <span id="servo-left-tip">10</span>'
+                        </div>
+                        <div class="mdl-tooltip" data-mdl-for="servo-right">
+                            <span id="servo-right-tip">0</span>'
+                        </div>
+                    </div>
                 </div>
             </section>
 

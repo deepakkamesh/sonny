@@ -201,8 +201,8 @@ $(document).ready(function() {
         });
     });
 
-    var roombaPowerBtn = document.querySelector('#i2c_en');
-    roombaPowerBtn.addEventListener('click', function() {
+    var i2cEnBtn = document.querySelector('#i2c_en');
+    i2cEnBtn.addEventListener('click', function() {
         var param = '';
         if (document.getElementById('i2c_en').checked) {
             param = 'on';
@@ -218,8 +218,8 @@ $(document).ready(function() {
         });
     });
 
-    var roombaPowerBtn = document.querySelector('#aux_power');
-    roombaPowerBtn.addEventListener('click', function() {
+    var auxPwrBtn = document.querySelector('#aux_power');
+    auxPwrBtn.addEventListener('click', function() {
         var param = '';
         if (document.getElementById('aux_power').checked) {
             param = 'on';
@@ -646,13 +646,16 @@ $(document).ready(function() {
 
                 case "56":
                     rb_main_curr = pkt;
+                    if (rb_main_curr > 10) {
+                        $('#aux_power_label')[0].MaterialSwitch.on();
+                        break;
+                    }
+                    $('#aux_power_label')[0].MaterialSwitch.off();
                     break;
 
                 case "57":
                     rb_side_curr = pkt;
                     break;
-
-
             }
         }
         msgCount++;
@@ -716,6 +719,7 @@ $(document).ready(function() {
                 case "5": // Controller Volts.
                     updateSpark("#ctrl_volt", dataBuf, ".ctrl_volt_spark", parseFloat(pkt).toFixed(2), msgCount);
                     break;
+
             }
         }
 
@@ -726,166 +730,3 @@ $(document).ready(function() {
     }
 
 });
-
-
-// TODO: Remove function.
-/*
-$(function() {
-
-    // CAtch keyboard 
-    $(document).keydown(function(e) {
-        if (e.which === 38) {
-            alert("d")
-            //up was pressed
-        }
-    });
-
-
-
-    // spark lines 
-    $('.inlinesparkline').sparkline();
-
-    var myvalues = [10, 8, 5, 7, 4, 4, 1];
-    $('.dynamicsparkline').sparkline(myvalues);
-
-    $('.dynamicbar').sparkline(myvalues, {
-        type: 'bar',
-        barColor: 'green'
-    });
-
-    $('.inlinebar').sparkline('html', {
-        type: 'bar',
-        barColor: 'red'
-    });
-
-
-});
-
-function RegularTasks() {
-    var infoContainer = document.querySelector('#info-popup');
-
-    // Ping controller.
-    if (document.getElementById('master_en').checked) {
-        $.post("/api/ping/", "", function(data, status) {
-            ret = JSON.parse(data);
-            $("#ping").empty();
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            $("#ping").append(ret.Data);
-        });
-    }
-    // Get distance.
-    if (document.getElementById('distance_en').checked) {
-        $.post("/api/distance/", "", function(data, status) {
-            $("#distance").empty();
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            $("#distance").append(ret.Data);
-        });
-    }
-
-    // Get distance.
-    if (document.getElementById('batt_en').checked) {
-        $.post("/api/batt/", "", function(data, status) {
-            $("#batt").empty();
-            ret = JSON.parse(data)
-            volts = Math.round(ret.Data * 1000) / 1000
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            $("#batt").append(volts);
-        });
-    }
-
-    // Get heading.
-    if (document.getElementById('heading_en').checked) {
-        $.post("/api/head/", "", function(data, status) {
-            $("#heading").empty();
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            head = Math.round(ret.Data * 1000) / 1000
-
-            $("#heading").append(head);
-        });
-    }
-
-    // Get accel.
-    if (document.getElementById('accel_en').checked) {
-        $.post("/api/accel/", "", function(data, status) {
-            $("#accel").empty();
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            x = Math.round(ret.Data[0] * 1000) / 1000
-            y = Math.round(ret.Data[1] * 1000) / 1000
-            z = Math.round(ret.Data[2] * 1000) / 1000
-            $("#accel").append("X:" + x + " Y:" + y + " Z:" + z);
-        });
-    }
-
-    // Get Temp & Humidity
-    if (document.getElementById('temp_en').checked) {
-        $.post("/api/temp/", "", function(data, status) {
-            $("#temp").empty();
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            $("#temp").append(" " + ret.Data[0] + "C " + ret.Data[1] + "%");
-        });
-    }
-
-    // Get LDR
-    if (document.getElementById('ldr_en').checked) {
-        $.post("/api/ldr/", "", function(data, status) {
-            $("#ldr").empty();
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            $("#ldr").append(" " + ret.Data);
-        });
-    }
-
-    // Get PIR
-    if (document.getElementById('pir_en').checked) {
-        $.post("/api/pir/", "", function(data, status) {
-            $("#pir").empty();
-            ret = JSON.parse(data)
-            if (ret.Err != '') {
-                infoContainer.MaterialSnackbar.showSnackbar({
-                    message: ret.Err
-                });
-                return
-            }
-            $("#pir").append(ret.Data);
-        });
-    }
-}*/

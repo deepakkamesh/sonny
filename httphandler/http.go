@@ -439,6 +439,9 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 			err = m.roomba.MainBrush(false, true)
 		}
 
+	case "reset":
+		err = m.roomba.Reset()
+
 	case "full_mode":
 		err = m.roomba.Full()
 
@@ -454,31 +457,10 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "power_off":
-		m.roomba.Start(false)
 		err = m.roomba.Power()
-		err = m.roomba.MainBrush(false, true)
-		m.data.Enabled = map[byte]bool{
-			TEMP:     false,
-			HUMIDITY: false,
-			LDR:      false,
-			PIR:      false,
-			MAG:      false,
-			BATT:     false,
-		}
 
 	case "power_on":
 		err = m.roomba.Start(true)
-		err = m.roomba.Safe()
-		time.Sleep(100 * time.Millisecond)
-		err = m.roomba.MainBrush(true, true)
-		m.data.Enabled = map[byte]bool{
-			TEMP:     true,
-			HUMIDITY: true,
-			LDR:      true,
-			PIR:      true,
-			MAG:      true,
-			BATT:     true,
-		}
 
 	case "seek_dock":
 		err = m.roomba.SeekDock()
