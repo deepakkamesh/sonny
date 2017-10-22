@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/drivers/i2c"
 
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
-	"github.com/gorilla/websocket"
 )
 
 const (
@@ -32,6 +32,7 @@ type Server struct {
 	mag        *i2c.HMC6352Driver
 	pir        *int
 	roomba     *roomba.Roomba
+	i2cEn      *gpio.DirectPinDriver
 	ssl        bool
 	resources  string
 	servoAngle map[byte]int // Map to hold state of each servo.
@@ -66,6 +67,7 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 		mag:        d.Mag,
 		pir:        d.Pir,
 		roomba:     d.Roomba,
+		i2cEn:      d.I2CEn,
 		ssl:        ssl,
 		resources:  resources,
 		servoAngle: map[byte]int{1: 90, 2: 90},
@@ -76,20 +78,20 @@ func New(d *rpc.Devices, ssl bool, resources string) *Server {
 			Controller: make(map[byte]float32),
 			Roomba:     make(map[byte]int16),
 			Enabled: map[byte]bool{
-				TEMP:     true,
-				HUMIDITY: true,
-				LDR:      true,
-				PIR:      true,
-				MAG:      true,
-				BATT:     true,
+				TEMP:     false,
+				HUMIDITY: false,
+				LDR:      false,
+				PIR:      false,
+				MAG:      false,
+				BATT:     false,
 			},
 		},
 	}
-
 }
 
 func (m *Server) Start(hostPort string) error {
 
+	// http routers.
 	http.HandleFunc("/api/setparam/", m.SetParam)
 	http.HandleFunc("/api/ping/", m.Ping)
 	http.HandleFunc("/api/ledon/", m.LEDOn)
@@ -97,11 +99,14 @@ func (m *Server) Start(hostPort string) error {
 	http.HandleFunc("/api/servorotate/", m.ServoRotate)
 	http.HandleFunc("/api/move/", m.Move)
 	http.HandleFunc("/api/roomba_cmd/", m.RoombaCmd)
-	http.HandleFunc("/datastream", m.dataStream) // Websocket  data stream Handler.
+	http.HandleFunc("/api/i2c_en/", m.I2CEn)
+	http.HandleFunc("/datastream", m.dataStream)
 
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
 	http.Handle("/", fs)
+
+	// Startup data collection routine.
 	go m.dataCollector()
 	return http.ListenAndServe(hostPort, nil)
 }
@@ -118,155 +123,37 @@ func writeResponse(w http.ResponseWriter, resp *response) {
 	w.Write(js)
 }
 
-// dataCollector collects sensor data from the various sensors on the rover. Its runs
-// as a goroutine independent of the websocket routine. This allows different intervals
-// for different sensors. It also polls sensors only if there is a client connected.
-func (m *Server) dataCollector() {
-	t5s := time.NewTicker(5 * time.Second)
-	t500ms := time.NewTicker(500 * time.Millisecond)
-	t300ms := time.NewTicker(300 * time.Millisecond)
-	t100ms := time.NewTicker(100 * time.Millisecond)
+// I2CEn enables or disables I2C connection.
+func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
-	// Each sensor reading is an anonymous function for readability and code flow.
-	for {
-		// Read sensors only when there is a connected websocket.
-		if m.connCount == 0 {
-			time.Sleep(200 * time.Millisecond)
-			continue
-		}
-
-		select {
-		case <-t5s.C:
-			// DHT11 sensor.
-			func() {
-				if !m.data.Enabled[TEMP] {
-					return
-				}
-				if m.ctrl == nil {
-					glog.V(3).Infof("Controller not initialized")
-					return
-				}
-				t, h, err := m.ctrl.DHT11()
-				if err != nil {
-					glog.Warningf("Failed to read DHT11: %v", err)
-					return
-				}
-				m.data.Controller[TEMP] = float32(t)*1.8 + 32
-				m.data.Controller[HUMIDITY] = float32(h)
-			}()
-
-		case <-t500ms.C:
-
-			time.Sleep(50 * time.Millisecond)
-			// LDR sensor.
-			func() {
-				if !m.data.Enabled[LDR] {
-					return
-				}
-				if m.ctrl == nil {
-					return
-				}
-				l, err := m.ctrl.LDR()
-				if err != nil {
-					glog.Warningf("Failed to read LDR: %v", err)
-					return
-				}
-				m.data.Controller[LDR] = float32(l)
-			}()
-			time.Sleep(50 * time.Millisecond)
-
-			// Controller battery voltage.
-			func() {
-				if !m.data.Enabled[BATT] {
-					return
-				}
-				if m.ctrl == nil {
-					return
-				}
-				b, err := m.ctrl.BattState()
-				if err != nil {
-					glog.Errorf("Failed to read controller batt state: %v", err)
-					return
-				}
-				m.data.Controller[BATT] = float32(b)
-			}()
-
-		case <-t300ms.C:
-			// Compass.
-			func() {
-				if !m.data.Enabled[MAG] {
-					return
-				}
-				if m.mag == nil {
-					return
-				}
-				// TODO: to be implemented.
-				//h, err := m.mag.Heading()
-				h := 0
-				var err error
-				if err != nil {
-					glog.Warningf("Failed to read Compass: %v", err)
-					return
-				}
-				m.data.Controller[MAG] = float32(h)
-			}()
-
-			// PIR sensor.
-			func() {
-				if !m.data.Enabled[PIR] {
-					return
-				}
-				if m.pir == nil {
-					return
-				}
-				m.data.Controller[PIR] = float32(*m.pir)
-			}()
-
-		case <-t100ms.C:
-			// Roomba data.
-			func() {
-				d, err := devices.GetRoombaTelemetry(m.roomba)
-				if err != nil {
-					glog.Warningf("Failed to read roomba sensors: %v", err)
-					return
-				}
-				m.data.Roomba = d
-			}()
-
-		}
-	}
-}
-
-// dataStream is the websocket server that streams rover stats.
-func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{}
-	c, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		glog.Warningf("failed to upgrade conn:%v", err)
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
 		return
 	}
 
-	m.connCount++
-
-	defer func() {
-		c.Close()
-		m.connCount--
-	}()
-
-	for {
-		jsMsg, err := json.Marshal(m.data)
-		if err != nil {
-			glog.Errorf("Failed to unmarshall: %v", err)
-			continue
+	var err error
+	if v := strings.ToLower(r.Form.Get("param")); v != "" {
+		switch v {
+		case "on":
+			err = m.i2cEn.DigitalWrite(1)
+		case "off":
+			err = m.i2cEn.DigitalWrite(0)
 		}
-
-		err = c.WriteMessage(websocket.TextMessage, jsMsg)
-		if err != nil {
-			glog.Errorf("Failed to write: %v", err)
-			return
-		}
-		time.Sleep(300 * time.Millisecond)
 	}
+
+	if err != nil {
+		glog.Errorf("Failed to enable I2C: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: I2C enable  failed %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: "OK",
+	})
+
 }
 
 // Ping is a http wrapper for devices.Ping.
@@ -535,17 +422,25 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cmd := strings.ToLower(r.Form.Get("cmd"))
+	param := strings.ToLower(r.Form.Get("param"))
+
 	var err error
-	glog.V(2).Infof("HTTP command %v", cmd)
+	glog.V(2).Infof("Roomba command %v", cmd)
 
 	switch cmd {
 	case "safe_mode":
 		err = m.roomba.Safe()
-		err = m.roomba.MainBrush(true, true)
+
+	case "aux_power":
+		switch param {
+		case "on":
+			err = m.roomba.MainBrush(true, true)
+		case "off":
+			err = m.roomba.MainBrush(false, true)
+		}
 
 	case "full_mode":
 		err = m.roomba.Full()
-		err = m.roomba.MainBrush(true, true)
 
 	case "passive_mode":
 		err = m.roomba.Passive()
@@ -591,7 +486,12 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error changing mode %v", err),
+			Err: fmt.Sprintf("Error execution roomba cmd: %v", err),
 		})
+		return
 	}
+	writeResponse(w, &response{
+		Data: "OK",
+	})
+
 }

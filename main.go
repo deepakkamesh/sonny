@@ -41,13 +41,15 @@ func main() {
 		httpHostPort = flag.String("http_port", ":8080", "host:port number for http")
 
 		roombaMode = flag.Uint("roomba_mode", 1, "0=Off 1=Passive 2=Safe 3=Full")
+		version    = flag.Bool("version", false, "display version")
+
 		enCompass  = flag.Bool("en_compass", false, "Enable Compass")
 		enRoomba   = flag.Bool("en_roomba", false, "Enable Roomba")
 		enPic      = flag.Bool("en_pic", false, "Enable PIC")
 		enPir      = flag.Bool("en_pir", false, "Enable PIR")
 		enLidar    = flag.Bool("en_lidar", false, "Enable Lidar")
-		enSecPower = flag.Bool("en_sec_power", false, "Enable Secondary Power")
-		version    = flag.Bool("version", false, "display version")
+		enI2C      = flag.Bool("en_i2c", false, "Enable I2C Connect")
+		enAuxPower = flag.Bool("en_aux_power", false, "Enable Auxillary Power")
 	)
 	flag.Parse()
 
@@ -96,7 +98,7 @@ func main() {
 		}
 
 		// Power up secondary battery on main brush.
-		if *enSecPower {
+		if *enAuxPower {
 			time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
 			if err := rb.MainBrush(true, true); err != nil {
 				glog.Fatalf("Failed to turn on main brush: %v ")
@@ -106,11 +108,13 @@ func main() {
 	}
 
 	// I2Cen control.
-	enI2C := gpio.NewDirectPinDriver(pi, *enI2CPin)
-	if err := enI2C.Start(); err != nil {
+	i2cEn := gpio.NewDirectPinDriver(pi, *enI2CPin)
+	if err := i2cEn.Start(); err != nil {
 		glog.Fatalf("Failed to initialize I2C en pin: %v", err)
 	}
-	enI2C.DigitalWrite(1)
+	if *enI2C {
+		i2cEn.DigitalWrite(1)
+	}
 
 	// Initialize PIC I2C Controller.
 	var ctrl *devices.Controller
@@ -164,7 +168,7 @@ func main() {
 		Pir:    &pirVal,
 		Roomba: rb,
 		Lidar:  lidar,
-		I2CEn:  enI2C,
+		I2CEn:  i2cEn,
 	}
 
 	// Startup RPC service.

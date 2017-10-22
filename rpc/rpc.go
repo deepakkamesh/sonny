@@ -67,7 +67,7 @@ func (m *Server) RoombaSensor(ctx context.Context, in *google_pb.Empty) (*pb.Roo
 
 	data, err := devices.GetRoombaTelemetry(m.roomba)
 	if err != nil {
-		glog.Error("Failed to get sensor %v", err)
+		glog.Errorf("Failed to get sensor %v", err)
 		return &pb.RoombaSensorRet{}, fmt.Errorf("%v", err)
 	}
 	// Convert to the right data format for proto.

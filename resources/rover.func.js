@@ -27,7 +27,6 @@ var IR_CODE_NAMES = {
 }
 
 $(document).ready(function() {
-    //setInterval("RegularTasks()", 1000);
     var count = 0;
     var motorBackButton = document.querySelector('#motor-back');
     motorBackButton.addEventListener('click', function() {
@@ -202,6 +201,41 @@ $(document).ready(function() {
         });
     });
 
+    var roombaPowerBtn = document.querySelector('#i2c_en');
+    roombaPowerBtn.addEventListener('click', function() {
+        var param = '';
+        if (document.getElementById('i2c_en').checked) {
+            param = 'on';
+        } else {
+            param = 'off';
+        }
+
+        $.post('/api/i2c_en/_?param=' + param, "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+    });
+
+    var roombaPowerBtn = document.querySelector('#aux_power');
+    roombaPowerBtn.addEventListener('click', function() {
+        var param = '';
+        if (document.getElementById('aux_power').checked) {
+            param = 'on';
+        } else {
+            param = 'off';
+        }
+
+        $.post('/api/roomba_cmd/_?cmd=aux_power&param=' + param, "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+    });
+
+
     var roombaPowerBtn = document.querySelector('#roomba_power');
     roombaPowerBtn.addEventListener('click', function() {
         var action = '';
@@ -332,13 +366,17 @@ $(document).ready(function() {
 
     ws = new WebSocket("ws://" + window.location.host + "/datastream");
 
-    ws.onopen = function(evt) {}
+    ws.onopen = function(evt) {
+        $("#conn_spinner").show();
+    }
 
     ws.onclose = function(evt) {
+        $("#conn_spinner").hide();
         ws = null;
     }
 
     ws.onmessage = function(evt) {
+
         st = JSON.parse(evt.data);
         if (st.Err != "") {
             console.log(st.Err);
@@ -467,6 +505,7 @@ $(document).ready(function() {
                     document.querySelector('.mdl-js-progress').MaterialProgress.setProgress(battPer);
                     $("#rb_batt_charge_tip").empty();
                     $("#rb_batt_charge_tip").append(battPer + "% " + battCharge + "/" + pkt);
+                    updateSpark("#rb_batt_charge", [], "", battPer, msgCount);
                     break;
 
                 case "27":
@@ -502,6 +541,7 @@ $(document).ready(function() {
                     break;
 
                 case "35":
+                    // OI mode.
                     updateSpark("#rb_oi_mode", [], "", OI_MODE[pkt], msgCount);
                     break;
 
