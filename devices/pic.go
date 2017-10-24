@@ -254,7 +254,7 @@ func (m *Controller) BattState() (batt float32, err error) {
 }
 
 // Distance returns the distance reading from the lidar.
-func (m *Controller) Distance() (dist uint16, err error) {
+func (m *Controller) DistancePIC() (dist uint16, err error) {
 	pkt := []byte{p.CMD_STATE}
 
 	if er := m.send(p.DEV_LIDAR, pkt); er != nil {

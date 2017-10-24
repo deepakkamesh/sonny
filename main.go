@@ -97,7 +97,7 @@ func main() {
 			glog.Fatalf("Failed to set roomba mode:%v", err)
 		}
 
-		// Power up secondary battery on main brush.
+		// Power up auxillary battery on main brush.
 		if *enAuxPower {
 			time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
 			if err := rb.MainBrush(true, true); err != nil {
@@ -107,11 +107,12 @@ func main() {
 		}
 	}
 
-	// I2Cen control.
+	// I2C enable control.
 	i2cEn := gpio.NewDirectPinDriver(pi, *enI2CPin)
 	if err := i2cEn.Start(); err != nil {
 		glog.Fatalf("Failed to initialize I2C en pin: %v", err)
 	}
+	i2cEn.DigitalWrite(0) // Need to reset pin as output can persist.
 	if *enI2C {
 		i2cEn.DigitalWrite(1)
 	}
@@ -161,6 +162,23 @@ func main() {
 		}()
 	}
 
+	type Sonny struct {
+		devices.Controller   // PIC controller.
+		i2c.LIDARLiteDriver  // Lidar Lite.
+		i2c.HMC6352Driver    // Magnetometer HMC5663.
+		roomba.Roomba        // Roomba controller.
+		gpio.DirectPinDriver // GPIO port control for I2C Bus.
+	}
+
+	// Build Devices.
+	sonny := &devices.Sonny{
+		ctrl,
+		lidar,
+		mag,
+		rb,
+		i2cEn,
+	}
+
 	// Build device list.
 	dev := &rpc.Devices{
 		Ctrl:   ctrl,
@@ -169,6 +187,7 @@ func main() {
 		Roomba: rb,
 		Lidar:  lidar,
 		I2CEn:  i2cEn,
+		Sonny:  sonny,
 	}
 
 	// Startup RPC service.
