@@ -14,18 +14,19 @@ import (
 
 // Sonny is the struct that represents all the devices.
 type Sonny struct {
-	*Controller           // PIC controller.
-	*i2c.LIDARLiteDriver  // Lidar Lite.
-	*i2c.HMC6352Driver    // Magnetometer HMC5663.
-	*roomba.Roomba        // Roomba controller.
-	*gpio.DirectPinDriver // GPIO port control for I2C Bus.
-	*gpio.PIRMotionDriver // PIR driver.
-	pirState              int
+	*Controller               // PIC controller.
+	*i2c.LIDARLiteDriver      // Lidar Lite.
+	*i2c.HMC6352Driver        // Magnetometer HMC5663.
+	*roomba.Roomba            // Roomba controller.
+	*gpio.DirectPinDriver     // GPIO port control for I2C Bus.
+	*gpio.PIRMotionDriver     // PIR driver.
+	pirState              int // State of PIR.
+	i2cBusState           int // State of I2CBus.
 }
 
 func NewSonny(c *Controller, l *i2c.LIDARLiteDriver, m *i2c.HMC6352Driver, r *roomba.Roomba, i2cEn *gpio.DirectPinDriver, p *gpio.PIRMotionDriver) *Sonny {
 	return &Sonny{
-		c, l, m, r, i2cEn, p, 0,
+		c, l, m, r, i2cEn, p, 0, 0,
 	}
 }
 
@@ -133,7 +134,14 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 // Connects the rest of the I2C devices with Pi.
 func (s *Sonny) I2CBusEnable(b bool) error {
 	if b {
+		s.i2cBusState = 1
 		return s.DigitalWrite(1)
 	}
+	s.i2cBusState = 0
 	return s.DigitalWrite(0)
+}
+
+// GetI2CBusState return 1 if I2C bus is enabled otherwise it returns 0.
+func (s *Sonny) GetI2CBusState() int {
+	return s.i2cBusState
 }

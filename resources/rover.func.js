@@ -543,6 +543,22 @@ $(document).ready(function() {
                 case "35":
                     // OI mode.
                     updateSpark("#rb_oi_mode", [], "", OI_MODE[pkt], msgCount);
+                    // Execute after an interval so it does not interfere with UI interaction.
+                    setTimeout(function(pkt) {
+                        switch (pkt) {
+                            case 1:
+                                $('#mode_passive_label')[0].MaterialRadio.check();
+                                break;
+                            case 2:
+                                $('#mode_safe_label')[0].MaterialRadio.check();
+                                break;
+                            case 3:
+                                $('#mode_full_label')[0].MaterialRadio.check();
+                                break;
+                            default:
+                                console.log("Unknown mode");
+                        }
+                    }, 100, pkt);
                     break;
 
                 case "36":
@@ -646,12 +662,15 @@ $(document).ready(function() {
 
                 case "56":
                     rb_main_curr = pkt;
-                    if (rb_main_curr > 10) {
-                        $('#aux_power_label')[0].MaterialSwitch.on();
-                        break;
-                    }
-                    $('#aux_power_label')[0].MaterialSwitch.off();
-                    break;
+                    // Change UI after timeout to prevent interference with UI actions.
+                    setTimeout(function(pkt) {
+                        if (rb_main_curr > 10) {
+                            $('#aux_power_label')[0].MaterialSwitch.on();
+                            return;
+                        }
+                        $('#aux_power_label')[0].MaterialSwitch.off();
+                        return;
+                    }, 100, pkt);
 
                 case "57":
                     rb_side_curr = pkt;
@@ -720,6 +739,22 @@ $(document).ready(function() {
                     updateSpark("#ctrl_volt", dataBuf, ".ctrl_volt_spark", parseFloat(pkt).toFixed(2), msgCount);
                     break;
 
+            }
+        }
+
+        piData = st.Pi;
+        for (var pktID in piData) {
+            pkt = piData[pktID];
+            switch (pktID) {
+                case "0": //I2CBus Enable.
+                    setTimeout(function(pkt) {
+                        if (pkt == 1) {
+                            $('#i2c_en_label')[0].MaterialSwitch.on();
+                            return;
+                        }
+                        $('#i2c_en_label')[0].MaterialSwitch.off();
+                        return;
+                    }, 100, pkt);
             }
         }
 

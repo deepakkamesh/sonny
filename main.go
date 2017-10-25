@@ -109,10 +109,6 @@ func main() {
 	if err := i2cEn.Start(); err != nil {
 		glog.Fatalf("Failed to initialize I2C en pin: %v", err)
 	}
-	i2cEn.DigitalWrite(0) // Need to reset pin as output can persist.
-	if *enI2C {
-		i2cEn.DigitalWrite(1)
-	}
 
 	// Initialize PIC I2C Controller.
 	var ctrl *devices.Controller
@@ -153,6 +149,16 @@ func main() {
 
 	// Build Devices.
 	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir)
+
+	// Enable I2C Bus if flag is set.
+	if err := sonny.I2CBusEnable(false); err != nil {
+		glog.Fatalf("Failed to disable I2C Bus")
+	}
+	if *enI2C {
+		if err := sonny.I2CBusEnable(true); err != nil {
+			glog.Fatalf("Failed to enable I2C Bus")
+		}
+	}
 
 	sonny.PIREventLoop()
 

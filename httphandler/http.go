@@ -12,15 +12,6 @@ import (
 	"github.com/golang/glog"
 )
 
-const (
-	TEMP byte = iota
-	HUMIDITY
-	LDR
-	PIR
-	MAG
-	BATT
-)
-
 type Server struct {
 	sonny      *devices.Sonny
 	ssl        bool
@@ -54,6 +45,7 @@ func New(d *devices.Sonny, ssl bool, resources string) *Server {
 		data: &sensorData{
 			Controller: make(map[byte]float32),
 			Roomba:     make(map[byte]int16),
+			Pi:         make(map[byte]int),
 			Enabled: map[byte]bool{
 				TEMP:     false,
 				HUMIDITY: false,

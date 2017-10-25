@@ -9,11 +9,25 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	TEMP byte = iota
+	HUMIDITY
+	LDR
+	PIR
+	MAG
+	BATT
+)
+
+const (
+	I2CBUS byte = iota
+)
+
 // sensor data struct.
 type sensorData struct {
 	Err        string
 	Roomba     map[byte]int16
 	Controller map[byte]float32
+	Pi         map[byte]int
 	Enabled    map[byte]bool
 }
 
@@ -24,9 +38,8 @@ func (m *Server) dataCollector() {
 	t5s := time.NewTicker(5 * time.Second)
 	t500ms := time.NewTicker(500 * time.Millisecond)
 	t300ms := time.NewTicker(300 * time.Millisecond)
-	t100ms := time.NewTicker(100 * time.Millisecond)
 
-	// Each sensor reading is an anonymous function for readability and code flow.
+	// Each sensor reading is an anonymous function for readability (can use return) and code flow.
 	for {
 		// Read sensors only when there is a connected websocket.
 		if m.connCount == 0 {
@@ -79,6 +92,11 @@ func (m *Server) dataCollector() {
 				m.data.Controller[BATT] = float32(b)
 			}()
 
+			// I2CBus State.
+			func() {
+				m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
+			}()
+
 		case <-t300ms.C:
 			// Compass.
 			func() {
@@ -104,7 +122,6 @@ func (m *Server) dataCollector() {
 				m.data.Controller[PIR] = float32(1)
 			}()
 
-		case <-t100ms.C:
 			// Roomba data.
 			func() {
 				d, err := m.sonny.GetRoombaTelemetry()
