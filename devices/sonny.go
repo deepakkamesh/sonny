@@ -7,6 +7,7 @@ import (
 
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/go-roomba/constants"
+	"github.com/golang/glog"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/drivers/i2c"
 )
@@ -18,13 +19,42 @@ type Sonny struct {
 	*i2c.HMC6352Driver    // Magnetometer HMC5663.
 	*roomba.Roomba        // Roomba controller.
 	*gpio.DirectPinDriver // GPIO port control for I2C Bus.
+	*gpio.PIRMotionDriver // PIR driver.
+	pirState              int
+}
+
+func NewSonny(c *Controller, l *i2c.LIDARLiteDriver, m *i2c.HMC6352Driver, r *roomba.Roomba, i2cEn *gpio.DirectPinDriver, p *gpio.PIRMotionDriver) *Sonny {
+	return &Sonny{
+		c, l, m, r, i2cEn, p, 0,
+	}
+}
+
+// PIREventLoop subscribes to events from the PIR gpio.
+func (s *Sonny) PIREventLoop() {
+	if s.PIRMotionDriver == nil {
+		return
+	}
+
+	pirCh := s.PIRMotionDriver.Subscribe()
+	go func() {
+		for {
+			evt := <-pirCh
+			s.pirState = evt.Data.(int)
+			glog.V(3).Infof("Got pir data %v %v", evt.Name, evt.Data.(int))
+		}
+	}()
+}
+
+// Returns PIR state.
+func (s *Sonny) GetPIRState() int {
+	return s.pirState
 }
 
 // GetRoombaTelemetry returns the current value of the roomba sensors.
 func (s *Sonny) GetRoombaTelemetry() (data map[byte]int16, err error) {
 
 	if s.Roomba == nil {
-		return nil, errors.New("roomba not initialized")
+		return nil, fmt.Errorf("roomba not initialized")
 	}
 
 	data = make(map[byte]int16)
@@ -46,6 +76,9 @@ func (s *Sonny) GetRoombaTelemetry() (data map[byte]int16, err error) {
 
 // SetRoombaMode sets the mode for Roomba.
 func (s *Sonny) SetRoombaMode(mode byte) error {
+	if s.Roomba == nil {
+		return fmt.Errorf("roomba not initialized")
+	}
 	switch mode {
 	case constants.OI_MODE_OFF:
 		if err := s.Roomba.Power(); err != nil {
@@ -71,6 +104,9 @@ func (s *Sonny) SetRoombaMode(mode byte) error {
 }
 
 func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
+	if s.Controller == nil {
+		return nil, errors.New("controller not initialized")
+	}
 	val := []int32{}
 
 	// Sleep to allow servo to move to starting position.
@@ -91,4 +127,13 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 	}
 
 	return val, nil
+}
+
+// I2CBusEnable enables/disables the I2C buffer chip.
+// Connects the rest of the I2C devices with Pi.
+func (s *Sonny) I2CBusEnable(b bool) error {
+	if b {
+		return s.DigitalWrite(1)
+	}
+	return s.DigitalWrite(0)
 }

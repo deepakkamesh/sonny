@@ -93,18 +93,15 @@ func main() {
 		if err = rb.Start(true); err != nil {
 			glog.Fatalf("Failed to start roomba: %v", err)
 		}
-		if err = devices.SetRoombaMode(rb, byte(*roombaMode)); err != nil {
-			glog.Fatalf("Failed to set roomba mode:%v", err)
-		}
+	}
 
-		// Power up auxillary battery on main brush.
-		if *enAuxPower {
-			time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
-			if err := rb.MainBrush(true, true); err != nil {
-				glog.Fatalf("Failed to turn on main brush: %v ")
-			}
-			time.Sleep(500 * time.Millisecond) // Time for secondary systems to come online.
+	// Power up auxillary battery on main brush.
+	if *enRoomba && *enAuxPower {
+		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
+		if err := rb.MainBrush(true, true); err != nil {
+			glog.Fatalf("Failed to turn on main brush: %v ")
 		}
+		time.Sleep(500 * time.Millisecond) // Time for secondary systems to come online.
 	}
 
 	// I2C enable control.
@@ -146,49 +143,27 @@ func main() {
 	}
 
 	// Initialize PIR sensor.
-	var pirVal int
+	var pir *gpio.PIRMotionDriver
 	if *enPir {
-		pir := gpio.NewPIRMotionDriver(pi, *pirPin)
+		pir = gpio.NewPIRMotionDriver(pi, *pirPin)
 		if err := pir.Start(); err != nil {
 			glog.Fatalf("Unable to initialize pin %v error %v", *pirPin, err)
 		}
-		pirCh := pir.Subscribe()
-		go func() {
-			for {
-				evt := <-pirCh
-				pirVal = evt.Data.(int)
-				glog.V(3).Infof("Got pir data %v %v", evt.Name, evt.Data.(int))
-			}
-		}()
-	}
-
-	type Sonny struct {
-		devices.Controller   // PIC controller.
-		i2c.LIDARLiteDriver  // Lidar Lite.
-		i2c.HMC6352Driver    // Magnetometer HMC5663.
-		roomba.Roomba        // Roomba controller.
-		gpio.DirectPinDriver // GPIO port control for I2C Bus.
 	}
 
 	// Build Devices.
-	sonny := &devices.Sonny{
-		ctrl,
-		lidar,
-		mag,
-		rb,
-		i2cEn,
+	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir)
+
+	sonny.PIREventLoop()
+
+	// Easier to set roomba mode once the sonny struct is ready.
+	if *enRoomba {
+		if err := sonny.SetRoombaMode(byte(*roombaMode)); err != nil {
+			glog.Fatalf("Failed to set roomba mode:%v", err)
+		}
 	}
 
-	// Build device list.
-	dev := &rpc.Devices{
-		Ctrl:   ctrl,
-		Mag:    mag,
-		Pir:    &pirVal,
-		Roomba: rb,
-		Lidar:  lidar,
-		I2CEn:  i2cEn,
-		Sonny:  sonny,
-	}
+	glog.Info("Sonny device initialization complete")
 
 	// Startup RPC service.
 	lis, err := net.Listen("tcp", *rpcPort)
@@ -196,11 +171,11 @@ func main() {
 		glog.Fatalf("Failed to listen:%v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterDevicesRPCServer(s, rpc.New(dev))
+	pb.RegisterDevicesRPCServer(s, rpc.New(sonny))
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(dev, false, *res)
+	h := httphandler.New(sonny, false, *res)
 	if err := h.Start(*httpHostPort); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}

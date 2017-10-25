@@ -8,12 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/drivers/i2c"
-
-	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
-	"github.com/deepakkamesh/sonny/rpc"
 	"github.com/golang/glog"
 )
 
@@ -27,12 +22,7 @@ const (
 )
 
 type Server struct {
-	ctrl       *devices.Controller
-	lidar      *i2c.LIDARLiteDriver
-	mag        *i2c.HMC6352Driver
-	pir        *int
-	roomba     *roomba.Roomba
-	i2cEn      *gpio.DirectPinDriver
+	sonny      *devices.Sonny
 	ssl        bool
 	resources  string
 	servoAngle map[byte]int // Map to hold state of each servo.
@@ -49,25 +39,12 @@ type response struct {
 	Data interface{}
 }
 
-// sensor data struct.
-type sensorData struct {
-	Err        string
-	Roomba     map[byte]int16
-	Controller map[byte]float32
-	Enabled    map[byte]bool
-}
-
-func New(d *rpc.Devices, ssl bool, resources string) *Server {
+func New(d *devices.Sonny, ssl bool, resources string) *Server {
 	t := time.NewTimer(500 * time.Millisecond)
 	t.Stop()
 
 	return &Server{
-		ctrl:       d.Ctrl,
-		lidar:      d.Lidar,
-		mag:        d.Mag,
-		pir:        d.Pir,
-		roomba:     d.Roomba,
-		i2cEn:      d.I2CEn,
+		sonny:      d,
 		ssl:        ssl,
 		resources:  resources,
 		servoAngle: map[byte]int{1: 90, 2: 90},
@@ -114,6 +91,7 @@ func (m *Server) Start(hostPort string) error {
 // writeResponse writes the response json object to w. If unable to marshal
 // it writes a http 500.
 func writeResponse(w http.ResponseWriter, resp *response) {
+	w.Header().Set("Content-Type", "application/json")
 	js, e := json.Marshal(resp)
 	if e != nil {
 		http.Error(w, e.Error(), http.StatusInternalServerError)
@@ -123,9 +101,8 @@ func writeResponse(w http.ResponseWriter, resp *response) {
 	w.Write(js)
 }
 
-// I2CEn enables or disables I2C connection.
+// I2CEn enables or disables I2C bus.
 func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -133,19 +110,20 @@ func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error
-	if v := strings.ToLower(r.Form.Get("param")); v != "" {
-		switch v {
+	action := strings.ToLower(r.Form.Get("param"))
+	if action != "" {
+		switch action {
 		case "on":
-			err = m.i2cEn.DigitalWrite(1)
+			err = m.sonny.I2CBusEnable(true)
 		case "off":
-			err = m.i2cEn.DigitalWrite(0)
+			err = m.sonny.I2CBusEnable(false)
 		}
 	}
 
 	if err != nil {
-		glog.Errorf("Failed to enable I2C: %v", err)
+		glog.Errorf("Failed to turn %v  I2C bus: %v", action, err)
 		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: I2C enable  failed %v", err),
+			Err: fmt.Sprintf("Error: Failed to turn %v I2C bus: %v", action, err),
 		})
 		return
 	}
@@ -158,16 +136,8 @@ func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
 
 // Ping is a http wrapper for devices.Ping.
 func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not initialized"),
-		})
-		return
-	}
-
-	if err := m.ctrl.Ping(); err != nil {
+	if err := m.sonny.Ping(); err != nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: ping failed %v", err),
 		})
@@ -181,7 +151,6 @@ func (m *Server) Ping(w http.ResponseWriter, r *http.Request) {
 
 // SetParam sets http console params.
 func (m *Server) SetParam(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -206,9 +175,8 @@ func (m *Server) SetParam(w http.ResponseWriter, r *http.Request) {
 
 // Move is the wrapper around ctrl.Move.
 func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
-	if m.roomba == nil {
+	if m.sonny.Roomba == nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: roomba not initialized"),
 		})
@@ -225,16 +193,16 @@ func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 
 	switch dir {
 	case "fwd":
-		err = m.roomba.Drive(m.velocity, 32767)
+		err = m.sonny.Drive(m.velocity, 32767)
 
 	case "bwd":
-		err = m.roomba.Drive(-1*m.velocity, 32767)
+		err = m.sonny.Drive(-1*m.velocity, 32767)
 
 	case "right":
-		err = m.roomba.Drive(m.velocity, -1)
+		err = m.sonny.Drive(m.velocity, -1)
 
 	case "left":
-		err = m.roomba.Drive(m.velocity, 1)
+		err = m.sonny.Drive(m.velocity, 1)
 	}
 
 	if err != nil {
@@ -248,21 +216,13 @@ func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 	if run := m.timer.Reset(500 * time.Millisecond); !run {
 		go func() {
 			<-m.timer.C
-			m.roomba.Drive(0, 0)
+			m.sonny.Drive(0, 0)
 		}()
 	}
 }
 
 // LEDBlink is the http wrapper for devices.LEDBlink().
 func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not initialized"),
-		})
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -281,7 +241,7 @@ func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := m.ctrl.LEDBlink(uint16(dur), byte(no)); err != nil {
+	if err := m.sonny.LEDBlink(uint16(dur), byte(no)); err != nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: failed to blink LED %v", err),
 		})
@@ -296,14 +256,6 @@ func (m *Server) LEDBlink(w http.ResponseWriter, r *http.Request) {
 
 // LEDOn is the http wrapper for devices.LEDOn().
 func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not initialized"),
-		})
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -314,14 +266,14 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 	switch a {
 	case "on":
-		if err := m.ctrl.LEDOn(true); err != nil {
+		if err := m.sonny.LEDOn(true); err != nil {
 			writeResponse(w, &response{
 				Err: fmt.Sprintf("Error: LED failed %v", err),
 			})
 			return
 		}
 	case "off":
-		if err := m.ctrl.LEDOn(false); err != nil {
+		if err := m.sonny.LEDOn(false); err != nil {
 			writeResponse(w, &response{
 				Err: fmt.Sprintf("Error: LED failed  %v", err),
 			})
@@ -341,14 +293,6 @@ func (m *Server) LEDOn(w http.ResponseWriter, r *http.Request) {
 
 // ServoRotate is the http wrapper for devices.ServoRotate().
 func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if m.ctrl == nil {
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Controller not initialized"),
-		})
-		return
-	}
 
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintf(w, "Error: %v", err)
@@ -391,7 +335,7 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := m.ctrl.ServoRotate(servo, m.servoAngle[servo]); err != nil {
+	if err := m.sonny.ServoRotate(servo, m.servoAngle[servo]); err != nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: servo failed %v", err),
 		})
@@ -405,9 +349,8 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 
 // RoombaCmd sets the roomba mode.
 func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
-	if m.roomba == nil {
+	if m.sonny.Roomba == nil {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: Roomba not initialized"),
 		})
@@ -429,24 +372,24 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 
 	switch cmd {
 	case "safe_mode":
-		err = m.roomba.Safe()
+		err = m.sonny.Safe()
 
 	case "aux_power":
 		switch param {
 		case "on":
-			err = m.roomba.MainBrush(true, true)
+			err = m.sonny.MainBrush(true, true)
 		case "off":
-			err = m.roomba.MainBrush(false, true)
+			err = m.sonny.MainBrush(false, true)
 		}
 
 	case "reset":
-		err = m.roomba.Reset()
+		err = m.sonny.Reset()
 
 	case "full_mode":
-		err = m.roomba.Full()
+		err = m.sonny.Full()
 
 	case "passive_mode":
-		err = m.roomba.Passive()
+		err = m.sonny.Passive()
 		m.data.Enabled = map[byte]bool{
 			TEMP:     false,
 			HUMIDITY: false,
@@ -457,13 +400,13 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "power_off":
-		err = m.roomba.Power()
+		err = m.sonny.Power()
 
 	case "power_on":
-		err = m.roomba.Start(true)
+		err = m.sonny.Roomba.Start(true)
 
 	case "seek_dock":
-		err = m.roomba.SeekDock()
+		err = m.sonny.SeekDock()
 	}
 
 	if err != nil {
@@ -475,5 +418,4 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, &response{
 		Data: "OK",
 	})
-
 }

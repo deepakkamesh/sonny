@@ -28,9 +28,9 @@ type Server struct {
 	sonny *devices.Sonny
 }
 
-func New(d *Devices) *Server {
+func New(s *devices.Sonny) *Server {
 	return &Server{
-		sonny: d.Sonny,
+		sonny: s,
 	}
 }
 
@@ -75,10 +75,7 @@ func (m *Server) I2CBusEn(ctx context.Context, in *pb.I2CBusEnReq) (*google_pb.E
 	if m.sonny.Roomba == nil {
 		return &google_pb.Empty{}, errors.New("roomba not enabled")
 	}
-	if in.On {
-		return &google_pb.Empty{}, m.sonny.DigitalWrite(1)
-	}
-	return &google_pb.Empty{}, m.sonny.DigitalWrite(0)
+	return &google_pb.Empty{}, m.sonny.I2CBusEnable(in.On)
 }
 
 // SecondaryPower turns on/off the secondary power supply for accessories.

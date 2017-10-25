@@ -94,6 +94,10 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 
 // Ping returns nil if the controller is available.
 func (m *Controller) Ping() (err error) {
+	if m == nil {
+		return fmt.Errorf("controller not initialized")
+	}
+
 	pkt := []byte{p.CMD_PING}
 
 	if er := m.send(p.DEV_ADMIN, pkt); er != nil {
@@ -105,6 +109,9 @@ func (m *Controller) Ping() (err error) {
 
 // LEDOn turn on/off the LED.
 func (m *Controller) LEDOn(on bool) (err error) {
+	if m == nil {
+		return fmt.Errorf("controller not initialized")
+	}
 	cmd := p.CMD_ON
 	if !on {
 		cmd = p.CMD_OFF
@@ -119,6 +126,9 @@ func (m *Controller) LEDOn(on bool) (err error) {
 
 // LEDBlink blinks the LED for duration (in ms) and for the number of times.
 func (m *Controller) LEDBlink(duration uint16, times byte) (err error) {
+	if m == nil {
+		return fmt.Errorf("controller not initialized")
+	}
 	pkt := []byte{p.CMD_BLINK,
 		byte(duration >> 8),
 		byte(duration & 0xF),
@@ -134,6 +144,9 @@ func (m *Controller) LEDBlink(duration uint16, times byte) (err error) {
 
 // RotateServo rotates servo by angle.
 func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
+	if m == nil {
+		return fmt.Errorf("controller not initialized")
+	}
 	const (
 		deg0      float32 = 0.0007 // 0.7 ms.
 		deg180    float32 = 0.0024 // 2.4 ms.
@@ -172,6 +185,9 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 
 // DHT11 returns the temperature in 'C and humidity %.
 func (m *Controller) DHT11() (temp, humidity uint8, err error) {
+	if m == nil {
+		return 0, 0, fmt.Errorf("controller not initialized")
+	}
 	pkt := []byte{p.CMD_STATE}
 
 	if er := m.send(p.DEV_DHT11, pkt); er != nil {
@@ -190,6 +206,9 @@ func (m *Controller) DHT11() (temp, humidity uint8, err error) {
 
 // LDR returns the ADC light value of the LDR sensor.
 func (m *Controller) LDR() (adc uint16, err error) {
+	if m == nil {
+		return 0, fmt.Errorf("controller not initialized")
+	}
 	pkt := []byte{p.CMD_STATE}
 
 	if er := m.send(p.DEV_LDR, pkt); er != nil {
@@ -211,6 +230,9 @@ func (m *Controller) LDR() (adc uint16, err error) {
 
 // Accelerometer returns the ADC values from the accelerometer.
 func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
+	if m == nil {
+		return 0, 0, 0, fmt.Errorf("controller not initialized")
+	}
 	pkt := []byte{p.CMD_STATE}
 
 	if er := m.send(p.DEV_ACCEL, pkt); er != nil {
@@ -236,6 +258,9 @@ func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 
 // BattState returns the voltage reading for the battery.
 func (m *Controller) BattState() (batt float32, err error) {
+	if m == nil {
+		return 0, fmt.Errorf("controller not initialized")
+	}
 	pkt := []byte{p.CMD_STATE}
 
 	if er := m.send(p.DEV_BATT, pkt); er != nil {
@@ -250,23 +275,5 @@ func (m *Controller) BattState() (batt float32, err error) {
 
 	adc := uint16(pkt[1])<<8 | uint16(pkt[2])
 	batt = 2095.104 / float32(adc)
-	return
-}
-
-// Distance returns the distance reading from the lidar.
-func (m *Controller) DistancePIC() (dist uint16, err error) {
-	pkt := []byte{p.CMD_STATE}
-
-	if er := m.send(p.DEV_LIDAR, pkt); er != nil {
-		err = fmt.Errorf("unable to send command: %v", er)
-		return
-	}
-
-	pkt, err = m.recv(p.DEV_LIDAR)
-	if err != nil {
-		return
-	}
-	glog.Infof("Packet %x %x", pkt[1], pkt[2])
-	dist = uint16(pkt[1])<<8 | uint16(pkt[2])
 	return
 }

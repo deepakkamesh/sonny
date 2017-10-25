@@ -5,10 +5,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/deepakkamesh/sonny/devices"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 )
+
+// sensor data struct.
+type sensorData struct {
+	Err        string
+	Roomba     map[byte]int16
+	Controller map[byte]float32
+	Enabled    map[byte]bool
+}
 
 // dataCollector collects sensor data from the various sensors on the rover. Its runs
 // as a goroutine independent of the websocket routine. This allows different intervals
@@ -34,11 +41,7 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[TEMP] {
 					return
 				}
-				if m.ctrl == nil {
-					glog.V(3).Infof("Controller not initialized")
-					return
-				}
-				t, h, err := m.ctrl.DHT11()
+				t, h, err := m.sonny.DHT11()
 				if err != nil {
 					glog.Warningf("Failed to read DHT11: %v", err)
 					return
@@ -54,10 +57,7 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[LDR] {
 					return
 				}
-				if m.ctrl == nil {
-					return
-				}
-				l, err := m.ctrl.LDR()
+				l, err := m.sonny.LDR()
 				if err != nil {
 					glog.Warningf("Failed to read LDR: %v", err)
 					return
@@ -71,10 +71,7 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[BATT] {
 					return
 				}
-				if m.ctrl == nil {
-					return
-				}
-				b, err := m.ctrl.BattState()
+				b, err := m.sonny.BattState()
 				if err != nil {
 					glog.Errorf("Failed to read controller batt state: %v", err)
 					return
@@ -88,9 +85,6 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[MAG] {
 					return
 				}
-				if m.mag == nil {
-					return
-				}
 				// TODO: to be implemented.
 				//h, err := m.mag.Heading()
 				h := 0
@@ -102,21 +96,18 @@ func (m *Server) dataCollector() {
 				m.data.Controller[MAG] = float32(h)
 			}()
 
-			// PIR sensor.
+			// PIR sensor.TODO: to be implemented.
 			func() {
 				if !m.data.Enabled[PIR] {
 					return
 				}
-				if m.pir == nil {
-					return
-				}
-				m.data.Controller[PIR] = float32(*m.pir)
+				m.data.Controller[PIR] = float32(1)
 			}()
 
 		case <-t100ms.C:
 			// Roomba data.
 			func() {
-				d, err := devices.GetRoombaTelemetry(m.roomba)
+				d, err := m.sonny.GetRoombaTelemetry()
 				if err != nil {
 					glog.Warningf("Failed to read roomba sensors: %v", err)
 					return
