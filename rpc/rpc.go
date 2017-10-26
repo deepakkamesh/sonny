@@ -36,9 +36,6 @@ func New(s *devices.Sonny) *Server {
 
 // Ping returns nil if the pic controller is up and responsive.
 func (m *Server) Ping(ctx context.Context, in *google_pb.Empty) (*google_pb.Empty, error) {
-	if m.sonny.Controller == nil {
-		return &google_pb.Empty{}, errors.New("controller not enabled")
-	}
 	return &google_pb.Empty{}, m.sonny.Ping()
 }
 
@@ -72,9 +69,6 @@ func (m *Server) RoombaSensor(ctx context.Context, in *google_pb.Empty) (*pb.Roo
 
 // I2CBusEn enables/disables the I2C master bus.
 func (m *Server) I2CBusEn(ctx context.Context, in *pb.I2CBusEnReq) (*google_pb.Empty, error) {
-	if m.sonny.Roomba == nil {
-		return &google_pb.Empty{}, errors.New("roomba not enabled")
-	}
 	return &google_pb.Empty{}, m.sonny.I2CBusEnable(in.On)
 }
 
@@ -88,25 +82,16 @@ func (m *Server) SecondaryPower(ctx context.Context, in *pb.SecPowerReq) (*googl
 
 // LEDOn turns on/off the LED indicator.
 func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, error) {
-	if m.sonny.Controller == nil {
-		return &google_pb.Empty{}, errors.New("controller not enabled")
-	}
 	return &google_pb.Empty{}, m.sonny.LEDOn(in.On)
 }
 
 // LEDBlink blinks the LED.
 func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.Empty, error) {
-	if m.sonny.Controller == nil {
-		return &google_pb.Empty{}, errors.New("controller not enabled")
-	}
 	return &google_pb.Empty{}, m.sonny.LEDBlink(uint16(in.Duration), byte(in.Times))
 }
 
 // Servo Rotate rotates the servo by angle.
 func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.Empty, error) {
-	if m.sonny.Controller == nil {
-		return &google_pb.Empty{}, errors.New("controller not enabled")
-	}
 	return &google_pb.Empty{}, m.sonny.ServoRotate(byte(in.Servo), int(in.Angle))
 }
 
@@ -149,9 +134,6 @@ func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, 
 
 // Accelerometer returns the dynamic and static acceleration from the accelerometer.
 func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.AccelRet, error) {
-	if m.sonny.Controller == nil {
-		return nil, errors.New("controller not enabled")
-	}
 
 	x, y, z, err := m.sonny.Accelerometer()
 	if err != nil {
@@ -177,9 +159,6 @@ func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet
 
 // BattState returns the battery level from pic.
 func (m *Server) BattState(ctx context.Context, in *google_pb.Empty) (*pb.BattRet, error) {
-	if m.sonny.Controller == nil {
-		return nil, errors.New("controller not enabled")
-	}
 
 	v, err := m.sonny.BattState()
 	if err != nil {
@@ -190,9 +169,6 @@ func (m *Server) BattState(ctx context.Context, in *google_pb.Empty) (*pb.BattRe
 
 // LDR returns the light level from pic.
 func (m *Server) LDR(ctx context.Context, in *google_pb.Empty) (*pb.LDRRet, error) {
-	if m.sonny.Controller == nil {
-		return nil, errors.New("controller not enabled")
-	}
 
 	v, err := m.sonny.LDR()
 	if err != nil {
@@ -203,9 +179,6 @@ func (m *Server) LDR(ctx context.Context, in *google_pb.Empty) (*pb.LDRRet, erro
 
 // DHT11 returns the temp and humidity level from pic.
 func (m *Server) DHT11(ctx context.Context, in *google_pb.Empty) (*pb.DHT11Ret, error) {
-	if m.sonny.Controller == nil {
-		return nil, errors.New("controller not enabled")
-	}
 
 	temp, humidity, err := m.sonny.DHT11()
 	if err != nil {

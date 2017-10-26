@@ -151,6 +151,7 @@ func main() {
 	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir)
 
 	// Enable I2C Bus if flag is set.
+	// Explicit disable is needed as the gpio may be high from prior run.
 	if err := sonny.I2CBusEnable(false); err != nil {
 		glog.Fatalf("Failed to disable I2C Bus")
 	}

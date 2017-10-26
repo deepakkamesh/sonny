@@ -24,7 +24,13 @@ type Sonny struct {
 	i2cBusState           int // State of I2CBus.
 }
 
-func NewSonny(c *Controller, l *i2c.LIDARLiteDriver, m *i2c.HMC6352Driver, r *roomba.Roomba, i2cEn *gpio.DirectPinDriver, p *gpio.PIRMotionDriver) *Sonny {
+func NewSonny(c *Controller,
+	l *i2c.LIDARLiteDriver,
+	m *i2c.HMC6352Driver,
+	r *roomba.Roomba,
+	i2cEn *gpio.DirectPinDriver,
+	p *gpio.PIRMotionDriver) *Sonny {
+
 	return &Sonny{
 		c, l, m, r, i2cEn, p, 0, 0,
 	}
@@ -133,6 +139,9 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 // I2CBusEnable enables/disables the I2C buffer chip.
 // Connects the rest of the I2C devices with Pi.
 func (s *Sonny) I2CBusEnable(b bool) error {
+	if s.DirectPinDriver == nil {
+		return fmt.Errorf("gpio I2C not initialized")
+	}
 	if b {
 		s.i2cBusState = 1
 		return s.DigitalWrite(1)
