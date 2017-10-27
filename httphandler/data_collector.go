@@ -2,6 +2,7 @@ package httphandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -20,6 +21,7 @@ const (
 
 const (
 	I2CBUS byte = iota
+	AUXPOWER
 )
 
 // sensor data struct.
@@ -36,7 +38,6 @@ type sensorData struct {
 // for different sensors. It also polls sensors only if there is a client connected.
 func (m *Server) dataCollector() {
 	t5s := time.NewTicker(5 * time.Second)
-	t500ms := time.NewTicker(500 * time.Millisecond)
 	t300ms := time.NewTicker(300 * time.Millisecond)
 
 	// Each sensor reading is an anonymous function for readability (can use return) and code flow.
@@ -51,53 +52,56 @@ func (m *Server) dataCollector() {
 		case <-t5s.C:
 			// DHT11 sensor.
 			func() {
-				if !m.data.Enabled[TEMP] {
+				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
 				t, h, err := m.sonny.DHT11()
 				if err != nil {
 					glog.Warningf("Failed to read DHT11: %v", err)
+					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
 					return
 				}
 				m.data.Controller[TEMP] = float32(t)*1.8 + 32
 				m.data.Controller[HUMIDITY] = float32(h)
 			}()
 
-		case <-t500ms.C:
+		case <-t300ms.C:
 			// LDR sensor.
-			time.Sleep(50 * time.Millisecond)
 			func() {
-				if !m.data.Enabled[LDR] {
+				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
+				time.Sleep(50 * time.Millisecond) // Need time A/D conversion.
 				l, err := m.sonny.LDR()
 				if err != nil {
 					glog.Warningf("Failed to read LDR: %v", err)
+					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
 					return
 				}
 				m.data.Controller[LDR] = float32(l)
 			}()
 
 			// Controller battery voltage.
-			time.Sleep(50 * time.Millisecond)
 			func() {
-				if !m.data.Enabled[BATT] {
+				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
+				time.Sleep(50 * time.Millisecond)
 				b, err := m.sonny.BattState()
 				if err != nil {
 					glog.Errorf("Failed to read controller batt state: %v", err)
+					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
 					return
 				}
 				m.data.Controller[BATT] = float32(b)
 			}()
 
-			// I2CBus State.
-			func() {
-				m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
-			}()
+			// AuxPower State.
+			m.data.Pi[AUXPOWER] = m.sonny.GetAuxPowerState()
 
-		case <-t300ms.C:
+			// I2CBus State.
+			m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
+
 			// Compass.
 			func() {
 				if !m.data.Enabled[MAG] {
@@ -109,24 +113,21 @@ func (m *Server) dataCollector() {
 				var err error
 				if err != nil {
 					glog.Warningf("Failed to read Compass: %v", err)
+					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
 					return
 				}
 				m.data.Controller[MAG] = float32(h)
 			}()
 
-			// PIR sensor.TODO: to be implemented.
-			func() {
-				if !m.data.Enabled[PIR] {
-					return
-				}
-				m.data.Controller[PIR] = float32(1)
-			}()
+			// PIR state.
+			m.data.Controller[PIR] = float32(m.sonny.GetPIRState())
 
 			// Roomba data.
 			func() {
 				d, err := m.sonny.GetRoombaTelemetry()
 				if err != nil {
 					glog.Warningf("Failed to read roomba sensors: %v", err)
+					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
 					return
 				}
 				m.data.Roomba = d
@@ -158,6 +159,7 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("Failed to unmarshall: %v", err)
 			continue
 		}
+		m.data.Err = ""
 
 		err = c.WriteMessage(websocket.TextMessage, jsMsg)
 		if err != nil {

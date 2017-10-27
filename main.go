@@ -95,15 +95,6 @@ func main() {
 		}
 	}
 
-	// Power up auxillary battery on main brush.
-	if *enRoomba && *enAuxPower {
-		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
-		if err := rb.MainBrush(true, true); err != nil {
-			glog.Fatalf("Failed to turn on main brush: %v ")
-		}
-		time.Sleep(500 * time.Millisecond) // Time for secondary systems to come online.
-	}
-
 	// I2C enable control.
 	i2cEn := gpio.NewDirectPinDriver(pi, *enI2CPin)
 	if err := i2cEn.Start(); err != nil {
@@ -167,6 +158,12 @@ func main() {
 	if *enRoomba {
 		if err := sonny.SetRoombaMode(byte(*roombaMode)); err != nil {
 			glog.Fatalf("Failed to set roomba mode:%v", err)
+		}
+
+		// Power up auxillary battery on main brush.
+		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
+		if err := sonny.AuxPower(*enAuxPower); err != nil {
+			glog.Fatalf("Failed to turn on Aux Power: %v ")
 		}
 	}
 

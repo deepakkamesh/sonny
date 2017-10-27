@@ -20,8 +20,10 @@ type Sonny struct {
 	*roomba.Roomba            // Roomba controller.
 	*gpio.DirectPinDriver     // GPIO port control for I2C Bus.
 	*gpio.PIRMotionDriver     // PIR driver.
-	pirState              int // State of PIR.
-	i2cBusState           int // State of I2CBus.
+	pirState              int // State of PIR. 1=enabled, 0=disabled.
+	i2cBusState           int // State of I2CBus. 1=enabled, 0=disabled.
+	auxPowerState         int // Start of AuxPower. 1=enabled, 0=disabled.
+	roombaMode            int //Roomba mode: 1 = passive, 2=safe, 3=full.
 }
 
 func NewSonny(c *Controller,
@@ -32,8 +34,24 @@ func NewSonny(c *Controller,
 	p *gpio.PIRMotionDriver) *Sonny {
 
 	return &Sonny{
-		c, l, m, r, i2cEn, p, 0, 0,
+		c, l, m, r, i2cEn, p, 0, 0, 0, 0,
 	}
+}
+
+// GetAuxPowerState returns the state of Aux Power.
+func (s *Sonny) GetAuxPowerState() int {
+	return s.auxPowerState
+}
+
+// AuxPower enables/disables Auxillary power from main brush motor on Roomba.
+func (s *Sonny) AuxPower(enable bool) error {
+	if enable {
+		s.auxPowerState = 1
+		return s.MainBrush(true, true)
+	}
+
+	s.auxPowerState = 0
+	return s.MainBrush(false, true)
 }
 
 // PIREventLoop subscribes to events from the PIR gpio.
@@ -78,7 +96,20 @@ func (s *Sonny) GetRoombaTelemetry() (data map[byte]int16, err error) {
 		}
 		data[pktID] = int16(p[0])<<8 | int16(p[1])
 	}
+
+	// Inspect roomba mode. If different, reset aux power.
+	prevMode := s.roombaMode
+	s.roombaMode = int(data[constants.SENSOR_OI_MODE])
+	// Changed into passive mode.
+	if s.roombaMode != prevMode && s.roombaMode == 1 {
+		s.AuxPower(false)
+	}
 	return
+}
+
+// GetRoombaMode returns the current roomba mode from the sensor reading.
+func (s *Sonny) GetRoombaMode() int {
+	return s.roombaMode
 }
 
 // SetRoombaMode sets the mode for Roomba.

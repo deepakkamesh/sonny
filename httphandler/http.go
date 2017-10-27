@@ -46,14 +46,6 @@ func New(d *devices.Sonny, ssl bool, resources string) *Server {
 			Controller: make(map[byte]float32),
 			Roomba:     make(map[byte]int16),
 			Pi:         make(map[byte]int),
-			Enabled: map[byte]bool{
-				TEMP:     false,
-				HUMIDITY: false,
-				LDR:      false,
-				PIR:      false,
-				MAG:      false,
-				BATT:     false,
-			},
 		},
 	}
 }
@@ -367,11 +359,15 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 		err = m.sonny.Safe()
 
 	case "aux_power":
+		if m.sonny.GetRoombaMode() <= 1 {
+			err = fmt.Errorf("Aux can only be enabled in Safe or Full mode")
+			break
+		}
 		switch param {
 		case "on":
-			err = m.sonny.MainBrush(true, true)
+			err = m.sonny.AuxPower(true)
 		case "off":
-			err = m.sonny.MainBrush(false, true)
+			err = m.sonny.AuxPower(false)
 		}
 
 	case "reset":
@@ -382,14 +378,6 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 
 	case "passive_mode":
 		err = m.sonny.Passive()
-		m.data.Enabled = map[byte]bool{
-			TEMP:     false,
-			HUMIDITY: false,
-			LDR:      false,
-			PIR:      false,
-			MAG:      false,
-			BATT:     false,
-		}
 
 	case "power_off":
 		err = m.sonny.Power()

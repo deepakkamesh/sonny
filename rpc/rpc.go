@@ -4,25 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
 	google_pb "github.com/golang/protobuf/ptypes/empty"
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/drivers/i2c"
 	"golang.org/x/net/context"
 )
-
-type Devices struct {
-	Ctrl   *devices.Controller   // PIC controller.
-	Lidar  *i2c.LIDARLiteDriver  // Lidar Lite.
-	Mag    *i2c.HMC6352Driver    // Magnetometer HMC5663.
-	Pir    *int                  // PIR.
-	Roomba *roomba.Roomba        // Roomba controller.
-	I2CEn  *gpio.DirectPinDriver // GPIO port control for I2C Bus.
-	Sonny  *devices.Sonny
-}
 
 type Server struct {
 	sonny *devices.Sonny
@@ -77,7 +64,7 @@ func (m *Server) SecondaryPower(ctx context.Context, in *pb.SecPowerReq) (*googl
 	if m.sonny.Roomba == nil {
 		return &google_pb.Empty{}, errors.New("roomba not enabled")
 	}
-	return &google_pb.Empty{}, m.sonny.MainBrush(in.On, true)
+	return &google_pb.Empty{}, m.sonny.AuxPower(in.On)
 }
 
 // LEDOn turns on/off the LED indicator.
@@ -154,7 +141,10 @@ func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRe
 
 // PIRDetect retuns true if infrared signal is detected.
 func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet, error) {
-	return &pb.PIRRet{On: false}, fmt.Errorf("To be implemented")
+	if m.sonny.GetPIRState() == 1 {
+		return &pb.PIRRet{On: true}, nil
+	}
+	return &pb.PIRRet{On: false}, nil
 }
 
 // BattState returns the battery level from pic.

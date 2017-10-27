@@ -235,17 +235,27 @@ $(document).ready(function() {
         });
     });
 
+    /*
+        var roombaPowerBtn = document.querySelector('#roomba_power');
+        roombaPowerBtn.addEventListener('click', function() {
+            var action = '';
+            if (document.getElementById('roomba_power').checked) {
+                action = 'power_on';
+            } else {
+                action = 'power_off';
+            }
 
-    var roombaPowerBtn = document.querySelector('#roomba_power');
-    roombaPowerBtn.addEventListener('click', function() {
-        var action = '';
-        if (document.getElementById('roomba_power').checked) {
-            action = 'power_on';
-        } else {
-            action = 'power_off';
-        }
+            $.post('/api/roomba_cmd/_?cmd=' + action, "", function(data, status) {
+                if (data.Err != '') {
+                    console.log(data.Err);
+                    return
+                }
+            });
+        });*/
 
-        $.post('/api/roomba_cmd/_?cmd=' + action, "", function(data, status) {
+    $("#mode_full, #mode_safe, #mode_passive").change(function() {
+        mode = $('input[name=roomba_mode]:checked').val();
+        $.post('/api/roomba_cmd/_?cmd=' + mode, "", function(data, status) {
             if (data.Err != '') {
                 console.log(data.Err);
                 return
@@ -253,9 +263,9 @@ $(document).ready(function() {
         });
     });
 
-    $("#mode_full, #mode_safe, #mode_passive").change(function() {
-        mode = $('input[name=roomba_mode]:checked').val();
-        $.post('/api/roomba_cmd/_?cmd=' + mode, "", function(data, status) {
+    var resetRoombaBtn = document.querySelector('#reset_roomba_btn');
+    resetRoombaBtn.addEventListener('click', function() {
+        $.post('/api/roomba_cmd/_?cmd=reset', "", function(data, status) {
             if (data.Err != '') {
                 console.log(data.Err);
                 return
@@ -662,15 +672,6 @@ $(document).ready(function() {
 
                 case "56":
                     rb_main_curr = pkt;
-                    // Change UI after timeout to prevent interference with UI actions.
-                    setTimeout(function(pkt) {
-                        if (rb_main_curr > 10) {
-                            $('#aux_power_label')[0].MaterialSwitch.on();
-                            return;
-                        }
-                        $('#aux_power_label')[0].MaterialSwitch.off();
-                        return;
-                    }, 100, pkt);
 
                 case "57":
                     rb_side_curr = pkt;
@@ -746,7 +747,7 @@ $(document).ready(function() {
         for (var pktID in piData) {
             pkt = piData[pktID];
             switch (pktID) {
-                case "0": //I2CBus Enable.
+                case "0": //I2CBus State.
                     setTimeout(function(pkt) {
                         if (pkt == 1) {
                             $('#i2c_en_label')[0].MaterialSwitch.on();
@@ -755,6 +756,17 @@ $(document).ready(function() {
                         $('#i2c_en_label')[0].MaterialSwitch.off();
                         return;
                     }, 100, pkt);
+
+                case "1": // AuxPower State.
+                    setTimeout(function(pkt) {
+                        if (pkt == 1) {
+                            $('#aux_power_label')[0].MaterialSwitch.on();
+                            return;
+                        }
+                        $('#aux_power_label')[0].MaterialSwitch.off();
+                        return;
+                    }, 100, pkt);
+
             }
         }
 
