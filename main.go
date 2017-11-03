@@ -33,7 +33,8 @@ func main() {
 		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
 		res          = flag.String("resources", "./resources", "resources directory")
 		pirPin       = flag.String("pir_pin", "16", "PIR gpio pin")
-		enI2CPin     = flag.String("i2c_en_pin", "11", "I2C enable pic (high to enable I2C chip)")
+		enI2CPin     = flag.String("i2c_en_pin", "11", "I2C enable pin (high to enable I2C chip)")
+		enLidarPin   = flag.String("lidar_en_pin", "18", "LIDAR power enable pin (high to enable lidar)")
 		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
 		magI2CBus    = flag.Int("mag_i2c_bus", 1, "I2C bus magnetometer")
 		picI2CBus    = flag.Int("pic_i2c_bus", 1, "I2C bus pic")
@@ -119,14 +120,25 @@ func main() {
 		_ = magI2CBus
 	}
 
-	// Initialize Lidar.
-	var lidar *i2c.LIDARLiteDriver
+	// Initialize Lidar and related systems.
+	var (
+		lidar      *i2c.LIDARLiteDriver
+		lidarEnPin *gpio.DirectPinDriver
+	)
 	if *enLidar {
 		lidar = i2c.NewLIDARLiteDriver(pi,
 			i2c.WithBus(*lidarI2CBus))
 		if err := lidar.Start(); err != nil {
-			glog.Fatalf("Failed to initialize lidar: %v")
+			glog.Fatalf("Failed to initialize lidar: %v", err)
 		}
+		// Lidar enable control. Needed so we bring devices online
+		// in a phased manner as to not overload the power.
+		// Pull high to disable.
+		lidarEnPin = gpio.NewDirectPinDriver(pi, *enLidarPin)
+		if err := lidarEnPin.Start(); err != nil {
+			glog.Fatalf("Failed to initialize Lidar enable pin: %v", err)
+		}
+		lidarEnPin.DigitalWrite(0)
 	}
 
 	// Initialize PIR sensor.
@@ -139,7 +151,7 @@ func main() {
 	}
 
 	// Build Devices.
-	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir)
+	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir, lidarEnPin)
 
 	// Enable I2C Bus if flag is set.
 	// Explicit disable is needed as the gpio may be high from prior run.
@@ -163,7 +175,7 @@ func main() {
 		// Power up auxillary battery on main brush.
 		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
 		if err := sonny.AuxPower(*enAuxPower); err != nil {
-			glog.Fatalf("Failed to turn on Aux Power: %v ")
+			glog.Fatalf("Failed to turn on Aux Power: %v ", err)
 		}
 	}
 

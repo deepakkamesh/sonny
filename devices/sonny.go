@@ -14,16 +14,17 @@ import (
 
 // Sonny is the struct that represents all the devices.
 type Sonny struct {
-	*Controller               // PIC controller.
-	*i2c.LIDARLiteDriver      // Lidar Lite.
-	*i2c.HMC6352Driver        // Magnetometer HMC5663.
-	*roomba.Roomba            // Roomba controller.
-	*gpio.DirectPinDriver     // GPIO port control for I2C Bus.
-	*gpio.PIRMotionDriver     // PIR driver.
-	pirState              int // State of PIR. 1=enabled, 0=disabled.
-	i2cBusState           int // State of I2CBus. 1=enabled, 0=disabled.
-	auxPowerState         int // Start of AuxPower. 1=enabled, 0=disabled.
-	roombaMode            int //Roomba mode: 1 = passive, 2=safe, 3=full.
+	*Controller                                 // PIC controller.
+	*i2c.LIDARLiteDriver                        // Lidar Lite.
+	*i2c.HMC6352Driver                          // Magnetometer HMC5663.
+	*roomba.Roomba                              // Roomba controller.
+	i2cEn                 *gpio.DirectPinDriver // GPIO port control for I2C Bus.
+	*gpio.PIRMotionDriver                       // PIR driver.
+	lidarEn               *gpio.DirectPinDriver // Lidar enable gpio. Pull high to disable.
+	pirState              int                   // State of PIR. 1=enabled, 0=disabled.
+	i2cBusState           int                   // State of I2CBus. 1=enabled, 0=disabled.
+	auxPowerState         int                   // Start of AuxPower. 1=enabled, 0=disabled.
+	roombaMode            int                   //Roomba mode: 1 = passive, 2=safe, 3=full.
 }
 
 func NewSonny(c *Controller,
@@ -31,10 +32,11 @@ func NewSonny(c *Controller,
 	m *i2c.HMC6352Driver,
 	r *roomba.Roomba,
 	i2cEn *gpio.DirectPinDriver,
-	p *gpio.PIRMotionDriver) *Sonny {
+	p *gpio.PIRMotionDriver,
+	le *gpio.DirectPinDriver) *Sonny {
 
 	return &Sonny{
-		c, l, m, r, i2cEn, p, 0, 0, 0, 0,
+		c, l, m, r, i2cEn, p, le, 0, 0, 0, 0,
 	}
 }
 
@@ -45,12 +47,22 @@ func (s *Sonny) GetAuxPowerState() int {
 
 // AuxPower enables/disables Auxillary power from main brush motor on Roomba.
 func (s *Sonny) AuxPower(enable bool) error {
+	if s.lidarEn == nil {
+		return fmt.Errorf("lidar en pin not initialized")
+	}
 	if enable {
 		s.auxPowerState = 1
-		return s.MainBrush(true, true)
+		if err := s.MainBrush(true, true); err != nil {
+			return err
+		}
+		time.Sleep(800 * time.Millisecond)
+		return s.lidarEn.DigitalWrite(1)
 	}
 
 	s.auxPowerState = 0
+	if err := s.lidarEn.DigitalWrite(0); err != nil {
+		return err
+	}
 	return s.MainBrush(false, true)
 }
 
@@ -170,15 +182,15 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 // I2CBusEnable enables/disables the I2C buffer chip.
 // Connects the rest of the I2C devices with Pi.
 func (s *Sonny) I2CBusEnable(b bool) error {
-	if s.DirectPinDriver == nil {
+	if s.i2cEn == nil {
 		return fmt.Errorf("gpio I2C not initialized")
 	}
 	if b {
 		s.i2cBusState = 1
-		return s.DigitalWrite(1)
+		return s.i2cEn.DigitalWrite(1)
 	}
 	s.i2cBusState = 0
-	return s.DigitalWrite(0)
+	return s.i2cEn.DigitalWrite(0)
 }
 
 // GetI2CBusState return 1 if I2C bus is enabled otherwise it returns 0.
