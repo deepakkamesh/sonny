@@ -47,23 +47,31 @@ func (s *Sonny) GetAuxPowerState() int {
 
 // AuxPower enables/disables Auxillary power from main brush motor on Roomba.
 func (s *Sonny) AuxPower(enable bool) error {
-	if s.lidarEn == nil {
-		return fmt.Errorf("lidar en pin not initialized")
-	}
 	if enable {
 		s.auxPowerState = 1
-		if err := s.MainBrush(true, true); err != nil {
-			return err
-		}
-		time.Sleep(800 * time.Millisecond)
-		return s.lidarEn.DigitalWrite(1)
+		return s.MainBrush(true, true)
 	}
 
 	s.auxPowerState = 0
-	if err := s.lidarEn.DigitalWrite(0); err != nil {
-		return err
-	}
 	return s.MainBrush(false, true)
+}
+
+// LidarPwrEnable enables the power to Lidar by driving the power enable pin high(on) or low(off).
+func (s *Sonny) LidarPower(enable bool) error {
+	if s.lidarEn == nil {
+		return fmt.Errorf("lidar en pin not initialized")
+	}
+
+	if enable {
+		if s.GetAuxPowerState() == 0 {
+			return fmt.Errorf("Aux power not turned on; cannot power on lidar")
+		}
+		// Drive GPIO high to enable LIDAR.
+		return s.lidarEn.DigitalWrite(1)
+	}
+
+	// Drive GPIO low to disable LIDAR.
+	return s.lidarEn.DigitalWrite(0)
 }
 
 // PIREventLoop subscribes to events from the PIR gpio.

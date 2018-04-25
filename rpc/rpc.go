@@ -59,6 +59,14 @@ func (m *Server) I2CBusEn(ctx context.Context, in *pb.I2CBusEnReq) (*google_pb.E
 	return &google_pb.Empty{}, m.sonny.I2CBusEnable(in.On)
 }
 
+// LidarPower turns on/off the Lidar power.
+func (m *Server) LidarPower(ctx context.Context, in *pb.LidarPowerReq) (*google_pb.Empty, error) {
+	if m.sonny.Roomba == nil {
+		return &google_pb.Empty{}, errors.New("roomba not enabled")
+	}
+	return &google_pb.Empty{}, m.sonny.LidarPower(in.On)
+}
+
 // SecondaryPower turns on/off the secondary power supply for accessories.
 func (m *Server) SecondaryPower(ctx context.Context, in *pb.SecPowerReq) (*google_pb.Empty, error) {
 	if m.sonny.Roomba == nil {

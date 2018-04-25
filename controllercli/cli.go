@@ -60,6 +60,23 @@ func main() {
 			},
 		},
 		{
+			Name:    "LidarPower",
+			Aliases: []string{"lidar_pwr"},
+			Usage:   "Turn on/off the lidar power.",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "on, o",
+					Usage: "Turn on power",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				if _, err := ctrl.LidarPower(context.Background(), &pb.LidarPowerReq{On: c.Bool("on")}); err != nil {
+					log.Printf("Lidar Power control failed %v", err)
+				}
+				return nil
+			},
+		},
+		{
 			Name:    "AuxillaryPower",
 			Aliases: []string{"aux_pwr"},
 			Usage:   "Turn on/off the auxillary power.",

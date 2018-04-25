@@ -24,6 +24,7 @@ service DevicesRPC {
   rpc Turn(TurnReq) returns (TurnRet) {}// Turn right or left.
 	rpc RoombaSensor(google.protobuf.Empty) returns (RoombaSensorRet) {}
 	rpc SetRoombaMode(RoombaModeReq) returns (google.protobuf.Empty) {}
+  rpc LidarPower(LidarPowerReq) returns (google.protobuf.Empty) {} // Lidar Power controls.
 }
 
 message RoombaModeReq {
@@ -36,6 +37,10 @@ message RoombaSensorRet {
 // sint32 curr = 3; // Current. 
 map<uint32,int32>Data = 1;
 
+}
+
+message LidarPowerReq {
+	bool On = 1;
 }
 
 message SecPowerReq {

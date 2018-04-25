@@ -179,6 +179,7 @@ func main() {
 		}
 	}
 
+	// Power up sequence complete
 	glog.Info("Sonny device initialization complete")
 
 	// Startup RPC service.
