@@ -167,6 +167,9 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 	}
 	val := []int32{}
 
+	if err := s.Controller.ServoRotate(1, 20); err != nil {
+		return nil, err
+	}
 	// Sleep to allow servo to move to starting position.
 	time.Sleep(320 * time.Millisecond)
 	for i := 20; i <= 160; i += angle {
@@ -174,10 +177,10 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 			return nil, err
 		}
 
-		time.Sleep(40 * time.Millisecond) // Sleep to allow servo to finish turning.
+		time.Sleep(300 * time.Millisecond) // Sleep to allow servo to finish turning.
 		dist, err := s.Distance()
-		if err == nil {
-			break
+		if err != nil {
+			return nil, err
 		}
 
 		val = append(val, int32(dist))
