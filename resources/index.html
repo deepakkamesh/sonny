@@ -542,10 +542,23 @@
                 </div>
             </section>
 
-            <!-- TAB 2 -->
+            <!-- TAB 3 -->
             <section class="mdl-layout__tab-panel" id="fixed-tab-3">
                 <div class="page-content">
                     <!-- Your content goes here -->
+                    <div class="mdl-grid demo-content">
+                        <!-- Grid Display -->
+                        <div class="mdl-cell mdl-cell--6-col">
+                            <img width=100% src="/gridDisp" id="reloader" onload="setTimeout('document.getElementById(\'reloader\').src=\'/gridDisp?\'+new Date().getMilliseconds()', 2000)" />
+                        </div>
+
+                        <div class="mdl-cell mdl-cell--3-col">
+                            <button id="navi-btn" class="mdl-button mdl-js-button mdl-button--raised ">
+                   					Start  
+                   					</button>
+                        </div>
+
+                    </div>
                 </div>
             </section>
 

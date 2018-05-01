@@ -283,7 +283,22 @@ $(document).ready(function() {
         });
     });
 
+
+    var naviButton = document.querySelector('#navi-btn');
+    naviButton.addEventListener('click', function() {
+        $.post('/api/navi/', "", function(data, status) {
+            if (data.Err != '') {
+                console.log(data.Err);
+                return
+            }
+        });
+    });
+
+
 });
+
+
+
 
 // updateSpark updates the value of the tag and also the associated sparkline spark. 
 // list is the buffer used to store the values.

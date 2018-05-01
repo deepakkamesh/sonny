@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
+	"github.com/deepakkamesh/sonny/navigator"
 	"github.com/golang/glog"
 )
 
 type Server struct {
 	sonny      *devices.Sonny
+	navigator  *navigator.Ogrid
 	ssl        bool
 	resources  string
 	servoAngle map[byte]int // Map to hold state of each servo.
@@ -30,12 +32,13 @@ type response struct {
 	Data interface{}
 }
 
-func New(d *devices.Sonny, ssl bool, resources string) *Server {
+func New(d *devices.Sonny, n *navigator.Ogrid, ssl bool, resources string) *Server {
 	t := time.NewTimer(500 * time.Millisecond)
 	t.Stop()
 
 	return &Server{
 		sonny:      d,
+		navigator:  n,
 		ssl:        ssl,
 		resources:  resources,
 		servoAngle: map[byte]int{1: 90, 2: 90},
@@ -62,6 +65,8 @@ func (m *Server) Start(hostPort string) error {
 	http.HandleFunc("/api/roomba_cmd/", m.RoombaCmd)
 	http.HandleFunc("/api/i2c_en/", m.I2CEn)
 	http.HandleFunc("/datastream", m.dataStream)
+	http.HandleFunc("/gridDisp", m.gridDisp)
+	http.HandleFunc("/api/navi/", m.Navi)
 
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
@@ -81,7 +86,7 @@ func writeResponse(w http.ResponseWriter, resp *response) {
 		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}
-	glog.V(2).Infof("Writing json response %s", js)
+	glog.V(3).Infof("Writing json response %s", js)
 	w.Write(js)
 }
 
@@ -115,6 +120,42 @@ func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, &response{
 		Data: "OK",
 	})
+
+}
+
+// Navi is a test function for navigation.
+func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
+	glog.Info("Navi button pressed")
+	if err := m.navigator.UpdateMap(); err != nil {
+		glog.Errorf("Navi failure: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: update map failed %v", err),
+		})
+		return
+	}
+
+	writeResponse(w, &response{
+		Data: "OK",
+	})
+}
+
+// gridDisp streams the png image with the grid map.
+func (m *Server) gridDisp(w http.ResponseWriter, r *http.Request) {
+
+	buffer, err := m.navigator.GenerateMap()
+	if err != nil {
+		glog.Errorf("Failed to generate map: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: Failed to generate map: %v", err),
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+	if _, err := w.Write(buffer.Bytes()); err != nil {
+		glog.Errorf("Unable to write image: %v", err)
+	}
 
 }
 

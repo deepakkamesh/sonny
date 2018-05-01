@@ -6,6 +6,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/i2c"
@@ -23,6 +24,24 @@ type Controller struct {
 	connector  i2c.Connector
 	connection i2c.Connection
 	i2c.Config
+	i2cReq chan req      // channel for inbound requests for i2c.
+	quit   chan struct{} // quit loop.
+}
+
+// ret is the struct for returning response from i2c.
+type ret struct {
+	retData data
+	err     error
+}
+
+type req struct {
+	retChan chan ret
+	reqData data
+}
+
+type data struct {
+	deviceID byte
+	pkt      []byte
 }
 
 // NewController returns a new initialized controller.
@@ -32,6 +51,8 @@ func NewController(a i2c.Connector, options ...func(i2c.Config)) *Controller {
 		name:      gobot.DefaultName("PIC"),
 		connector: a,
 		Config:    i2c.NewConfig(),
+		i2cReq:    make(chan req),
+		quit:      make(chan struct{}),
 	}
 
 	for _, option := range options {
@@ -49,10 +70,59 @@ func (h *Controller) Start() (err error) {
 	if err != nil {
 		return err
 	}
+	go h.run()
 	return
 }
 
-// send sends a command, parameters to deviceID.
+// run starts I2C communication goroutine.
+func (m *Controller) run() {
+	for {
+		select {
+		case req := <-m.i2cReq:
+			if err := m.send(req.reqData.deviceID, req.reqData.pkt); err != nil {
+				req.retChan <- ret{
+					err: err,
+				}
+				continue
+			}
+			pkt, err := m.recv(req.reqData.deviceID)
+			if err != nil {
+				req.retChan <- ret{
+					err: err,
+				}
+				continue
+			}
+			req.retChan <- ret{
+				retData: data{
+					deviceID: req.reqData.deviceID,
+					pkt:      pkt,
+				},
+			}
+			// TODO: Replace with a retry logic here.
+			time.Sleep(100 * time.Millisecond)
+
+		case <-m.quit:
+			return
+		}
+	}
+}
+
+func (m *Controller) get(deviceID byte, pkt []byte) ([]byte, error) {
+
+	retChan := make(chan ret)
+	m.i2cReq <- req{
+		retChan: retChan,
+		reqData: data{
+			deviceID: deviceID,
+			pkt:      pkt,
+		},
+	}
+
+	retData := <-retChan
+	return retData.retData.pkt, retData.err
+}
+
+// send transmits a command, parameters to deviceID.
 func (m *Controller) send(deviceID byte, pkt []byte) error {
 	d := []byte{p.Header(pkt)}
 	d = append(d, pkt...)
@@ -85,7 +155,10 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 	}
 
 	if p.StatusCode(pkt[0]) == p.ERR {
-		return nil, p.Error(pkt[1])
+		if len(pkt) > 1 {
+			return nil, p.Error(pkt[1])
+		}
+		return nil, fmt.Errorf("unknown error")
 	}
 
 	return pkt, nil
@@ -100,10 +173,7 @@ func (m *Controller) Ping() (err error) {
 
 	pkt := []byte{p.CMD_PING}
 
-	if er := m.send(p.DEV_ADMIN, pkt); er != nil {
-		return fmt.Errorf("unable to send command: %v", er)
-	}
-	_, err = m.recv(p.DEV_ADMIN)
+	_, err = m.get(p.DEV_ADMIN, pkt)
 	return
 }
 
@@ -117,10 +187,7 @@ func (m *Controller) LEDOn(on bool) (err error) {
 		cmd = p.CMD_OFF
 	}
 	pkt := []byte{cmd}
-	if er := m.send(p.DEV_LED, pkt); er != nil {
-		return fmt.Errorf("unable to send command: %v", er)
-	}
-	_, err = m.recv(p.DEV_LED)
+	_, err = m.get(p.DEV_LED, pkt)
 	return
 }
 
@@ -135,10 +202,7 @@ func (m *Controller) LEDBlink(duration uint16, times byte) (err error) {
 		times,
 	}
 
-	if er := m.send(p.DEV_LED, pkt); er != nil {
-		return fmt.Errorf("unable to send command: %v", er)
-	}
-	_, err = m.recv(p.DEV_LED)
+	_, err = m.get(p.DEV_LED, pkt)
 	return
 }
 
@@ -176,10 +240,7 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 		servo,
 	}
 
-	if er := m.send(p.DEV_SERVO, pkt); er != nil {
-		return fmt.Errorf("unable to send command: %v", er)
-	}
-	_, err = m.recv(p.DEV_SERVO)
+	_, err = m.get(p.DEV_SERVO, pkt)
 	return
 }
 
@@ -190,12 +251,7 @@ func (m *Controller) DHT11() (temp, humidity uint8, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	if er := m.send(p.DEV_DHT11, pkt); er != nil {
-		err = fmt.Errorf("unable to send command: %v", er)
-		return
-	}
-
-	pkt, err = m.recv(p.DEV_DHT11)
+	pkt, err = m.get(p.DEV_DHT11, pkt)
 	if err != nil {
 		return
 	}
@@ -211,12 +267,7 @@ func (m *Controller) LDR() (adc uint16, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	if er := m.send(p.DEV_LDR, pkt); er != nil {
-		err = fmt.Errorf("unable to send command: %v", er)
-		return
-	}
-
-	pkt, err = m.recv(p.DEV_LDR)
+	pkt, err = m.get(p.DEV_LDR, pkt)
 	if err != nil {
 		return
 	}
@@ -235,12 +286,7 @@ func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	if er := m.send(p.DEV_ACCEL, pkt); er != nil {
-		err = fmt.Errorf("unable to send command: %v", er)
-		return
-	}
-
-	pkt, err = m.recv(p.DEV_ACCEL)
+	pkt, err = m.get(p.DEV_ACCEL, pkt)
 	if err != nil {
 		return
 	}
@@ -263,12 +309,7 @@ func (m *Controller) BattState() (batt float32, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	if er := m.send(p.DEV_BATT, pkt); er != nil {
-		err = fmt.Errorf("unable to send command: %v", er)
-		return
-	}
-
-	pkt, err = m.recv(p.DEV_BATT)
+	pkt, err = m.get(p.DEV_BATT, pkt)
 	if err != nil {
 		return
 	}

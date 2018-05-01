@@ -14,6 +14,7 @@ import (
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/httphandler"
+	"github.com/deepakkamesh/sonny/navigator"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
@@ -32,12 +33,12 @@ func main() {
 		picAddr      = flag.Int("pic_addr", 0x08, "I2C address of PIC controller")
 		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
 		res          = flag.String("resources", "./resources", "resources directory")
-		pirPin       = flag.String("pir_pin", "16", "PIR gpio pin")
+		pirPin       = flag.String("pir_pin", "22", "PIR gpio pin")
 		enI2CPin     = flag.String("i2c_en_pin", "11", "I2C enable pin (high to enable I2C chip)")
-		enLidarPin   = flag.String("lidar_en_pin", "18", "LIDAR power enable pin (high to enable lidar)")
+		enLidarPin   = flag.String("lidar_en_pin", "24", "LIDAR power enable pin (high to enable lidar)")
 		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
-		magI2CBus    = flag.Int("mag_i2c_bus", 1, "I2C bus magnetometer")
-		picI2CBus    = flag.Int("pic_i2c_bus", 1, "I2C bus pic")
+		magI2CBus    = flag.Int("mag_i2c_bus", 3, "I2C bus magnetometer")
+		picI2CBus    = flag.Int("pic_i2c_bus", 3, "I2C bus pic")
 		rpcPort      = flag.String("rpc_port", ":2233", "host:port number for rpc")
 		httpHostPort = flag.String("http_port", ":8080", "host:port number for http")
 
@@ -182,6 +183,9 @@ func main() {
 	// Power up sequence complete
 	glog.Info("Sonny device initialization complete")
 
+	// Start up navigation routines.
+	navi := navigator.NewOgrid(sonny)
+
 	// Startup RPC service.
 	lis, err := net.Listen("tcp", *rpcPort)
 	if err != nil {
@@ -192,7 +196,7 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(sonny, false, *res)
+	h := httphandler.New(sonny, navi, false, *res)
 	if err := h.Start(*httpHostPort); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}

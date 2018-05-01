@@ -168,23 +168,29 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 	val := []int32{}
 
 	if err := s.Controller.ServoRotate(1, 20); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to rotate servo: %v", err)
+
 	}
 	// Sleep to allow servo to move to starting position.
 	time.Sleep(320 * time.Millisecond)
 	for i := 20; i <= 160; i += angle {
 		if err := s.Controller.ServoRotate(1, i); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to rotate servo: %v", err)
 		}
 
-		time.Sleep(300 * time.Millisecond) // Sleep to allow servo to finish turning.
-		dist, err := s.Distance()
+		time.Sleep(300 * time.Millisecond)
+		// Take 3 distance measurements to eliminate any suprious readings.
+		// TODO: use standard deviation to eliminate bad readings.
+		dist0, err := s.Distance()
+		dist1, err := s.Distance()
+		dist2, err := s.Distance()
+		dist := (dist0 + dist1 + dist2) / 3
+
+		time.Sleep(10 * time.Millisecond)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read lidar: %v", err)
 		}
-
 		val = append(val, int32(dist))
-		time.Sleep(100 * time.Millisecond)
 	}
 
 	return val, nil

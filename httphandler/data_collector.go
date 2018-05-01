@@ -89,7 +89,7 @@ func (m *Server) dataCollector() {
 				time.Sleep(50 * time.Millisecond)
 				b, err := m.sonny.BattState()
 				if err != nil {
-					glog.Errorf("Failed to read controller batt state: %v", err)
+					glog.Warningf("Failed to read controller batt state: %v", err)
 					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
 					return
 				}
