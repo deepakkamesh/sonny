@@ -4,9 +4,9 @@
 package devices
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
-	"time"
 
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/i2c"
@@ -25,6 +25,7 @@ type Controller struct {
 	connection i2c.Connection
 	i2c.Config
 	i2cReq chan req      // channel for inbound requests for i2c.
+	reqQ   PriorityQueue // Prioritized queue of requests for I2C.
 	quit   chan struct{} // quit loop.
 }
 
@@ -35,8 +36,10 @@ type ret struct {
 }
 
 type req struct {
-	retChan chan ret
-	reqData data
+	retChan  chan ret
+	reqData  data
+	priority int
+	index    int
 }
 
 type data struct {
@@ -44,8 +47,43 @@ type data struct {
 	pkt      []byte
 }
 
+// A PriorityQueue implements heap.Interface and holds Req structs.
+type PriorityQueue []*req
+
+func (pq PriorityQueue) Len() int { return len(pq) }
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
+	return pq[i].priority > pq[j].priority
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *PriorityQueue) Push(x interface{}) {
+	n := len(*pq)
+	item := x.(*req)
+	item.index = n
+	*pq = append(*pq, item)
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	item.index = -1 // for safety
+	*pq = old[0 : n-1]
+	return item
+}
+
 // NewController returns a new initialized controller.
 func NewController(a i2c.Connector, options ...func(i2c.Config)) *Controller {
+
+	q := make(PriorityQueue, 0)
+	heap.Init(&q)
 
 	d := &Controller{
 		name:      gobot.DefaultName("PIC"),
@@ -53,6 +91,7 @@ func NewController(a i2c.Connector, options ...func(i2c.Config)) *Controller {
 		Config:    i2c.NewConfig(),
 		i2cReq:    make(chan req),
 		quit:      make(chan struct{}),
+		reqQ:      q,
 	}
 
 	for _, option := range options {
@@ -74,40 +113,47 @@ func (h *Controller) Start() (err error) {
 	return
 }
 
-// run starts I2C communication goroutine.
+// run starts I2C communication goroutine. The requests from channel
+// are added to a priority heap and pop'ed based on decreasing priority.
+// This ensures priority I2C messages (servo rotate) are send on wire firt.
 func (m *Controller) run() {
 	for {
 		select {
 		case req := <-m.i2cReq:
-			if err := m.send(req.reqData.deviceID, req.reqData.pkt); err != nil {
-				req.retChan <- ret{
-					err: err,
-				}
-				continue
-			}
-			pkt, err := m.recv(req.reqData.deviceID)
-			if err != nil {
-				req.retChan <- ret{
-					err: err,
-				}
-				continue
-			}
-			req.retChan <- ret{
-				retData: data{
-					deviceID: req.reqData.deviceID,
-					pkt:      pkt,
-				},
-			}
-			// TODO: Replace with a retry logic here.
-			time.Sleep(100 * time.Millisecond)
+			heap.Push(&m.reqQ, &req)
 
 		case <-m.quit:
 			return
+
+		default:
+			if m.reqQ.Len() > 0 {
+				req := heap.Pop(&m.reqQ).(*req)
+				if err := m.send(req.reqData.deviceID, req.reqData.pkt); err != nil {
+					req.retChan <- ret{
+						err: err,
+					}
+					continue
+				}
+				pkt, err := m.recv(req.reqData.deviceID)
+				if err != nil {
+					req.retChan <- ret{
+						err: err,
+					}
+					continue
+				}
+				req.retChan <- ret{
+					retData: data{
+						deviceID: req.reqData.deviceID,
+						pkt:      pkt,
+					},
+				}
+			}
+
 		}
 	}
 }
 
-func (m *Controller) get(deviceID byte, pkt []byte) ([]byte, error) {
+func (m *Controller) get(deviceID byte, pkt []byte, priority int) ([]byte, error) {
 
 	retChan := make(chan ret)
 	m.i2cReq <- req{
@@ -116,6 +162,7 @@ func (m *Controller) get(deviceID byte, pkt []byte) ([]byte, error) {
 			deviceID: deviceID,
 			pkt:      pkt,
 		},
+		priority: priority,
 	}
 
 	retData := <-retChan
@@ -173,7 +220,7 @@ func (m *Controller) Ping() (err error) {
 
 	pkt := []byte{p.CMD_PING}
 
-	_, err = m.get(p.DEV_ADMIN, pkt)
+	_, err = m.get(p.DEV_ADMIN, pkt, 10)
 	return
 }
 
@@ -187,7 +234,7 @@ func (m *Controller) LEDOn(on bool) (err error) {
 		cmd = p.CMD_OFF
 	}
 	pkt := []byte{cmd}
-	_, err = m.get(p.DEV_LED, pkt)
+	_, err = m.get(p.DEV_LED, pkt, 50)
 	return
 }
 
@@ -202,7 +249,7 @@ func (m *Controller) LEDBlink(duration uint16, times byte) (err error) {
 		times,
 	}
 
-	_, err = m.get(p.DEV_LED, pkt)
+	_, err = m.get(p.DEV_LED, pkt, 50)
 	return
 }
 
@@ -240,7 +287,7 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 		servo,
 	}
 
-	_, err = m.get(p.DEV_SERVO, pkt)
+	_, err = m.get(p.DEV_SERVO, pkt, 90)
 	return
 }
 
@@ -251,7 +298,7 @@ func (m *Controller) DHT11() (temp, humidity uint8, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	pkt, err = m.get(p.DEV_DHT11, pkt)
+	pkt, err = m.get(p.DEV_DHT11, pkt, 30)
 	if err != nil {
 		return
 	}
@@ -267,7 +314,7 @@ func (m *Controller) LDR() (adc uint16, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	pkt, err = m.get(p.DEV_LDR, pkt)
+	pkt, err = m.get(p.DEV_LDR, pkt, 10)
 	if err != nil {
 		return
 	}
@@ -286,7 +333,7 @@ func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	pkt, err = m.get(p.DEV_ACCEL, pkt)
+	pkt, err = m.get(p.DEV_ACCEL, pkt, 10)
 	if err != nil {
 		return
 	}
@@ -309,7 +356,7 @@ func (m *Controller) BattState() (batt float32, err error) {
 	}
 	pkt := []byte{p.CMD_STATE}
 
-	pkt, err = m.get(p.DEV_BATT, pkt)
+	pkt, err = m.get(p.DEV_BATT, pkt, 10)
 	if err != nil {
 		return
 	}

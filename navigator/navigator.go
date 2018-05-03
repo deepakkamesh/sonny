@@ -65,7 +65,7 @@ func calcCell(line, angle uint) (x, y int) {
 		angle := 180 - angle
 		x := math.Cos(float64(angle)*math.Pi/180) * float64(line)
 		y := math.Sin(float64(angle)*math.Pi/180) * float64(line)
-		return int(x/cellSz) + 1, int(y/cellSz) + 1
+		return (int(x/cellSz) + 1), int(y/cellSz) + 1
 	}
 	return
 }
@@ -103,6 +103,7 @@ func (s *Ogrid) UpdateMap() error {
 			break
 		}
 		glog.Warningf("Forward sweep failed retry#%v: %v", i, err)
+		time.Sleep(1 * time.Second)
 	}
 	if failure {
 		return fmt.Errorf("Failed to update map: %v", err)

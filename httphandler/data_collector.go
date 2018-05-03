@@ -38,7 +38,8 @@ type sensorData struct {
 // for different sensors. It also polls sensors only if there is a client connected.
 func (m *Server) dataCollector() {
 	t5s := time.NewTicker(5 * time.Second)
-	t300ms := time.NewTicker(300 * time.Millisecond)
+	t1s := time.NewTicker(1000 * time.Millisecond)
+	t300s := time.NewTicker(300 * time.Millisecond)
 
 	// Each sensor reading is an anonymous function for readability (can use return) and code flow.
 	for {
@@ -65,13 +66,13 @@ func (m *Server) dataCollector() {
 				m.data.Controller[HUMIDITY] = float32(h)
 			}()
 
-		case <-t300ms.C:
+		case <-t1s.C:
 			// LDR sensor.
 			func() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
-				time.Sleep(50 * time.Millisecond) // Need time A/D conversion.
+				time.Sleep(200 * time.Millisecond)
 				l, err := m.sonny.LDR()
 				if err != nil {
 					glog.Warningf("Failed to read LDR: %v", err)
@@ -86,7 +87,7 @@ func (m *Server) dataCollector() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(200 * time.Millisecond)
 				b, err := m.sonny.BattState()
 				if err != nil {
 					glog.Warningf("Failed to read controller batt state: %v", err)
@@ -95,12 +96,6 @@ func (m *Server) dataCollector() {
 				}
 				m.data.Controller[BATT] = float32(b)
 			}()
-
-			// AuxPower State.
-			m.data.Pi[AUXPOWER] = m.sonny.GetAuxPowerState()
-
-			// I2CBus State.
-			m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
 
 			// Compass.
 			func() {
@@ -118,6 +113,13 @@ func (m *Server) dataCollector() {
 				}
 				m.data.Controller[MAG] = float32(h)
 			}()
+
+		case <-t300s.C:
+			// AuxPower State.
+			m.data.Pi[AUXPOWER] = m.sonny.GetAuxPowerState()
+
+			// I2CBus State.
+			m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
 
 			// PIR state.
 			m.data.Controller[PIR] = float32(m.sonny.GetPIRState())

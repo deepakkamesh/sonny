@@ -23,7 +23,7 @@ type Server struct {
 	velocity   int16
 	timer      *time.Timer
 	data       *sensorData
-	connCount  int // Count of websockets.
+	connCount  int // Count of wvebsockets.
 }
 
 // Struct to return JSON.
@@ -73,7 +73,7 @@ func (m *Server) Start(hostPort string) error {
 	http.Handle("/", fs)
 
 	// Startup data collection routine.
-	go m.dataCollector()
+	//go m.dataCollector()
 	return http.ListenAndServe(hostPort, nil)
 }
 
@@ -133,7 +133,6 @@ func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
 	writeResponse(w, &response{
 		Data: "OK",
 	})
