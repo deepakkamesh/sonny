@@ -7,6 +7,7 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
+	"sync"
 
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/i2c"
@@ -27,6 +28,7 @@ type Controller struct {
 	i2cReq chan req      // channel for inbound requests for i2c.
 	reqQ   PriorityQueue // Prioritized queue of requests for I2C.
 	quit   chan struct{} // quit loop.
+	mut    *sync.Mutex   // mutex to lock I2C bus.
 }
 
 // ret is the struct for returning response from i2c.
@@ -92,6 +94,7 @@ func NewController(a i2c.Connector, options ...func(i2c.Config)) *Controller {
 		i2cReq:    make(chan req),
 		quit:      make(chan struct{}),
 		reqQ:      q,
+		mut:       &sync.Mutex{},
 	}
 
 	for _, option := range options {
@@ -212,6 +215,9 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 
 }
 
+func (m *Controller) LockI2CBus()   { m.mut.Lock() }
+func (m *Controller) UnlockI2CBus() { m.mut.Unlock() }
+
 // Ping returns nil if the controller is available.
 func (m *Controller) Ping() (err error) {
 	if m == nil {
@@ -293,6 +299,9 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 
 // DHT11 returns the temperature in 'C and humidity %.
 func (m *Controller) DHT11() (temp, humidity uint8, err error) {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	if m == nil {
 		return 0, 0, fmt.Errorf("controller not initialized")
 	}
@@ -309,6 +318,9 @@ func (m *Controller) DHT11() (temp, humidity uint8, err error) {
 
 // LDR returns the ADC light value of the LDR sensor.
 func (m *Controller) LDR() (adc uint16, err error) {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	if m == nil {
 		return 0, fmt.Errorf("controller not initialized")
 	}
@@ -328,6 +340,9 @@ func (m *Controller) LDR() (adc uint16, err error) {
 
 // Accelerometer returns the ADC values from the accelerometer.
 func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	if m == nil {
 		return 0, 0, 0, fmt.Errorf("controller not initialized")
 	}
@@ -351,6 +366,9 @@ func (m *Controller) Accelerometer() (gx, gy, gz float32, err error) {
 
 // BattState returns the voltage reading for the battery.
 func (m *Controller) BattState() (batt float32, err error) {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	if m == nil {
 		return 0, fmt.Errorf("controller not initialized")
 	}

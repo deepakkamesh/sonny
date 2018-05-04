@@ -56,6 +56,8 @@ func (m *Server) dataCollector() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
+				// Sleep is needed to prevent contention on I2C bus.
+				time.Sleep(500 * time.Millisecond)
 				t, h, err := m.sonny.DHT11()
 				if err != nil {
 					glog.Warningf("Failed to read DHT11: %v", err)
@@ -72,7 +74,8 @@ func (m *Server) dataCollector() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
-				time.Sleep(200 * time.Millisecond)
+				// Sleep is needed to prevent contention on I2C bus.
+				time.Sleep(100 * time.Millisecond)
 				l, err := m.sonny.LDR()
 				if err != nil {
 					glog.Warningf("Failed to read LDR: %v", err)
@@ -87,7 +90,8 @@ func (m *Server) dataCollector() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
 					return
 				}
-				time.Sleep(200 * time.Millisecond)
+				// Sleep is needed to prevent contention on I2C bus.
+				time.Sleep(100 * time.Millisecond)
 				b, err := m.sonny.BattState()
 				if err != nil {
 					glog.Warningf("Failed to read controller batt state: %v", err)

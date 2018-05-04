@@ -73,7 +73,7 @@ func (m *Server) Start(hostPort string) error {
 	http.Handle("/", fs)
 
 	// Startup data collection routine.
-	//go m.dataCollector()
+	go m.dataCollector()
 	return http.ListenAndServe(hostPort, nil)
 }
 

@@ -162,6 +162,10 @@ func (s *Sonny) SetRoombaMode(mode byte) error {
 }
 
 func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
+	// Lock I2C bus to avoid any contention.
+	s.LockI2CBus()
+	defer s.UnlockI2CBus()
+
 	if s.Controller == nil {
 		return nil, errors.New("controller not initialized")
 	}
@@ -179,7 +183,8 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 			return nil, fmt.Errorf("failed to rotate servo: %v", err)
 		}
 
-		// sleep to finish servo rotation prior to measuring.
+		// Sleep to finish servo rotation prior to measuring and prevent
+		// contention on I2C bus.
 		time.Sleep(100 * time.Millisecond)
 		// Take 3 distance measurements to eliminate any suprious readings.
 		// TODO: use standard deviation to eliminate bad readings.
