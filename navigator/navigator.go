@@ -90,7 +90,7 @@ func (s *Ogrid) UpdateMap() error {
 
 	s.ResetMap() //TODO: Remove after testing.
 
-	// Get forward sweep radar readings with retry in case of I2C failures..
+	// Get forward sweep radar readings with retry in case of I2C failures.
 	var (
 		err          error
 		rangeReading []int32
@@ -124,27 +124,37 @@ func (s *Ogrid) UpdateMap() error {
 }
 
 // GenerateMap returns a png buffer with the current map.
+// TODO: This is a CPU intensive operation. Need an optimization.
 func (s *Ogrid) GenerateMap() (*bytes.Buffer, error) {
-	img := image.NewRGBA(image.Rect(0, 0, maxX, maxY))
+	m := 2 // Number of pixels per cell. m x m.
+	img := image.NewRGBA(image.Rect(0, 0, maxX*m, maxY*m))
 
 	// TODO: color the cell based on the probability.
 	for x := 0; x < maxX; x++ {
 		for y := 0; y < maxY; y++ {
 			if s.cells[x][y].occupied == true {
-				img.Set(x, y, color.RGBA{255, 0, 0, 255})
+				fillCell(img, x, y, m, color.RGBA{255, 0, 0, 255})
 				continue
 			}
-			img.Set(x, y, color.RGBA{255, 0, 0, 10})
 		}
 	}
 
 	// Set rover location on map.
-	img.Set(s.curr_x, s.curr_y, color.RGBA{100, 50, 0, 255})
-
+	fillCell(img, s.curr_x, s.curr_y, m, color.RGBA{100, 50, 0, 255})
 	buff := new(bytes.Buffer)
 	if err := png.Encode(buff, img); err != nil {
 		return nil, err
 	}
 
 	return buff, nil
+}
+
+// fillCell renders the cell at x, y with a size of scale x scale.
+func fillCell(img *image.RGBA, x int, y int, scale int, c color.RGBA) {
+	for i := 0; i < scale; i++ {
+		for j := 0; j < scale; j++ {
+			img.Set(x*scale+i, y*scale+j, c)
+		}
+	}
+
 }

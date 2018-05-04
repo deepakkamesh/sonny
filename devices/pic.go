@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/drivers/i2c"
@@ -120,6 +121,7 @@ func (h *Controller) Start() (err error) {
 // are added to a priority heap and pop'ed based on decreasing priority.
 // This ensures priority I2C messages (servo rotate) are send on wire firt.
 func (m *Controller) run() {
+	t := time.NewTicker(50 * time.Millisecond)
 	for {
 		select {
 		case req := <-m.i2cReq:
@@ -128,7 +130,7 @@ func (m *Controller) run() {
 		case <-m.quit:
 			return
 
-		default:
+		case <-t.C:
 			if m.reqQ.Len() > 0 {
 				req := heap.Pop(&m.reqQ).(*req)
 				if err := m.send(req.reqData.deviceID, req.reqData.pkt); err != nil {
