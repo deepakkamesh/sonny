@@ -67,6 +67,7 @@ func (m *Server) Start(hostPort string) error {
 	http.HandleFunc("/datastream", m.dataStream)
 	http.HandleFunc("/gridDisp", m.gridDisp)
 	http.HandleFunc("/api/navi/", m.Navi)
+	http.Handle("/videostream", m.sonny.Video.Stream)
 
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))

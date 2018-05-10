@@ -21,22 +21,26 @@ type Sonny struct {
 	i2cEn                 *gpio.DirectPinDriver // GPIO port control for I2C Bus.
 	*gpio.PIRMotionDriver                       // PIR driver.
 	lidarEn               *gpio.DirectPinDriver // Lidar enable gpio. Pull high to disable.
-	pirState              int                   // State of PIR. 1=enabled, 0=disabled.
-	i2cBusState           int                   // State of I2CBus. 1=enabled, 0=disabled.
-	auxPowerState         int                   // Start of AuxPower. 1=enabled, 0=disabled.
-	roombaMode            int                   //Roomba mode: 1 = passive, 2=safe, 3=full.
+	*Video
+	pirState      int // State of PIR. 1=enabled, 0=disabled.
+	i2cBusState   int // State of I2CBus. 1=enabled, 0=disabled.
+	auxPowerState int // Start of AuxPower. 1=enabled, 0=disabled.
+	roombaMode    int //Roomba mode: 1 = passive, 2=safe, 3=full.
 }
 
-func NewSonny(c *Controller,
+func NewSonny(
+	c *Controller,
 	l *i2c.LIDARLiteDriver,
 	m *i2c.HMC6352Driver,
 	r *roomba.Roomba,
 	i2cEn *gpio.DirectPinDriver,
 	p *gpio.PIRMotionDriver,
-	le *gpio.DirectPinDriver) *Sonny {
+	le *gpio.DirectPinDriver,
+	v *Video,
+) *Sonny {
 
 	return &Sonny{
-		c, l, m, r, i2cEn, p, le, 0, 0, 0, 0,
+		c, l, m, r, i2cEn, p, le, v, 0, 0, 0, 0,
 	}
 }
 

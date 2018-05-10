@@ -45,6 +45,9 @@ func main() {
 		roombaMode = flag.Uint("roomba_mode", 1, "0=Off 1=Passive 2=Safe 3=Full")
 		version    = flag.Bool("version", false, "display version")
 
+		vidHeight = flag.Uint("vid_height", 480, "Video Height")
+		vidWidth  = flag.Uint("vid_width", 640, "Video Width")
+
 		enCompass  = flag.Bool("en_compass", false, "Enable Compass")
 		enRoomba   = flag.Bool("en_roomba", false, "Enable Roomba")
 		enPic      = flag.Bool("en_pic", false, "Enable PIC")
@@ -52,6 +55,7 @@ func main() {
 		enLidar    = flag.Bool("en_lidar", false, "Enable Lidar")
 		enI2C      = flag.Bool("en_i2c", false, "Enable I2C Connect")
 		enAuxPower = flag.Bool("en_aux_power", false, "Enable Auxillary Power")
+		enVid      = flag.Bool("en_video", true, "Enable video")
 	)
 	flag.Parse()
 
@@ -151,8 +155,15 @@ func main() {
 		}
 	}
 
+	// Initialize video device.
+	var vid *devices.Video
+	if *enVid {
+		vid = devices.NewVideo(devices.MJPEG, uint32(*vidWidth), uint32(*vidHeight), 2)
+		vid.StartVideoStream()
+	}
+
 	// Build Devices.
-	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir, lidarEnPin)
+	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir, lidarEnPin, vid)
 
 	// Enable I2C Bus if flag is set.
 	// Explicit disable is needed as the gpio may be high from prior run.
