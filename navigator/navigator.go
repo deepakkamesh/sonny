@@ -21,18 +21,19 @@ const maxY = 100  // number of grid Y.
 
 // struct cell represents a single cell in the occupancy grid.
 type cell struct {
-	occupied bool      // Is the cell occupied?
+	occupied int       // Is the cell occupied 1 = occupied 0 = unoccupied, -1 = unknown
 	lastUpd  time.Time // Last updated timestamp for cell.
 	obs      uint      // number of observations.
-	posObs   float64   // Number of observations the cell is occupied.
+	posObs   float64   // Number of (positive) observations the cell is occupied.
 }
 
 // ogrid represents the occupancy grid.
 type Ogrid struct {
 	sonny  *devices.Sonny
 	cells  [maxX][maxY]cell
-	curr_x int
-	curr_y int
+	curr_x int     // current x,y location of bot.
+	curr_y int     // current x,y location of bot.
+	orient float64 // Current orientation of bot.
 }
 
 // NewOGrid returns a initialized Ogrid structure.
@@ -65,7 +66,7 @@ func calcCell(line, angle uint) (x, y int) {
 		angle := 180 - angle
 		x := math.Cos(float64(angle)*math.Pi/180) * float64(line)
 		y := math.Sin(float64(angle)*math.Pi/180) * float64(line)
-		return (int(x/cellSz) + 1), int(y/cellSz) + 1
+		return 1 * (int(x/cellSz) + 1), int(y/cellSz) + 1
 	}
 	return
 }
@@ -75,7 +76,7 @@ func (s *Ogrid) ResetMap() {
 
 	for x := 0; x < maxX; x++ {
 		for y := 0; y < maxY; y++ {
-			s.cells[x][y].occupied = false
+			s.cells[x][y].occupied = -1
 			s.cells[x][y].obs = 0
 			s.cells[x][y].posObs = 0
 		}
@@ -86,7 +87,7 @@ func (s *Ogrid) ResetMap() {
 func (s *Ogrid) UpdateMap() error {
 
 	minAngle := 20
-	shiftAngle := 5
+	shiftAngle := 1 // reduce.TODO
 
 	s.ResetMap() //TODO: Remove after testing.
 
@@ -113,11 +114,27 @@ func (s *Ogrid) UpdateMap() error {
 	// TODO: Update all the cells till the occupied cells as non occupied.
 	for i := 0; i < len(rangeReading); i++ {
 		x, y := calcCell(uint(rangeReading[i]), uint(minAngle+i*shiftAngle))
+		// TODO: This should take into account orientation of bot to the grid.
 		xAbs := s.curr_x + x
 		yAbs := s.curr_y + y
-		s.cells[xAbs][yAbs].occupied = true
+
+		s.cells[xAbs][yAbs].occupied = 1
 		s.cells[xAbs][yAbs].obs += 1
 		s.cells[xAbs][yAbs].posObs += 1
+		if x == 0 {
+			continue
+		}
+
+		// Calculate free cells till occupied tell.
+		m := float32(y) / float32(x)
+		b := float32(yAbs) - m*float32(xAbs)
+		//	glog.Infof("XX %v= %v %v %v %v\n", rangeReading[i], xAbs, yAbs, m, b)
+		for j := s.curr_y; j < yAbs; j++ {
+			xF := (float32(j) - float32(b)) / m
+			//glog.Infof("xy %v %v %v", j, yF, m)
+			s.cells[int(xF)][j].occupied = 0
+		}
+
 	}
 
 	return nil
@@ -132,9 +149,13 @@ func (s *Ogrid) GenerateMap() (*bytes.Buffer, error) {
 	// TODO: color the cell based on the probability.
 	for x := 0; x < maxX; x++ {
 		for y := 0; y < maxY; y++ {
-			if s.cells[x][y].occupied == true {
+			switch s.cells[x][y].occupied {
+			case 1:
 				fillCell(img, x, y, m, color.RGBA{255, 0, 0, 255})
-				continue
+			case 0:
+				fillCell(img, x, y, m, color.RGBA{0, 255, 0, 255})
+			case -1:
+				fillCell(img, x, y, m, color.RGBA{20, 20, 20, 255})
 			}
 		}
 	}
