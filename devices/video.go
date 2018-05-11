@@ -103,7 +103,6 @@ func (s *Video) startStreamer() {
 		glog.Errorf("Failed to start stream:%v", err)
 		return
 	}
-
 	s.capStatus = true
 	glog.Infof("Started Video Capture")
 

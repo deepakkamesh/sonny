@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"time"
 
 	"gobot.io/x/gobot/drivers/gpio"
@@ -45,8 +46,8 @@ func main() {
 		roombaMode = flag.Uint("roomba_mode", 1, "0=Off 1=Passive 2=Safe 3=Full")
 		version    = flag.Bool("version", false, "display version")
 
-		vidHeight = flag.Uint("vid_height", 480, "Video Height")
-		vidWidth  = flag.Uint("vid_width", 640, "Video Width")
+		vidHeight = flag.Uint("vid_height", 120, "Video Height")
+		vidWidth  = flag.Uint("vid_width", 160, "Video Width")
 
 		enCompass  = flag.Bool("en_compass", false, "Enable Compass")
 		enRoomba   = flag.Bool("en_roomba", false, "Enable Roomba")
@@ -158,7 +159,7 @@ func main() {
 	// Initialize video device.
 	var vid *devices.Video
 	if *enVid {
-		vid = devices.NewVideo(devices.MJPEG, uint32(*vidWidth), uint32(*vidHeight), 2)
+		vid = devices.NewVideo(devices.MJPEG, uint32(*vidWidth), uint32(*vidHeight), 10)
 		vid.StartVideoStream()
 	}
 
@@ -196,6 +197,19 @@ func main() {
 
 	// Start up navigation routines.
 	navi := navigator.NewOgrid(sonny)
+
+	// Catch interrupts to exit clean.
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		select {
+		case sig := <-c:
+			glog.Infof("Got %s signal. Aborting...\n", sig)
+			// TODO: Call cleanup functions for devices.
+			vid.StopVideoStream()
+			os.Exit(1)
+		}
+	}()
 
 	// Startup RPC service.
 	lis, err := net.Listen("tcp", *rpcPort)

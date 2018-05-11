@@ -87,7 +87,7 @@ func (s *Ogrid) ResetMap() {
 func (s *Ogrid) UpdateMap() error {
 
 	minAngle := 20
-	shiftAngle := 1 // reduce.TODO
+	shiftAngle := 10 // reduce.TODO
 
 	s.ResetMap() //TODO: Remove after testing.
 
