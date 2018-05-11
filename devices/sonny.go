@@ -187,6 +187,9 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 			return nil, fmt.Errorf("failed to rotate servo: %v", err)
 		}
 
+		if err := s.LidarPower(true); err != nil {
+			return nil, err
+		}
 		// Sleep to finish servo rotation prior to measuring and prevent
 		// contention on I2C bus.
 		time.Sleep(100 * time.Millisecond)
@@ -196,6 +199,10 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 		dist1, err := s.Distance()
 		dist2, err := s.Distance()
 		dist := (dist0 + dist1 + dist2) / 3
+
+		if err := s.LidarPower(false); err != nil {
+			return nil, err
+		}
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to read lidar: %v", err)
