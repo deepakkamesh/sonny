@@ -11,11 +11,12 @@ import (
 	"math"
 	"time"
 
+	"github.com/deepakkamesh/go-roomba/constants"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/golang/glog"
 )
 
-const cellSz = 35 // size of the cell in centimeters.
+const cellSz = 35 // size of the cell in centimeters. Cell is cellSz x CellSz square.
 const maxX = 100  // number of grid X coordinates
 const maxY = 100  // number of grid Y.
 
@@ -83,6 +84,51 @@ func (s *Ogrid) ResetMap() {
 	}
 }
 
+// MoveForward moves the bot forward by number of cells. It returns the delta
+// of movement in mm. If positive it overshot the location and if negative it undershot.
+func (s *Ogrid) MoveForward(cells int) (delta int, err error) {
+	vel := 300 // Speed in mm/s.
+
+	// Get starting readings.
+	// TODO: Ignoring RIGHT ENcoder. Need to refactor to include both.
+	p, err := s.sonny.Sensors(constants.SENSOR_LEFT_ENCODER)
+	if err != nil {
+		return 0, err
+	}
+	encStart := int16(p[0])<<8 | int16(p[1])
+
+	desiredDist := cells * cellSz * 10               // Desired distance to move in mm.
+	driveTime := float32(desiredDist) / float32(vel) // Assume fixed speed of 500 mm/s
+
+	glog.Infof("%v %v", desiredDist, driveTime)
+	// Move bot (time*speed).
+	if err := s.sonny.DirectDrive(int16(vel), int16(vel)); err != nil {
+		return 0, err
+	}
+	time.Sleep(time.Duration(driveTime*1000) * time.Millisecond)
+	if err := s.sonny.DirectDrive(0, 0); err != nil {
+		return 0, err
+	}
+
+	// Calculate if we overshot or undershot landing and return delta.
+	p, err = s.sonny.Sensors(constants.SENSOR_LEFT_ENCODER)
+	if err != nil {
+		return 0, err
+	}
+	encEnd := int16(p[0])<<8 | int16(p[1])
+	switch {
+	case encEnd > encStart:
+		distTravelled := float32(encEnd-encStart) * math.Pi * 72.0 / 508.8
+		return (desiredDist - int(distTravelled)), nil
+
+	case encEnd < encStart:
+		distTravelled := float32(32767-encStart+encEnd) * math.Pi * 72.0 / 508.8
+		return (desiredDist - int(distTravelled)), nil
+	}
+
+	return
+}
+
 // UpdateMap updates the occupany grid map based on lidar readings
 func (s *Ogrid) UpdateMap() error {
 
@@ -140,7 +186,7 @@ func (s *Ogrid) UpdateMap() error {
 	return nil
 }
 
-// GenerateMap returns a png buffer with the current map.
+// GenerateMap returns a png buffer with the current map of the grid.
 // TODO: This is a CPU intensive operation. Need an optimization.
 func (s *Ogrid) GenerateMap() (*bytes.Buffer, error) {
 	m := 2 // Number of pixels per cell. m x m.

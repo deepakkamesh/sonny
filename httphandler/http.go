@@ -126,14 +126,32 @@ func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
 
 // Navi is a test function for navigation.
 func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
-	glog.Info("Navi button pressed")
-	if err := m.navigator.UpdateMap(); err != nil {
-		glog.Errorf("Navi failure: %v", err)
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: update map failed %v", err),
-		})
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "Error: %v", err)
 		return
 	}
+
+	var cells int = 1
+	if v := r.Form.Get("cell"); v != "" {
+		cs, _ := strconv.ParseInt(v, 10, 8)
+		cells = int(cs)
+	}
+
+	delta, err := m.navigator.MoveForward(cells)
+	if err != nil {
+		glog.Errorf("Failed Navi %v", err)
+	}
+	glog.Infof("Movement delta %v", delta)
+
+	/*
+		glog.Info("Navi button pressed")
+		if err := m.navigator.UpdateMap(); err != nil {
+			glog.Errorf("Navi failure: %v", err)
+			writeResponse(w, &response{
+				Err: fmt.Sprintf("Error: update map failed %v", err),
+			})
+			return
+		}*/
 	writeResponse(w, &response{
 		Data: "OK",
 	})
