@@ -13,7 +13,7 @@
   @Description
     This header file provides APIs for driver for FVR.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15.3
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.6
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:

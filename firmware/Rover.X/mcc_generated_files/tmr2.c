@@ -13,7 +13,7 @@
   @Description
     This source file provides APIs for TMR2.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15.3
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.6
         Device            :  PIC18F26K22
         Driver Version    :  2.00
     The generated drivers are tested against the following:

@@ -13,7 +13,7 @@
   Description:
     This header file provides implementations for pin APIs for all pins selected in the GUI.
     Generation Information :
-        Product Revision  :  MPLAB(c) Code Configurator - 4.15.3
+        Product Revision  :  MPLAB(c) Code Configurator - 4.15.6
         Device            :  PIC18F26K22
         Driver Version    :  1.02
     The generated drivers are tested against the following:
