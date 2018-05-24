@@ -46,7 +46,7 @@
 
 #include "i2c2.h"
 
-#define I2C2_SLAVE_ADDRESS 0x08 
+#define I2C2_SLAVE_ADDRESS 0x55 
 #define I2C2_SLAVE_MASK    0x7F
 
 typedef enum
@@ -91,7 +91,7 @@ void I2C2_Initialize(void)
     SSP2CON3 = 0x00;
     // MSK0 127; 
     SSP2MSK = (I2C2_SLAVE_MASK << 1);  // adjust UI mask for R/nW bit            
-    // SSPADD 8; 
+    // SSPADD 85; 
     SSP2ADD = (I2C2_SLAVE_ADDRESS << 1);  // adjust UI address for R/nW bit
 
     // clear the slave interrupt flag

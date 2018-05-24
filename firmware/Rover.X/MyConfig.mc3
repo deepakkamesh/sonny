@@ -647,7 +647,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.RegisterKey" moduleName="MSSP2" registerAlias="SSPADD"/>
-         <value>8</value>
+         <value>85</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.OptionKey" moduleName="Pin Module" registerAlias="LATA" settingAlias="LATA1" alias="clear"/>
@@ -2851,7 +2851,7 @@
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.SettingKey" moduleName="MSSP2" registerAlias="SSPADD" settingAlias="SSPADD"/>
-         <value>8</value>
+         <value>85</value>
       </entry>
       <entry>
          <key class="com.microchip.mcc.core.tokenManager.CustomKey" moduleName="Pin Module" name="Custom Name RC4"/>
@@ -5349,7 +5349,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files/i2c2.h</file>
-         <hash>15583ffb8351fa0ce278b9dc24ad5aa7daf70f8952c2b3dbd6b249566e65e7ba</hash>
+         <hash>6b55705a38a0f83303defdc716ff9571d877e36badb500ac427d234d53554a71</hash>
       </entry>
       <entry>
          <file>mcc_generated_files/adc.c</file>
@@ -5369,7 +5369,7 @@
       </entry>
       <entry>
          <file>mcc_generated_files/i2c2.c</file>
-         <hash>014e1dfd175b962b626365ecde6146aa2aade58dcc411493ab89c3e725ac20d3</hash>
+         <hash>1b994bf245b19b05e8d718b9b2ac3f564ad5de373a6e9e23e4ec45695fa4a26e</hash>
       </entry>
       <entry>
          <file>mcc_generated_files/mcc.c</file>
