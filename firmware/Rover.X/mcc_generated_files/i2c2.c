@@ -81,8 +81,8 @@ void I2C2_StatusCallback(I2C2_SLAVE_DRIVER_STATUS i2c_bus_state);
 void I2C2_Initialize(void)
 {
     // initialize the hardware
-    // R_nW write_noTX; P stopbit_notdetected; S startbit_notdetected; BF RCinprocess_TXcomplete; SMP High Speed; UA dontupdate; CKE disabled; D_nA lastbyte_address; 
-    SSP2STAT = 0x00;
+    // R_nW write_noTX; P stopbit_notdetected; S startbit_notdetected; BF RCinprocess_TXcomplete; SMP Standard Speed; UA dontupdate; CKE disabled; D_nA lastbyte_address; 
+    SSP2STAT = 0x80;
     // SSPEN enabled; WCOL no_collision; CKP disabled; SSPM 7 Bit Polling; SSPOV no_overflow; 
     SSP2CON1 = 0x26;
     // ACKEN disabled; GCEN disabled; PEN disabled; ACKDT acknowledge; RSEN disabled; RCEN disabled; ACKSTAT received; SEN disabled; 
