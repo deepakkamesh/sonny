@@ -106,10 +106,7 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[MAG] {
 					return
 				}
-				// TODO: to be implemented.
-				//h, err := m.mag.Heading()
-				h := 0
-				var err error
+				h, err := m.mag.Heading()
 				if err != nil {
 					glog.Warningf("Failed to read Compass: %v", err)
 					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)

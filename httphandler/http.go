@@ -15,7 +15,7 @@ import (
 
 type Server struct {
 	sonny      *devices.Sonny
-	navigator  *navigator.Ogrid
+	navigator  *navigator.AutoDrive
 	ssl        bool
 	resources  string
 	servoAngle map[byte]int // Map to hold state of each servo.
@@ -32,7 +32,7 @@ type response struct {
 	Data interface{}
 }
 
-func New(d *devices.Sonny, n *navigator.Ogrid, ssl bool, resources string) *Server {
+func New(d *devices.Sonny, n *navigator.AutoDrive, ssl bool, resources string) *Server {
 	t := time.NewTimer(500 * time.Millisecond)
 	t.Stop()
 
@@ -98,7 +98,6 @@ func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error: %v", err)
 		return
 	}
-
 	var err error
 	action := strings.ToLower(r.Form.Get("param"))
 	if action != "" {
@@ -133,25 +132,35 @@ func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
 
 	var cells int = 1
 	if v := r.Form.Get("cell"); v != "" {
-		cs, _ := strconv.ParseInt(v, 10, 8)
+		cs, _ := strconv.ParseInt(v, 10, 16)
 		cells = int(cs)
 	}
 
-	delta, err := m.navigator.MoveForward(cells)
-	if err != nil {
-		glog.Errorf("Failed Navi %v", err)
+	_ = cells
+	if err := m.navigator.TestDrive(); err != nil {
+		glog.Errorf("Navi failure: %v", err)
+		writeResponse(w, &response{
+			Err: fmt.Sprintf("Error: update map failed %v", err),
+		})
+		return
 	}
-	glog.Infof("Movement delta %v", delta)
 
 	/*
-		glog.Info("Navi button pressed")
-		if err := m.navigator.UpdateMap(); err != nil {
-			glog.Errorf("Navi failure: %v", err)
-			writeResponse(w, &response{
-				Err: fmt.Sprintf("Error: update map failed %v", err),
-			})
-			return
-		}*/
+		delta, err := m.navigator.Turn(float64(cells))
+		if err != nil {
+			glog.Errorf("Failed Navi %v", err)
+		}
+		glog.Infof("Movement delta %v", delta)
+
+		/*
+			glog.Info("Navi button pressed")
+			if err := m.navigator.UpdateMap(); err != nil {
+				glog.Errorf("Navi failure: %v", err)
+				writeResponse(w, &response{
+					Err: fmt.Sprintf("Error: update map failed %v", err),
+				})
+				return
+			}*/
 	writeResponse(w, &response{
 		Data: "OK",
 	})

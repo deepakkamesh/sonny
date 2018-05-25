@@ -4,16 +4,11 @@ package navigator
 
 import (
 	"bytes"
-	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"math"
 	"time"
-
-	"github.com/deepakkamesh/go-roomba/constants"
-	"github.com/deepakkamesh/sonny/devices"
-	"github.com/golang/glog"
 )
 
 const cellSz = 35 // size of the cell in centimeters. Cell is cellSz x CellSz square.
@@ -30,7 +25,6 @@ type cell struct {
 
 // ogrid represents the occupancy grid.
 type Ogrid struct {
-	sonny  *devices.Sonny
 	cells  [maxX][maxY]cell
 	curr_x int     // current x,y location of bot.
 	curr_y int     // current x,y location of bot.
@@ -38,9 +32,8 @@ type Ogrid struct {
 }
 
 // NewOGrid returns a initialized Ogrid structure.
-func NewOgrid(s *devices.Sonny) *Ogrid {
+func NewOgrid() *Ogrid {
 	return &Ogrid{
-		sonny:  s,
 		cells:  [maxX][maxY]cell{},
 		curr_x: 50,
 		curr_y: 50,
@@ -84,103 +77,52 @@ func (s *Ogrid) ResetMap() {
 	}
 }
 
-// MoveForward moves the bot forward by number of cells. It returns the delta
-// of movement in mm. If positive it overshot the location and if negative it undershot.
-func (s *Ogrid) MoveForward(cells int) (delta int, err error) {
-	vel := 300 // Speed in mm/s.
+// UpdateMap updates the occupany grid map based on lidar readings.
+// minAngle is the starting angle in reference to the bot.
+// shiftAngle is the delta.
+func (s *Ogrid) UpdateMap(rangeReading []int32, minAngle int, shiftAngle int, posture int) error {
 
-	// Get starting readings.
-	// TODO: Ignoring RIGHT ENcoder. Need to refactor to include both.
-	p, err := s.sonny.Sensors(constants.SENSOR_LEFT_ENCODER)
-	if err != nil {
-		return 0, err
-	}
-	encStart := int16(p[0])<<8 | int16(p[1])
-
-	desiredDist := cells * cellSz * 10               // Desired distance to move in mm.
-	driveTime := float32(desiredDist) / float32(vel) // Assume fixed speed of 500 mm/s
-
-	glog.Infof("%v %v", desiredDist, driveTime)
-	// Move bot (time*speed).
-	if err := s.sonny.DirectDrive(int16(vel), int16(vel)); err != nil {
-		return 0, err
-	}
-	time.Sleep(time.Duration(driveTime*1000) * time.Millisecond)
-	if err := s.sonny.DirectDrive(0, 0); err != nil {
-		return 0, err
-	}
-
-	// Calculate if we overshot or undershot landing and return delta.
-	p, err = s.sonny.Sensors(constants.SENSOR_LEFT_ENCODER)
-	if err != nil {
-		return 0, err
-	}
-	encEnd := int16(p[0])<<8 | int16(p[1])
-	switch {
-	case encEnd > encStart:
-		distTravelled := float32(encEnd-encStart) * math.Pi * 72.0 / 508.8
-		return (desiredDist - int(distTravelled)), nil
-
-	case encEnd < encStart:
-		distTravelled := float32(32767-encStart+encEnd) * math.Pi * 72.0 / 508.8
-		return (desiredDist - int(distTravelled)), nil
-	}
-
-	return
-}
-
-// UpdateMap updates the occupany grid map based on lidar readings
-func (s *Ogrid) UpdateMap() error {
-
-	minAngle := 20
-	shiftAngle := 10 // reduce.TODO
-
-	s.ResetMap() //TODO: Remove after testing.
-
-	// Get forward sweep radar readings with retry in case of I2C failures.
-	var (
-		err          error
-		rangeReading []int32
-		failure      bool = true
-	)
-	for i := 0; i < 3; i++ {
-		rangeReading, err = s.sonny.ForwardSweep(shiftAngle)
-		if err == nil {
-			failure = false
-			break
-		}
-		glog.Warningf("Forward sweep failed retry#%v: %v", i, err)
-		time.Sleep(1 * time.Second)
-	}
-	if failure {
-		return fmt.Errorf("Failed to update map: %v", err)
-	}
+	//s.ResetMap() //TODO: Remove after testing.
 
 	// From the returned beam update the cell location.
 	// TODO: Update all the cells till the occupied cells as non occupied.
 	for i := 0; i < len(rangeReading); i++ {
 		x, y := calcCell(uint(rangeReading[i]), uint(minAngle+i*shiftAngle))
-		// TODO: This should take into account orientation of bot to the grid.
-		xAbs := s.curr_x + x
-		yAbs := s.curr_y + y
+		var xAbs, yAbs int
+		switch posture {
+		case 0:
+			xAbs = s.curr_x + x
+			yAbs = s.curr_y + y
+		case 180:
+			xAbs = s.curr_x + x
+			yAbs = s.curr_y - y
+		case 90:
+			xAbs = s.curr_x + y
+			yAbs = s.curr_y + x
+		case 270:
+			xAbs = s.curr_x - y
+			yAbs = s.curr_y + x
+		}
 
 		s.cells[xAbs][yAbs].occupied = 1
 		s.cells[xAbs][yAbs].obs += 1
 		s.cells[xAbs][yAbs].posObs += 1
+		// TODO: if x is zero then just update Y as free till blocked cell.
 		if x == 0 {
 			continue
 		}
 
-		// Calculate free cells till occupied tell.
-		m := float32(y) / float32(x)
+		// Calculate free cells till occupied cell using line equation.
+		// Y = mX + b  where m is slope and b is intercept.
+		m := float32(yAbs-s.curr_y) / float32(xAbs-s.curr_x)
 		b := float32(yAbs) - m*float32(xAbs)
 		//	glog.Infof("XX %v= %v %v %v %v\n", rangeReading[i], xAbs, yAbs, m, b)
 		for j := s.curr_y; j < yAbs; j++ {
 			xF := (float32(j) - float32(b)) / m
 			//glog.Infof("xy %v %v %v", j, yF, m)
 			s.cells[int(xF)][j].occupied = 0
+			s.cells[int(xF)][j].obs += 1
 		}
-
 	}
 
 	return nil

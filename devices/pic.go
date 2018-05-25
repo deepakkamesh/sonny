@@ -270,7 +270,7 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 		deg0      float32 = 0.0007 // 0.7 ms.
 		deg180    float32 = 0.0024 // 2.4 ms.
 		pwmPeriod float32 = 0.020  // 20ms.
-		// TODO: Update is pic clock is change.
+		// TODO: Update if pic clock is changed.
 		cycle float32 = 0.000001 // = Fosc/4 divided by PWM prescaler
 	)
 

@@ -102,13 +102,10 @@ func (m *Server) Turn(ctx context.Context, in *pb.TurnReq) (*pb.TurnRet, error) 
 
 // Heading returns the magnetic heading.
 func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingRet, error) {
-	if m.sonny == nil {
+	if m.sonny.QMC5883Driver == nil {
 		return nil, errors.New("magnetometer not enabled")
 	}
-	// TODO: To be implemented.
-	//heading, err := m.mag.Heading()
-	heading := 0.0
-	var err error
+	heading, err := m.sonny.Heading()
 	if err != nil {
 		return nil, err
 	}

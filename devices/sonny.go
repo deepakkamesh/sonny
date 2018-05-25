@@ -16,7 +16,7 @@ import (
 type Sonny struct {
 	*Controller                                 // PIC controller.
 	*i2c.LIDARLiteDriver                        // Lidar Lite.
-	*i2c.HMC6352Driver                          // Magnetometer HMC5663.
+	*i2c.QMC5883Driver                          // Magnetometer QMC5883.
 	*roomba.Roomba                              // Roomba controller.
 	i2cEn                 *gpio.DirectPinDriver // GPIO port control for I2C Bus.
 	*gpio.PIRMotionDriver                       // PIR driver.
@@ -31,7 +31,7 @@ type Sonny struct {
 func NewSonny(
 	c *Controller,
 	l *i2c.LIDARLiteDriver,
-	m *i2c.HMC6352Driver,
+	m *i2c.QMC5883Driver,
 	r *roomba.Roomba,
 	i2cEn *gpio.DirectPinDriver,
 	p *gpio.PIRMotionDriver,

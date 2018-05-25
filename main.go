@@ -31,15 +31,15 @@ func main() {
 
 	var (
 		brc          = flag.String("brc", "7", "GPIO port for roomba BRC for keepalive")
-		picAddr      = flag.Int("pic_addr", 0x08, "I2C address of PIC controller")
+		picAddr      = flag.Int("pic_addr", 0x55, "I2C address of PIC controller")
 		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
 		res          = flag.String("resources", "./resources", "resources directory")
 		pirPin       = flag.String("pir_pin", "22", "PIR gpio pin")
 		enI2CPin     = flag.String("i2c_en_pin", "11", "I2C enable pin (high to enable I2C chip)")
 		enLidarPin   = flag.String("lidar_en_pin", "24", "LIDAR power enable pin (high to enable lidar)")
 		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
-		magI2CBus    = flag.Int("mag_i2c_bus", 3, "I2C bus magnetometer")
-		picI2CBus    = flag.Int("pic_i2c_bus", 3, "I2C bus pic")
+		magI2CBus    = flag.Int("mag_i2c_bus", 0, "I2C bus magnetometer")
+		picI2CBus    = flag.Int("pic_i2c_bus", 0, "I2C bus pic")
 		rpcPort      = flag.String("rpc_port", ":2233", "host:port number for rpc")
 		httpHostPort = flag.String("http_port", ":8080", "host:port number for http")
 
@@ -67,7 +67,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	glog.Infof("Starting Sonny ver %s build on %s", githash, buildtime)
+	glog.Infof("Starting Sonny ver %s build on) %s", githash, buildtime)
 
 	// Log flush Routine.
 	go func() {
@@ -115,15 +115,20 @@ func main() {
 			i2c.WithBus(*picI2CBus),
 			i2c.WithAddress(*picAddr))
 		if err := ctrl.Start(); err != nil {
-			glog.Fatalf("Failed to initialize controller:%v")
+			glog.Fatalf("Failed to initialize controller:%v", err)
 		}
 	}
 
 	// Initialize magnetometer.
-	// TODO: Need driver for hmc5883L in gobot.
-	var mag *i2c.HMC6352Driver
+	var mag *i2c.QMC5883Driver
 	if *enCompass {
-		_ = magI2CBus
+		mag = i2c.NewQMC5883Driver(pi, i2c.WithBus(*magI2CBus))
+		// Continuous, 100 Hz data gathering, 8G sensitivity, Oversampling 512.
+		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR100Hz | i2c.QMC5883RNG8G | i2c.QMC5883OSR512)
+		mag.SetOffset(-181, 414) // Offset from calibration.
+		if err := mag.Start(); err != nil {
+			glog.Fatalf("Failed to initialize magnetometer:%v", err)
+		}
 	}
 
 	// Initialize Lidar and related systems.
@@ -196,7 +201,7 @@ func main() {
 	glog.Info("Sonny device initialization complete")
 
 	// Start up navigation routines.
-	navi := navigator.NewOgrid(sonny)
+	navi := navigator.NewAutoDrive(sonny)
 
 	// Catch interrupts to exit clean.
 	c := make(chan os.Signal)
