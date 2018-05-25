@@ -126,9 +126,6 @@ func main() {
 		// Continuous, 100 Hz data gathering, 8G sensitivity, Oversampling 512.
 		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR100Hz | i2c.QMC5883RNG8G | i2c.QMC5883OSR512)
 		mag.SetOffset(-181, 414) // Offset from calibration.
-		if err := mag.Start(); err != nil {
-			glog.Fatalf("Failed to initialize magnetometer:%v", err)
-		}
 	}
 
 	// Initialize Lidar and related systems.
@@ -182,9 +179,30 @@ func main() {
 		}
 	}
 
+	// Setup the any post init routines tied to Aux power.
+	sonny.SetAuxPostInit(
+		// Function is called whenever aux power is turned on.
+		func() error {
+			// Magnetometer needs to be (re)configured after every power up.
+			if sonny.GetI2CBusState() == 0 {
+				err := fmt.Errorf("I2C bus not enabled. Enable I2C bus prior to starting Compass.")
+				glog.Warningf("%v", err)
+				return err
+			}
+			if err := mag.Start(); err != nil {
+				glog.Fatalf("Failed to initialize magnetometer:%v", err)
+			}
+			return nil
+		},
+		// Function is called whenever aux power is turned off.
+		func() error {
+			return nil
+		})
+
 	sonny.PIREventLoop()
 
-	// Easier to set roomba mode once the sonny struct is ready.
+	// Easier to set roomba mode once the sonny struct is ready since
+	// sonny has a simpler function to set mode.
 	if *enRoomba {
 		if err := sonny.SetRoombaMode(byte(*roombaMode)); err != nil {
 			glog.Fatalf("Failed to set roomba mode:%v", err)
@@ -212,6 +230,10 @@ func main() {
 			glog.Infof("Got %s signal. Aborting...\n", sig)
 			// TODO: Call cleanup functions for devices.
 			vid.StopVideoStream()
+			if err := sonny.I2CBusEnable(false); err != nil {
+				glog.Fatalf("Failed to disable I2C Bus")
+			}
+
 			os.Exit(1)
 		}
 	}()

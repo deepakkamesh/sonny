@@ -49,6 +49,7 @@ func New(d *devices.Sonny, n *navigator.AutoDrive, ssl bool, resources string) *
 			Controller: make(map[byte]float32),
 			Roomba:     make(map[byte]int16),
 			Pi:         make(map[byte]int),
+			Enabled:    make(map[byte]bool),
 		},
 	}
 }
@@ -72,6 +73,10 @@ func (m *Server) Start(hostPort string) error {
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
 	http.Handle("/", fs)
+
+	// Setup which data collectors to enable.
+	// TODO: Setup Enabled for other sensors in data_collector.go
+	m.data.Enabled[MAG] = true
 
 	// Startup data collection routine.
 	go m.dataCollector()

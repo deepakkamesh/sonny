@@ -40,6 +40,7 @@ func (m *Server) dataCollector() {
 	t5s := time.NewTicker(5 * time.Second)
 	t1s := time.NewTicker(1000 * time.Millisecond)
 	t300s := time.NewTicker(300 * time.Millisecond)
+	t100 := time.NewTicker(100 * time.Millisecond)
 
 	// Each sensor reading is an anonymous function for readability (can use return) and code flow.
 	for {
@@ -101,12 +102,17 @@ func (m *Server) dataCollector() {
 				m.data.Controller[BATT] = float32(b)
 			}()
 
+		case <-t100.C:
 			// Compass.
 			func() {
+				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
+					return
+				}
+
 				if !m.data.Enabled[MAG] {
 					return
 				}
-				h, err := m.mag.Heading()
+				h, err := m.sonny.Heading()
 				if err != nil {
 					glog.Warningf("Failed to read Compass: %v", err)
 					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)
@@ -114,16 +120,6 @@ func (m *Server) dataCollector() {
 				}
 				m.data.Controller[MAG] = float32(h)
 			}()
-
-		case <-t300s.C:
-			// AuxPower State.
-			m.data.Pi[AUXPOWER] = m.sonny.GetAuxPowerState()
-
-			// I2CBus State.
-			m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
-
-			// PIR state.
-			m.data.Controller[PIR] = float32(m.sonny.GetPIRState())
 
 			// Roomba data.
 			func() {
@@ -135,6 +131,16 @@ func (m *Server) dataCollector() {
 				}
 				m.data.Roomba = d
 			}()
+
+		case <-t300s.C:
+			// AuxPower State.
+			m.data.Pi[AUXPOWER] = m.sonny.GetAuxPowerState()
+
+			// I2CBus State.
+			m.data.Pi[I2CBUS] = m.sonny.GetI2CBusState()
+
+			// PIR state.
+			m.data.Controller[PIR] = float32(m.sonny.GetPIRState())
 
 		}
 	}
@@ -169,6 +175,6 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("Failed to write: %v", err)
 			return
 		}
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }

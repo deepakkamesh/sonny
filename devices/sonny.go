@@ -22,10 +22,12 @@ type Sonny struct {
 	*gpio.PIRMotionDriver                       // PIR driver.
 	lidarEn               *gpio.DirectPinDriver // Lidar enable gpio. Pull high to disable.
 	*Video
-	pirState      int // State of PIR. 1=enabled, 0=disabled.
-	i2cBusState   int // State of I2CBus. 1=enabled, 0=disabled.
-	auxPowerState int // Start of AuxPower. 1=enabled, 0=disabled.
-	roombaMode    int //Roomba mode: 1 = passive, 2=safe, 3=full.
+	pirState        int          // State of PIR. 1=enabled, 0=disabled.
+	i2cBusState     int          // State of I2CBus. 1=enabled, 0=disabled.
+	auxPowerState   int          // Start of AuxPower. 1=enabled, 0=disabled.
+	roombaMode      int          // Roomba mode: 1 = passive, 2=safe, 3=full.
+	auxPowerOnInit  func() error // initialization to execute after Aux Power is on.
+	auxPowerOffInit func() error // initialization to execute after Aux Power is off.
 }
 
 func NewSonny(
@@ -41,6 +43,8 @@ func NewSonny(
 
 	return &Sonny{
 		c, l, m, r, i2cEn, p, le, v, 0, 0, 0, 0,
+		func() error { return nil },
+		func() error { return nil },
 	}
 }
 
@@ -49,15 +53,36 @@ func (s *Sonny) GetAuxPowerState() int {
 	return s.auxPowerState
 }
 
+// SetAuxPostInit sets the initialization routines to call after aux power
+// is turned on or off.
+func (s *Sonny) SetAuxPostInit(fOn func() error, fOff func() error) {
+	s.auxPowerOnInit = fOn
+	s.auxPowerOffInit = fOff
+}
+
 // AuxPower enables/disables Auxillary power from main brush motor on Roomba.
 func (s *Sonny) AuxPower(enable bool) error {
 	if enable {
+		if err := s.MainBrush(true, true); err != nil {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond) // Time to power up Aux.
 		s.auxPowerState = 1
-		return s.MainBrush(true, true)
+		if err := s.auxPowerOnInit(); err != nil {
+			return err
+		}
+		return nil
 	}
 
+	if err := s.MainBrush(false, true); err != nil {
+		return err
+	}
+	time.Sleep(100 * time.Millisecond) // Time to power down Aux.
 	s.auxPowerState = 0
-	return s.MainBrush(false, true)
+	if err := s.auxPowerOffInit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // LidarPwrEnable enables the power to Lidar by driving the power enable pin high(on) or low(off).
