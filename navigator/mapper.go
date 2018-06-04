@@ -2,6 +2,7 @@ package navigator
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"time"
 
@@ -13,39 +14,78 @@ import (
 const roombaRadius float64 = 117.5 // Radius between roomba center and wheel in mm.
 
 type AutoDrive struct {
-	posture int
 	*Ogrid
 	sonny *devices.Sonny
 }
 
 func NewAutoDrive(s *devices.Sonny) *AutoDrive {
 	return &AutoDrive{
-		0,
 		NewOgrid(),
 		s,
 	}
 }
 
+func (s *AutoDrive) Start() error {
+	s.StartGrid()
+	return nil
+}
+
 func (s *AutoDrive) TestDrive() error {
-	s.Ogrid.ResetMap()
-	for i := 0; i < 360; i += 90 {
-		s.posture = i
-		if i > 0 {
-			if _, err := s.Turn(float64(90)); err != nil {
+	//	s.Ogrid.ResetMap()
+
+	for _, c := range []int{0, 200} {
+
+		d, err := s.MoveForward(c)
+		if err != nil {
+			return err
+		}
+		effDist := (c + d) / 10
+		posture, err := s.sonny.Heading()
+		if err != nil {
+			return err
+		}
+		effAngle := 360 - posture
+		glog.Infof("EffAngle %v EffDist %v", effAngle, effDist)
+
+		x := (math.Cos(effAngle*math.Pi/180) * float64(effDist))
+		y := (math.Sin(effAngle*math.Pi/180) * float64(effDist))
+
+		s.curr_x += int(x)
+		s.curr_y += int(y)
+
+		glog.Infof("X:%v,Y:%v", s.curr_x, s.curr_y)
+
+		// Take readings at different angles.
+		for _, i := range []int{0, -60, -50, -30} {
+			if _, err := s.Turn(float64(i)); err != nil {
+				return err
+			}
+			if err := s.ForwardSweep(); err != nil {
 				return err
 			}
 		}
-		if err := s.ForwardSweep(); err != nil {
+
+		// turn back to original position.
+		if _, err := s.Turn(140); err != nil {
 			return err
 		}
+
 	}
 	return nil
+}
+
+func prettyPrint(x, y int, posture float64, reading []int32) {
+	fmt.Printf("\ndatapt{\nposture:%v,\nx:%v,\ny:%v,\nreading:[]int32{", posture, x, y)
+	for _, i := range reading {
+		fmt.Printf("%v,", i)
+	}
+	fmt.Printf("},\n},\n")
 }
 
 // ForwardSweep does a lidar forward sweep and updates the map.
 func (s *AutoDrive) ForwardSweep() error {
 	minAngle := 20
-	shiftAngle := 10 // reduce.TODO
+	shiftAngle := 5 // reduce.TODO
 
 	// Get forward sweep radar readings with retry in case of I2C failures.
 	var (
@@ -60,13 +100,19 @@ func (s *AutoDrive) ForwardSweep() error {
 			break
 		}
 		glog.Warningf("Forward sweep failed retry#%v: %v", i, err)
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 	if failure {
 		return fmt.Errorf("Failed to update map: %v", err)
 	}
 
-	return s.Ogrid.UpdateMap(rangeReading, minAngle, shiftAngle, s.posture)
+	posture, err := s.sonny.Heading()
+	if err != nil {
+		return err
+	}
+	//glog.Infof("Posture: %v Reading:%v", posture, rangeReading)
+	prettyPrint(s.curr_x, s.curr_y, posture, rangeReading)
+	return s.Ogrid.UpdateMap(rangeReading, minAngle, shiftAngle, 360-posture, color.RGBA{255, 0, 0, 20})
 }
 
 // getEncoderReading returns the current encoder reading.
@@ -81,6 +127,9 @@ func (s *AutoDrive) getEncoderReading(enc byte) (int16, error) {
 // Turn rotates the bot by angle in degrees and returns the delta in degrees.
 // positve angle rotates clockwise.
 func (s *AutoDrive) Turn(angle float64) (int, error) {
+	if angle == 0 {
+		return 0, nil
+	}
 	vel := 50 //speed in mm/s.
 
 	// Get starting encoder reading.
@@ -122,9 +171,12 @@ func (s *AutoDrive) Turn(angle float64) (int, error) {
 	return 0, nil
 }
 
-// MoveForward moves the bot forward by number of cells. It returns the delta
+// MoveForward moves the bot forward in mm  . It returns the delta
 // of movement in mm. If positive it overshot the location and if negative it undershot.
-func (s *AutoDrive) MoveForward(cells int) (delta int, err error) {
+func (s *AutoDrive) MoveForward(desiredDist int) (delta int, err error) {
+	if desiredDist == 0 {
+		return 0, nil
+	}
 	vel := 300 // Speed in mm/s.
 
 	// Get starting readings.
@@ -134,8 +186,7 @@ func (s *AutoDrive) MoveForward(cells int) (delta int, err error) {
 		return 0, err
 	}
 
-	desiredDist := cells * cellSz * 10               // Desired distance to move in mm.
-	driveTime := float32(desiredDist) / float32(vel) // Assume fixed speed of 500 mm/s
+	driveTime := float32(desiredDist) / float32(vel) // Assume fixed speed mm/s
 
 	// Move bot (time*speed).
 	if err := s.sonny.DirectDrive(int16(vel), int16(vel)); err != nil {

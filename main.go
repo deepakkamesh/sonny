@@ -220,6 +220,7 @@ func main() {
 
 	// Start up navigation routines.
 	navi := navigator.NewAutoDrive(sonny)
+	navi.Start()
 
 	// Catch interrupts to exit clean.
 	c := make(chan os.Signal)

@@ -39,8 +39,8 @@ type sensorData struct {
 func (m *Server) dataCollector() {
 	t5s := time.NewTicker(5 * time.Second)
 	t1s := time.NewTicker(1000 * time.Millisecond)
-	t300s := time.NewTicker(300 * time.Millisecond)
-	t100 := time.NewTicker(100 * time.Millisecond)
+	t300 := time.NewTicker(300 * time.Millisecond)
+	//t100 := time.NewTicker(100 * time.Millisecond)
 
 	// Each sensor reading is an anonymous function for readability (can use return) and code flow.
 	for {
@@ -102,7 +102,7 @@ func (m *Server) dataCollector() {
 				m.data.Controller[BATT] = float32(b)
 			}()
 
-		case <-t100.C:
+		case <-t300.C:
 			// Compass.
 			func() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
@@ -132,7 +132,6 @@ func (m *Server) dataCollector() {
 				m.data.Roomba = d
 			}()
 
-		case <-t300s.C:
 			// AuxPower State.
 			m.data.Pi[AUXPOWER] = m.sonny.GetAuxPowerState()
 
@@ -175,6 +174,6 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("Failed to write: %v", err)
 			return
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
 	}
 }
