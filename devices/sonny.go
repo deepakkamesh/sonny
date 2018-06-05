@@ -3,6 +3,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	roomba "github.com/deepakkamesh/go-roomba"
@@ -255,4 +256,60 @@ func (s *Sonny) I2CBusEnable(b bool) error {
 // GetI2CBusState return 1 if I2C bus is enabled otherwise it returns 0.
 func (s *Sonny) GetI2CBusState() int {
 	return s.i2cBusState
+}
+
+func (s *Sonny) CalibrateCompass() error {
+
+	if s.QMC5883Driver == nil {
+		return fmt.Errorf("Compass not enabled")
+	}
+
+	var minX, maxX, minY, maxY int16
+	f, err := os.OpenFile("calibrationReading.csv", os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Reset offset.
+	s.SetOffset(0, 0, 0)
+
+	for i := 0; i < 200; i++ {
+		x, y, z, err := s.RawHeading()
+		if err != nil {
+			return err
+		}
+
+		time.Sleep(200 * time.Millisecond)
+		h := s.HeadingFromRaw(x, y, z)
+		f.WriteString(fmt.Sprintf(" Reading, %v,%v,%v,%v\n", x, y, z, h))
+
+		// Turn the bot.
+		if err := s.DirectDrive(50, -50); err != nil {
+			return err
+		}
+		time.Sleep(100 * time.Millisecond)
+		if err := s.DirectDrive(0, 0); err != nil {
+			return err
+		}
+
+		if x < minX {
+			minX = x
+		}
+		if x > maxX {
+			maxX = x
+		}
+		if y < minY {
+			minY = y
+		}
+		if y > maxY {
+			maxY = y
+		}
+	}
+
+	offX := (minX + maxX) / 2
+	offY := (minY + maxY) / 2
+	glog.Infof("Calibration Result minX:%v, maxX:%v, minY:%v maxY:%v, Xoff:%v Yoff:%v", minX, maxX, minY, maxY, offX, offY)
+	s.SetOffset(offX, offY, 0)
+	return nil
 }

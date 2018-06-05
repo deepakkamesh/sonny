@@ -125,7 +125,8 @@ func main() {
 		mag = i2c.NewQMC5883Driver(pi, i2c.WithBus(*magI2CBus))
 		// Continuous, 100 Hz data gathering, 8G sensitivity, Oversampling 512.
 		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR100Hz | i2c.QMC5883RNG8G | i2c.QMC5883OSR512)
-		mag.SetOffset(-181, 414) // Offset from calibration.
+		// precalculated offset.
+		mag.SetOffset(117, 780, 0)
 	}
 
 	// Initialize Lidar and related systems.
