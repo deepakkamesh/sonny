@@ -258,6 +258,8 @@ func (s *Sonny) GetI2CBusState() int {
 	return s.i2cBusState
 }
 
+// CalibrateCompass runs the calibration routine on the compass and sets
+// the offsets.
 func (s *Sonny) CalibrateCompass() error {
 
 	if s.QMC5883Driver == nil {
