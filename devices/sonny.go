@@ -191,7 +191,7 @@ func (s *Sonny) SetRoombaMode(mode byte) error {
 	return nil
 }
 
-func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
+func (s *Sonny) ForwardSweep(angle, min, max int) ([]int32, error) {
 	// Lock I2C bus to avoid any contention.
 	s.LockI2CBus()
 	defer s.UnlockI2CBus()
@@ -207,8 +207,8 @@ func (s *Sonny) ForwardSweep(angle int) ([]int32, error) {
 	}
 	// Sleep to allow servo to move to starting position.
 	// rotation speed 100ms for 60"
-	time.Sleep(320 * time.Millisecond)
-	for i := 20; i <= 160; i += angle {
+	time.Sleep(400 * time.Millisecond)
+	for i := min; i <= max; i += angle {
 		if err := s.Controller.ServoRotate(1, i); err != nil {
 			return nil, fmt.Errorf("failed to rotate servo: %v", err)
 		}
@@ -284,9 +284,9 @@ func (s *Sonny) CalibrateCompass() error {
 
 		time.Sleep(200 * time.Millisecond)
 		h := s.HeadingFromRaw(x, y, z)
-		f.WriteString(fmt.Sprintf(" Reading, %v,%v,%v,%v\n", x, y, z, h))
+		f.WriteString(fmt.Sprintf(" Reading (x,y,z,H), %v,%v,%v,%v\n", x, y, z, h))
 
-		// Turn the bot.
+		// Turn the bot through 360.
 		if err := s.DirectDrive(50, -50); err != nil {
 			return err
 		}
@@ -311,7 +311,7 @@ func (s *Sonny) CalibrateCompass() error {
 
 	offX := (minX + maxX) / 2
 	offY := (minY + maxY) / 2
-	glog.Infof("Calibration Result minX:%v, maxX:%v, minY:%v maxY:%v, Xoff:%v Yoff:%v", minX, maxX, minY, maxY, offX, offY)
+	glog.Infof("Calibration Complete: X:(%v - %v)/2=%v, Y:(%v - %v)/2=%v", minX, maxX, offX, minY, maxY, offY)
 	s.SetOffset(offX, offY, 0)
 	return nil
 }

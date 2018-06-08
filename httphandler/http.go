@@ -135,14 +135,10 @@ func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cells int = 1
-	if v := r.Form.Get("cell"); v != "" {
-		cs, _ := strconv.ParseInt(v, 10, 16)
-		cells = int(cs)
-	}
+	v := r.Form.Get("cmd")
+	val := r.Form.Get("val")
 
-	_ = cells
-	if err := m.navigator.TestDrive(); err != nil {
+	if err := m.navigator.TestDrive(v, val); err != nil {
 		glog.Errorf("Navi failure: %v", err)
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: update map failed %v", err),

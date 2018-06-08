@@ -136,7 +136,7 @@ func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.Ac
 
 // ForwardSweep returns the distance to the nearest object sweeping angle degrees at a time.
 func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRet, error) {
-	v, err := m.sonny.ForwardSweep(int(in.Angle))
+	v, err := m.sonny.ForwardSweep(int(in.Angle), 20, 160)
 
 	if err != nil {
 		return nil, err
