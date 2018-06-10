@@ -127,7 +127,7 @@ func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, 
 // Accelerometer returns the dynamic and static acceleration from the accelerometer.
 func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.AccelRet, error) {
 
-	x, y, z, err := m.sonny.Accelerometer()
+	x, y, z, err := m.sonny.Controller.Accelerometer()
 	if err != nil {
 		return nil, err
 	}

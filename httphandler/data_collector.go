@@ -112,7 +112,7 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[MAG] {
 					return
 				}
-				h, err := m.sonny.Heading()
+				h, err := m.sonny.TiltHeading()
 				if err != nil {
 					glog.Warningf("Failed to read Compass: %v", err)
 					m.data.Err = fmt.Sprintf("%v\n%v", m.data.Err, err)

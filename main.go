@@ -39,6 +39,7 @@ func main() {
 		enLidarPin   = flag.String("lidar_en_pin", "24", "LIDAR power enable pin (high to enable lidar)")
 		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
 		magI2CBus    = flag.Int("mag_i2c_bus", 0, "I2C bus magnetometer")
+		gyroI2CBus   = flag.Int("gyro_i2c_bus", 0, "I2C gyro bus")
 		picI2CBus    = flag.Int("pic_i2c_bus", 0, "I2C bus pic")
 		rpcPort      = flag.String("rpc_port", ":2233", "host:port number for rpc")
 		httpHostPort = flag.String("http_port", ":8080", "host:port number for http")
@@ -50,6 +51,7 @@ func main() {
 		vidWidth  = flag.Uint("vid_width", 160, "Video Width")
 
 		enCompass  = flag.Bool("en_compass", false, "Enable Compass")
+		enGyro     = flag.Bool("en_gyro", false, "Enable Gyro")
 		enRoomba   = flag.Bool("en_roomba", false, "Enable Roomba")
 		enPic      = flag.Bool("en_pic", false, "Enable PIC")
 		enPir      = flag.Bool("en_pir", false, "Enable PIR")
@@ -123,10 +125,15 @@ func main() {
 	var mag *i2c.QMC5883Driver
 	if *enCompass {
 		mag = i2c.NewQMC5883Driver(pi, i2c.WithBus(*magI2CBus))
-		// Continuous, 100 Hz data gathering, 8G sensitivity, Oversampling 512.
-		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR100Hz | i2c.QMC5883RNG8G | i2c.QMC5883OSR512)
+		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR10Hz | i2c.QMC5883RNG2G | i2c.QMC5883OSR512)
 		// precalculated offset.
-		mag.SetOffset(117, 780, 0)
+		mag.SetOffset(456, 3640, 0)
+	}
+
+	// Initialize MPU6050.
+	var gyro *i2c.MPU6050Driver
+	if *enGyro {
+		gyro = i2c.NewMPU6050Driver(pi, i2c.WithBus(*gyroI2CBus))
 	}
 
 	// Initialize Lidar and related systems.
@@ -167,7 +174,7 @@ func main() {
 	}
 
 	// Build Devices.
-	sonny := devices.NewSonny(ctrl, lidar, mag, rb, i2cEn, pir, lidarEnPin, vid)
+	sonny := devices.NewSonny(ctrl, lidar, mag, gyro, rb, i2cEn, pir, lidarEnPin, vid)
 
 	// Enable I2C Bus if flag is set.
 	// Explicit disable is needed as the gpio may be high from prior run.
@@ -192,6 +199,9 @@ func main() {
 			}
 			if err := mag.Start(); err != nil {
 				glog.Fatalf("Failed to initialize magnetometer:%v", err)
+			}
+			if err := gyro.Start(); err != nil {
+				glog.Fatalf("Failed to initialize Gyro:%v", err)
 			}
 			return nil
 		},
@@ -233,7 +243,10 @@ func main() {
 			// TODO: Call cleanup functions for devices.
 			vid.StopVideoStream()
 			if err := sonny.I2CBusEnable(false); err != nil {
-				glog.Fatalf("Failed to disable I2C Bus")
+				glog.Fatalf("Failed to disable I2C Bus: %v", err)
+			}
+			if err := sonny.AuxPower(false); err != nil {
+				glog.Errorf("Failed to disable aux power: %v", err)
 			}
 
 			os.Exit(1)

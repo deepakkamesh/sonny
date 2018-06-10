@@ -3,6 +3,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -18,6 +19,7 @@ type Sonny struct {
 	*Controller                                 // PIC controller.
 	*i2c.LIDARLiteDriver                        // Lidar Lite.
 	*i2c.QMC5883Driver                          // Magnetometer QMC5883.
+	*i2c.MPU6050Driver                          // MPU 6050 Accelerometer / Gryo.
 	*roomba.Roomba                              // Roomba controller.
 	i2cEn                 *gpio.DirectPinDriver // GPIO port control for I2C Bus.
 	*gpio.PIRMotionDriver                       // PIR driver.
@@ -35,6 +37,7 @@ func NewSonny(
 	c *Controller,
 	l *i2c.LIDARLiteDriver,
 	m *i2c.QMC5883Driver,
+	a *i2c.MPU6050Driver,
 	r *roomba.Roomba,
 	i2cEn *gpio.DirectPinDriver,
 	p *gpio.PIRMotionDriver,
@@ -43,7 +46,7 @@ func NewSonny(
 ) *Sonny {
 
 	return &Sonny{
-		c, l, m, r, i2cEn, p, le, v, 0, 0, 0, 0,
+		c, l, m, a, r, i2cEn, p, le, v, 0, 0, 0, 0,
 		func() error { return nil },
 		func() error { return nil },
 	}
@@ -67,7 +70,7 @@ func (s *Sonny) AuxPower(enable bool) error {
 		if err := s.MainBrush(true, true); err != nil {
 			return err
 		}
-		time.Sleep(100 * time.Millisecond) // Time to power up Aux.
+		time.Sleep(1000 * time.Millisecond) // Time to power up Aux.
 		s.auxPowerState = 1
 		if err := s.auxPowerOnInit(); err != nil {
 			return err
@@ -78,7 +81,7 @@ func (s *Sonny) AuxPower(enable bool) error {
 	if err := s.MainBrush(false, true); err != nil {
 		return err
 	}
-	time.Sleep(100 * time.Millisecond) // Time to power down Aux.
+	time.Sleep(1000 * time.Millisecond) // Time to power down Aux.
 	s.auxPowerState = 0
 	if err := s.auxPowerOffInit(); err != nil {
 		return err
@@ -260,7 +263,7 @@ func (s *Sonny) GetI2CBusState() int {
 
 // CalibrateCompass runs the calibration routine on the compass and sets
 // the offsets.
-func (s *Sonny) CalibrateCompass() error {
+func (s *Sonny) CalibrateCompass(test bool) error {
 
 	if s.QMC5883Driver == nil {
 		return fmt.Errorf("Compass not enabled")
@@ -273,27 +276,40 @@ func (s *Sonny) CalibrateCompass() error {
 	}
 	defer f.Close()
 
-	// Reset offset.
-	s.SetOffset(0, 0, 0)
+	fX, fY, fZ := s.GetOffSet()
+	glog.Infof("Calibration in test mode: %v  offsets:%v %v %v", test, fX, fY, fZ)
 
-	for i := 0; i < 200; i++ {
+	// Reset offset.
+	if !test {
+		s.SetOffset(0, 0, 0)
+	}
+
+	roombaRadius := 117.5 // mm.
+	vel := int16(20)      // 50 mm/s.
+	circum := roombaRadius * 2 * math.Pi
+	driveTime := float32(circum) / float32(vel) // in secs.
+
+	go func() {
+		// Turn the bot through two 360 rotation.
+		if err := s.DirectDrive(vel, -vel); err != nil {
+			glog.Errorf("%v", err)
+			return
+		}
+		time.Sleep(time.Duration(driveTime*1000*2) * time.Millisecond)
+		if err := s.DirectDrive(0, 0); err != nil {
+			glog.Errorf("%v", err)
+			return
+		}
+
+	}()
+
+	for i := 0; i < int(driveTime*1000*2/100); i++ {
 		x, y, z, err := s.RawHeading()
 		if err != nil {
 			return err
 		}
 
-		time.Sleep(200 * time.Millisecond)
-		h := s.HeadingFromRaw(x, y, z)
-		f.WriteString(fmt.Sprintf(" Reading (x,y,z,H), %v,%v,%v,%v\n", x, y, z, h))
-
-		// Turn the bot through 360.
-		if err := s.DirectDrive(50, -50); err != nil {
-			return err
-		}
-		time.Sleep(100 * time.Millisecond)
-		if err := s.DirectDrive(0, 0); err != nil {
-			return err
-		}
+		f.WriteString(fmt.Sprintf(" Reading, %v,%v,%v\n", x, y, z))
 
 		if x < minX {
 			minX = x
@@ -307,11 +323,66 @@ func (s *Sonny) CalibrateCompass() error {
 		if y > maxY {
 			maxY = y
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
+	f.Sync()
 
 	offX := (minX + maxX) / 2
 	offY := (minY + maxY) / 2
 	glog.Infof("Calibration Complete: X:(%v - %v)/2=%v, Y:(%v - %v)/2=%v", minX, maxX, offX, minY, maxY, offY)
-	s.SetOffset(offX, offY, 0)
+	if !test {
+		s.SetOffset(offX, offY, 0)
+	}
 	return nil
+}
+
+func (s *Sonny) TiltHeading() (float64, error) {
+
+	// Setup scale.
+	scale := i2c.QMC5883SScale2G
+	if (s.QMC5883Driver.GetConfig() & 0xF0) == i2c.QMC5883RNG8G {
+		scale = i2c.QMC5883SScale8G
+	}
+
+	if err := s.MPU6050Driver.GetData(); err != nil {
+		return 0, err
+	}
+
+	accX := int(s.MPU6050Driver.Accelerometer.X)
+	accY := int(s.MPU6050Driver.Accelerometer.Y)
+	accZ := int(s.MPU6050Driver.Accelerometer.Z)
+	// Normalize accelerometer reading.
+	accXn := float64(accX) / math.Sqrt(float64(accX*accX+accY*accY+accZ*accZ))
+	accYn := float64(accY) / math.Sqrt(float64(accX*accX+accY*accY+accZ*accZ))
+
+	pitch := math.Asin(accXn)
+	roll := -math.Asin(accYn / math.Cos(pitch))
+
+	xR, yR, zR, err := s.RawHeading()
+	if err != nil {
+		return 0, err
+	}
+
+	x := float64(xR) * scale
+	y := float64(yR) * scale
+	z := float64(zR) * scale
+
+	// Tilt compensation.
+	magX := x*math.Cos(pitch) + (z)*math.Sin(pitch)
+	magY := x*math.Sin(roll)*math.Sin(pitch) +
+		y*math.Cos(roll) -
+		z*math.Sin(roll)*math.Cos(pitch)
+
+	heading := 180 * math.Atan2(magY, magX) / math.Pi
+	if heading < 0 {
+		heading += 360
+	}
+	// Declination.
+	declination := 231.8 / 1000
+	heading += declination * 180 / math.Pi
+	if heading > 360 {
+		heading -= 360
+	}
+
+	return heading, nil
 }
