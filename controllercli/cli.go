@@ -326,7 +326,7 @@ func main() {
 				if err != nil {
 					return cli.NewExitError(err.Error(), 1)
 				}
-				log.Printf("Heading %v", h.Heading)
+				log.Printf("Heading %0.2f", h.Heading)
 				return nil
 			},
 		},

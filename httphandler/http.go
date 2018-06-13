@@ -14,16 +14,18 @@ import (
 )
 
 type Server struct {
-	sonny      *devices.Sonny
-	navigator  *navigator.AutoDrive
-	ssl        bool
-	resources  string
-	servoAngle map[byte]int // Map to hold state of each servo.
-	servoDelta uint8
-	velocity   int16
-	timer      *time.Timer
-	data       *sensorData
-	connCount  int // Count of wvebsockets.
+	sonny        *devices.Sonny
+	navigator    *navigator.AutoDrive
+	ssl          bool
+	resources    string
+	servoAngle   map[byte]int // Map to hold state of each servo.
+	servoDelta   uint8
+	velocity     int16
+	timer        *time.Timer
+	data         *sensorData
+	connCount    int  // Count of wvebsockets.
+	enVid        bool // Enable video stream.
+	enDataStream bool //Enable http data stream.
 }
 
 // Struct to return JSON.
@@ -32,19 +34,21 @@ type response struct {
 	Data interface{}
 }
 
-func New(d *devices.Sonny, n *navigator.AutoDrive, ssl bool, resources string) *Server {
+func New(d *devices.Sonny, n *navigator.AutoDrive, ssl bool, resources string, enVid, enDataStream bool) *Server {
 	t := time.NewTimer(500 * time.Millisecond)
 	t.Stop()
 
 	return &Server{
-		sonny:      d,
-		navigator:  n,
-		ssl:        ssl,
-		resources:  resources,
-		servoAngle: map[byte]int{1: 90, 2: 90},
-		servoDelta: 10,
-		velocity:   100,
-		timer:      t,
+		sonny:        d,
+		navigator:    n,
+		ssl:          ssl,
+		resources:    resources,
+		servoAngle:   map[byte]int{1: 90, 2: 90},
+		servoDelta:   10,
+		velocity:     100,
+		timer:        t,
+		enVid:        enVid,
+		enDataStream: enDataStream,
 		data: &sensorData{
 			Controller: make(map[byte]float32),
 			Roomba:     make(map[byte]int16),
@@ -68,8 +72,10 @@ func (m *Server) Start(hostPort string) error {
 	http.HandleFunc("/datastream", m.dataStream)
 	http.HandleFunc("/gridDisp", m.gridDisp)
 	http.HandleFunc("/api/navi/", m.Navi)
-	http.Handle("/videostream", m.sonny.Video.Stream)
 
+	if m.enVid {
+		http.Handle("/videostream", m.sonny.Video.Stream)
+	}
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
 	http.Handle("/", fs)
@@ -79,7 +85,9 @@ func (m *Server) Start(hostPort string) error {
 	m.data.Enabled[MAG] = true
 
 	// Startup data collection routine.
-	go m.dataCollector()
+	if m.enDataStream {
+		go m.dataCollector()
+	}
 	return http.ListenAndServe(hostPort, nil)
 }
 

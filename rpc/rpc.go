@@ -105,7 +105,7 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 	if m.sonny.QMC5883Driver == nil {
 		return nil, errors.New("magnetometer not enabled")
 	}
-	heading, err := m.sonny.Heading()
+	heading, err := m.sonny.TiltHeading()
 	if err != nil {
 		return nil, err
 	}

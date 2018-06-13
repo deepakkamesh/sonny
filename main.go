@@ -50,15 +50,16 @@ func main() {
 		vidHeight = flag.Uint("vid_height", 120, "Video Height")
 		vidWidth  = flag.Uint("vid_width", 160, "Video Width")
 
-		enCompass  = flag.Bool("en_compass", false, "Enable Compass")
-		enGyro     = flag.Bool("en_gyro", false, "Enable Gyro")
-		enRoomba   = flag.Bool("en_roomba", false, "Enable Roomba")
-		enPic      = flag.Bool("en_pic", false, "Enable PIC")
-		enPir      = flag.Bool("en_pir", false, "Enable PIR")
-		enLidar    = flag.Bool("en_lidar", false, "Enable Lidar")
-		enI2C      = flag.Bool("en_i2c", false, "Enable I2C Connect")
-		enAuxPower = flag.Bool("en_aux_power", false, "Enable Auxillary Power")
-		enVid      = flag.Bool("en_video", true, "Enable video")
+		enCompass    = flag.Bool("en_compass", false, "Enable Compass")
+		enGyro       = flag.Bool("en_gyro", false, "Enable Gyro")
+		enRoomba     = flag.Bool("en_roomba", false, "Enable Roomba")
+		enPic        = flag.Bool("en_pic", false, "Enable PIC")
+		enPir        = flag.Bool("en_pir", false, "Enable PIR")
+		enLidar      = flag.Bool("en_lidar", false, "Enable Lidar")
+		enI2C        = flag.Bool("en_i2c", false, "Enable I2C Connect")
+		enAuxPower   = flag.Bool("en_aux_power", false, "Enable Auxillary Power")
+		enVid        = flag.Bool("en_video", false, "Enable video")
+		enDataStream = flag.Bool("en_data_stream", false, "Enable data stream for http")
 	)
 	flag.Parse()
 
@@ -125,9 +126,7 @@ func main() {
 	var mag *i2c.QMC5883Driver
 	if *enCompass {
 		mag = i2c.NewQMC5883Driver(pi, i2c.WithBus(*magI2CBus))
-		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR10Hz | i2c.QMC5883RNG2G | i2c.QMC5883OSR512)
-		// precalculated offset.
-		mag.SetOffset(456, 3640, 0)
+		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR200Hz | i2c.QMC5883RNG2G | i2c.QMC5883OSR512)
 	}
 
 	// Initialize MPU6050.
@@ -241,7 +240,9 @@ func main() {
 		case sig := <-c:
 			glog.Infof("Got %s signal. Aborting...\n", sig)
 			// TODO: Call cleanup functions for devices.
-			vid.StopVideoStream()
+			if *enVid {
+				vid.StopVideoStream()
+			}
 			if err := sonny.I2CBusEnable(false); err != nil {
 				glog.Fatalf("Failed to disable I2C Bus: %v", err)
 			}
@@ -263,7 +264,7 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(sonny, navi, false, *res)
+	h := httphandler.New(sonny, navi, false, *res, *enVid, *enDataStream)
 	if err := h.Start(*httpHostPort); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}

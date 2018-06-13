@@ -31,6 +31,10 @@ type Sonny struct {
 	roombaMode      int          // Roomba mode: 1 = passive, 2=safe, 3=full.
 	auxPowerOnInit  func() error // initialization to execute after Aux Power is on.
 	auxPowerOffInit func() error // initialization to execute after Aux Power is off.
+	magXmin         int16        // magnetometer X min value for calibration.
+	magXmax         int16        // magnetometer X max value for calibration.
+	magYmin         int16        // magnetometer Y min value for calibration.
+	magYmax         int16        // magnetometer Y max value for calibration.
 }
 
 func NewSonny(
@@ -49,6 +53,10 @@ func NewSonny(
 		c, l, m, a, r, i2cEn, p, le, v, 0, 0, 0, 0,
 		func() error { return nil },
 		func() error { return nil },
+		-2600.00, // min X. Default min/max values for a sane Magnetometer offset.
+		3355.00,  // max X.
+		0.00,     // min Y.
+		6590.00,  // max Y.
 	}
 }
 
@@ -204,13 +212,13 @@ func (s *Sonny) ForwardSweep(angle, min, max int) ([]int32, error) {
 	}
 	val := []int32{}
 
-	if err := s.Controller.ServoRotate(1, 20); err != nil {
+	if err := s.Controller.ServoRotate(1, min); err != nil {
 		return nil, fmt.Errorf("failed to rotate servo: %v", err)
 
 	}
 	// Sleep to allow servo to move to starting position.
 	// rotation speed 100ms for 60"
-	time.Sleep(400 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	for i := min; i <= max; i += angle {
 		if err := s.Controller.ServoRotate(1, i); err != nil {
 			return nil, fmt.Errorf("failed to rotate servo: %v", err)
@@ -262,7 +270,8 @@ func (s *Sonny) GetI2CBusState() int {
 }
 
 // CalibrateCompass runs the calibration routine on the compass and sets
-// the offsets.
+// the offsets. In test mode it recalibrations after apply existing offets
+// without storing the calibration values. Useful to see if recalib is needed.
 func (s *Sonny) CalibrateCompass(test bool) error {
 
 	if s.QMC5883Driver == nil {
@@ -276,13 +285,7 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 	}
 	defer f.Close()
 
-	fX, fY, fZ := s.GetOffSet()
-	glog.Infof("Calibration in test mode: %v  offsets:%v %v %v", test, fX, fY, fZ)
-
-	// Reset offset.
-	if !test {
-		s.SetOffset(0, 0, 0)
-	}
+	glog.Infof("Calibration in test mode: %v")
 
 	roombaRadius := 117.5 // mm.
 	vel := int16(20)      // 50 mm/s.
@@ -309,6 +312,12 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 			return err
 		}
 
+		// If this is a test then apply offsets to the raw readings.
+		if test {
+			x -= (s.magXmin + s.magXmax) / 2
+			y -= (s.magYmin + s.magYmax) / 2
+		}
+
 		f.WriteString(fmt.Sprintf(" Reading, %v,%v,%v\n", x, y, z))
 
 		if x < minX {
@@ -331,43 +340,103 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 	offY := (minY + maxY) / 2
 	glog.Infof("Calibration Complete: X:(%v - %v)/2=%v, Y:(%v - %v)/2=%v", minX, maxX, offX, minY, maxY, offY)
 	if !test {
-		s.SetOffset(offX, offY, 0)
+		s.magXmin = minX
+		s.magXmax = maxX
+		s.magYmin = minY
+		s.magYmax = maxY
 	}
 	return nil
 }
 
+// Accelerometer returns the X,Y,Z data.
+func (s *Sonny) Accelerometer() (x, y, z int16, err error) {
+	if err = s.MPU6050Driver.GetData(); err != nil {
+		return
+	}
+
+	x = s.MPU6050Driver.Accelerometer.X
+	y = s.MPU6050Driver.Accelerometer.Y
+	z = s.MPU6050Driver.Accelerometer.Z
+	return
+}
+
+// Gryo returns the X,Y,Z data from Gryo.
+func (s *Sonny) Gyro() (x, y, z int16, err error) {
+	if err = s.MPU6050Driver.GetData(); err != nil {
+		return
+	}
+
+	x = s.MPU6050Driver.Gyroscope.X
+	y = s.MPU6050Driver.Gyroscope.Y
+	z = s.MPU6050Driver.Gyroscope.Z
+	return
+}
+
+// TiltHeading returns tilt compensated compass reading
+// with a low pass filter.
 func (s *Sonny) TiltHeading() (float64, error) {
 
-	// Setup scale.
-	scale := i2c.QMC5883SScale2G
-	if (s.QMC5883Driver.GetConfig() & 0xF0) == i2c.QMC5883RNG8G {
-		scale = i2c.QMC5883SScale8G
+	magLPF := 0.4
+	accLPF := 0.1
+
+	var accX, accY, accZ, xR, yR, zR int16
+	var paccX, paccY, paccZ, pxR, pyR, pzR int16
+	var err error
+
+	// Apply Low Pass Filter to stablize value.
+	for i := 0; i < 50; i++ {
+		accX, accY, accZ, err = s.Accelerometer()
+		if err != nil {
+			return 0, nil
+		}
+		xR, yR, zR, err = s.RawHeading()
+		if err != nil {
+			return 0, nil
+		}
+
+		accX = int16(float64(accX)*accLPF + float64(paccX)*(1-accLPF))
+		accY = int16(float64(accY)*accLPF + float64(paccY)*(1-accLPF))
+		accZ = int16(float64(accZ)*accLPF + float64(paccZ)*(1-accLPF))
+
+		paccX = accX
+		paccY = accY
+		paccZ = accZ
+
+		xR = int16(float64(xR)*magLPF + float64(pxR)*(1-magLPF))
+		yR = int16(float64(yR)*magLPF + float64(pyR)*(1-magLPF))
+		zR = int16(float64(zR)*magLPF + float64(pzR)*(1-magLPF))
+
+		pxR = xR
+		pyR = yR
+		pzR = zR
+		time.Sleep(5 * time.Millisecond)
 	}
 
-	if err := s.MPU6050Driver.GetData(); err != nil {
-		return 0, err
-	}
+	// Apply hard iron offsets.
+	xR -= (s.magXmin + s.magXmax) / 2
+	yR -= (s.magYmin + s.magYmax) / 2
 
-	accX := int(s.MPU6050Driver.Accelerometer.X)
-	accY := int(s.MPU6050Driver.Accelerometer.Y)
-	accZ := int(s.MPU6050Driver.Accelerometer.Z)
+	/*	// Apply soft iron offets.
+		// TODO: This skews values.
+		x := float64((xR-s.magXmin)/(s.magXmax-s.magXmin)*2) - 1
+		y := float64((yR-s.magYmin)/(s.magYmax-s.magYmin)*2) - 1
+		z := float64(zR)*/
+
+	x := float64(xR)
+	y := float64(yR)
+	z := float64(zR)
+
 	// Normalize accelerometer reading.
-	accXn := float64(accX) / math.Sqrt(float64(accX*accX+accY*accY+accZ*accZ))
-	accYn := float64(accY) / math.Sqrt(float64(accX*accX+accY*accY+accZ*accZ))
+	div := math.Sqrt(float64(accX)*float64(accX) +
+		float64(accY)*float64(accY) +
+		float64(accZ)*float64(accZ))
+	accXn := float64(accX) / div
+	accYn := float64(accY) / div
 
+	// Tilt compensation.
 	pitch := math.Asin(accXn)
 	roll := -math.Asin(accYn / math.Cos(pitch))
 
-	xR, yR, zR, err := s.RawHeading()
-	if err != nil {
-		return 0, err
-	}
-
-	x := float64(xR) * scale
-	y := float64(yR) * scale
-	z := float64(zR) * scale
-
-	// Tilt compensation.
 	magX := x*math.Cos(pitch) + (z)*math.Sin(pitch)
 	magY := x*math.Sin(roll)*math.Sin(pitch) +
 		y*math.Cos(roll) -
@@ -377,6 +446,7 @@ func (s *Sonny) TiltHeading() (float64, error) {
 	if heading < 0 {
 		heading += 360
 	}
+
 	// Declination.
 	declination := 231.8 / 1000
 	heading += declination * 180 / math.Pi
