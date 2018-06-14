@@ -52,6 +52,10 @@ func NewVideo(pixelFormat webcam.PixelFormat, w uint32, h uint32, fps uint) *Vid
 	}
 }
 
+func (s *Video) GetVideoStream() *mjpeg.Stream {
+	return s.Stream
+}
+
 func (s *Video) SetResMode(i int) {
 	s.SetRes(uint32(CamResolutions[i][0]), uint32(CamResolutions[i][1]))
 }

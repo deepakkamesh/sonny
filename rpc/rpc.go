@@ -12,10 +12,10 @@ import (
 )
 
 type Server struct {
-	sonny *devices.Sonny
+	sonny devices.Platform
 }
 
-func New(s *devices.Sonny) *Server {
+func New(s devices.Platform) *Server {
 	return &Server{
 		sonny: s,
 	}
@@ -23,12 +23,16 @@ func New(s *devices.Sonny) *Server {
 
 // Ping returns nil if the pic controller is up and responsive.
 func (m *Server) Ping(ctx context.Context, in *google_pb.Empty) (*google_pb.Empty, error) {
+	if !m.sonny.ControllerInitialized() {
+		return &google_pb.Empty{}, errors.New("Controller not enabled")
+	}
+
 	return &google_pb.Empty{}, m.sonny.Ping()
 }
 
 // RoombaModeReq sets the roomba mode.
 func (m *Server) SetRoombaMode(ctx context.Context, in *pb.RoombaModeReq) (*google_pb.Empty, error) {
-	if m.sonny.Roomba == nil {
+	if !m.sonny.RoombaInitialized() {
 		return &google_pb.Empty{}, errors.New("Roomba not enabled")
 	}
 
@@ -37,7 +41,7 @@ func (m *Server) SetRoombaMode(ctx context.Context, in *pb.RoombaModeReq) (*goog
 
 // Returns sensor information from Roomba.
 func (m *Server) RoombaSensor(ctx context.Context, in *google_pb.Empty) (*pb.RoombaSensorRet, error) {
-	if m.sonny.Roomba == nil {
+	if !m.sonny.RoombaInitialized() {
 		return &pb.RoombaSensorRet{}, errors.New("Roomba not enabled")
 	}
 
@@ -61,7 +65,7 @@ func (m *Server) I2CBusEn(ctx context.Context, in *pb.I2CBusEnReq) (*google_pb.E
 
 // LidarPower turns on/off the Lidar power.
 func (m *Server) LidarPower(ctx context.Context, in *pb.LidarPowerReq) (*google_pb.Empty, error) {
-	if m.sonny.Roomba == nil {
+	if !m.sonny.RoombaInitialized() {
 		return &google_pb.Empty{}, errors.New("roomba not enabled")
 	}
 	return &google_pb.Empty{}, m.sonny.LidarPower(in.On)
@@ -69,7 +73,7 @@ func (m *Server) LidarPower(ctx context.Context, in *pb.LidarPowerReq) (*google_
 
 // SecondaryPower turns on/off the secondary power supply for accessories.
 func (m *Server) SecondaryPower(ctx context.Context, in *pb.SecPowerReq) (*google_pb.Empty, error) {
-	if m.sonny.Roomba == nil {
+	if !m.sonny.RoombaInitialized() {
 		return &google_pb.Empty{}, errors.New("roomba not enabled")
 	}
 	return &google_pb.Empty{}, m.sonny.AuxPower(in.On)
@@ -77,16 +81,25 @@ func (m *Server) SecondaryPower(ctx context.Context, in *pb.SecPowerReq) (*googl
 
 // LEDOn turns on/off the LED indicator.
 func (m *Server) LEDOn(ctx context.Context, in *pb.LEDOnReq) (*google_pb.Empty, error) {
+	if !m.sonny.ControllerInitialized() {
+		return &google_pb.Empty{}, errors.New("Controller not enabled")
+	}
 	return &google_pb.Empty{}, m.sonny.LEDOn(in.On)
 }
 
 // LEDBlink blinks the LED.
 func (m *Server) LEDBlink(ctx context.Context, in *pb.LEDBlinkReq) (*google_pb.Empty, error) {
+	if !m.sonny.ControllerInitialized() {
+		return &google_pb.Empty{}, errors.New("Controller not enabled")
+	}
 	return &google_pb.Empty{}, m.sonny.LEDBlink(uint16(in.Duration), byte(in.Times))
 }
 
 // Servo Rotate rotates the servo by angle.
 func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.Empty, error) {
+	if !m.sonny.ControllerInitialized() {
+		return &google_pb.Empty{}, errors.New("Controller not enabled")
+	}
 	return &google_pb.Empty{}, m.sonny.ServoRotate(byte(in.Servo), int(in.Angle))
 }
 
@@ -102,7 +115,7 @@ func (m *Server) Turn(ctx context.Context, in *pb.TurnReq) (*pb.TurnRet, error) 
 
 // Heading returns the magnetic heading.
 func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingRet, error) {
-	if m.sonny.QMC5883Driver == nil {
+	if !m.sonny.MagnetometerInitialized() {
 		return nil, errors.New("magnetometer not enabled")
 	}
 	heading, err := m.sonny.TiltHeading()
@@ -114,7 +127,7 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 
 // Distance returns the forward clearance in cm using the LIDAR.
 func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, error) {
-	if m.sonny.LIDARLiteDriver == nil {
+	if !m.sonny.LidarInitialized() {
 		return nil, errors.New("controller not enabled")
 	}
 	d, err := m.sonny.Distance()
@@ -127,11 +140,11 @@ func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, 
 // Accelerometer returns the dynamic and static acceleration from the accelerometer.
 func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.AccelRet, error) {
 
-	x, y, z, err := m.sonny.Controller.Accelerometer()
+	x, y, z, err := m.sonny.Accelerometer()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AccelRet{X: x, Y: y, Z: z}, nil
+	return &pb.AccelRet{X: int32(x), Y: int32(y), Z: int32(z)}, nil
 }
 
 // ForwardSweep returns the distance to the nearest object sweeping angle degrees at a time.
@@ -154,7 +167,9 @@ func (m *Server) PIRDetect(ctx context.Context, in *google_pb.Empty) (*pb.PIRRet
 
 // BattState returns the battery level from pic.
 func (m *Server) BattState(ctx context.Context, in *google_pb.Empty) (*pb.BattRet, error) {
-
+	if !m.sonny.ControllerInitialized() {
+		return &pb.BattRet{}, errors.New("Controller not enabled")
+	}
 	v, err := m.sonny.BattState()
 	if err != nil {
 		return nil, err
@@ -164,7 +179,9 @@ func (m *Server) BattState(ctx context.Context, in *google_pb.Empty) (*pb.BattRe
 
 // LDR returns the light level from pic.
 func (m *Server) LDR(ctx context.Context, in *google_pb.Empty) (*pb.LDRRet, error) {
-
+	if !m.sonny.ControllerInitialized() {
+		return &pb.LDRRet{}, errors.New("Controller not enabled")
+	}
 	v, err := m.sonny.LDR()
 	if err != nil {
 		return nil, err
@@ -174,7 +191,9 @@ func (m *Server) LDR(ctx context.Context, in *google_pb.Empty) (*pb.LDRRet, erro
 
 // DHT11 returns the temp and humidity level from pic.
 func (m *Server) DHT11(ctx context.Context, in *google_pb.Empty) (*pb.DHT11Ret, error) {
-
+	if !m.sonny.ControllerInitialized() {
+		return &pb.DHT11Ret{}, errors.New("Controller not enabled")
+	}
 	temp, humidity, err := m.sonny.DHT11()
 	if err != nil {
 		return nil, err

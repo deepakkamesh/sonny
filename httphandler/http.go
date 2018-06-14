@@ -14,7 +14,7 @@ import (
 )
 
 type Server struct {
-	sonny        *devices.Sonny
+	sonny        devices.Platform
 	navigator    *navigator.AutoDrive
 	ssl          bool
 	resources    string
@@ -34,7 +34,7 @@ type response struct {
 	Data interface{}
 }
 
-func New(d *devices.Sonny, n *navigator.AutoDrive, ssl bool, resources string, enVid, enDataStream bool) *Server {
+func New(d devices.Platform, n *navigator.AutoDrive, ssl bool, resources string, enVid, enDataStream bool) *Server {
 	t := time.NewTimer(500 * time.Millisecond)
 	t.Stop()
 
@@ -74,7 +74,7 @@ func (m *Server) Start(hostPort string) error {
 	http.HandleFunc("/api/navi/", m.Navi)
 
 	if m.enVid {
-		http.Handle("/videostream", m.sonny.Video.Stream)
+		http.Handle("/videostream", m.sonny.GetVideoStream())
 	}
 	// Serve static content from resources dir.
 	fs := http.FileServer(http.Dir(m.resources))
@@ -237,7 +237,7 @@ func (m *Server) SetParam(w http.ResponseWriter, r *http.Request) {
 // Move is the wrapper around ctrl.Move.
 func (m *Server) Move(w http.ResponseWriter, r *http.Request) {
 
-	if m.sonny.Roomba == nil {
+	if !m.sonny.RoombaInitialized() {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: roomba not initialized"),
 		})
@@ -411,7 +411,7 @@ func (m *Server) ServoRotate(w http.ResponseWriter, r *http.Request) {
 // RoombaCmd sets the roomba mode.
 func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 
-	if m.sonny.Roomba == nil {
+	if !m.sonny.RoombaInitialized() {
 		writeResponse(w, &response{
 			Err: fmt.Sprintf("Error: Roomba not initialized"),
 		})
@@ -460,7 +460,7 @@ func (m *Server) RoombaCmd(w http.ResponseWriter, r *http.Request) {
 		err = m.sonny.Power()
 
 	case "power_on":
-		err = m.sonny.Roomba.Start(true)
+		err = m.sonny.StartRoomba(true)
 
 	case "seek_dock":
 		err = m.sonny.SeekDock()

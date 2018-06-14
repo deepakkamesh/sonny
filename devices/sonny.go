@@ -60,6 +60,27 @@ func NewSonny(
 	}
 }
 
+// StartRoomba starts up the roomba platform.
+func (s *Sonny) StartRoomba(keepAlive bool) error {
+	return s.Roomba.Start(keepAlive)
+}
+
+// RoombaInitialized returns true if Roomba is initialized.
+func (s *Sonny) RoombaInitialized() bool {
+	return (s.Roomba != nil)
+}
+
+func (s *Sonny) LidarInitialized() bool {
+	return (s.LIDARLiteDriver != nil)
+}
+func (s *Sonny) MagnetometerInitialized() bool {
+	return (s.QMC5883Driver != nil)
+}
+
+func (s *Sonny) ControllerInitialized() bool {
+	return (s.Controller != nil)
+}
+
 // GetAuxPowerState returns the state of Aux Power.
 func (s *Sonny) GetAuxPowerState() int {
 	return s.auxPowerState
