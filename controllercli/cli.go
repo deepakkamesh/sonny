@@ -201,28 +201,18 @@ func main() {
 			Usage:   "Turn Motor",
 			Flags: []cli.Flag{
 				cli.IntFlag{
-					Name:  "turns,t",
-					Usage: "Number of Turns",
-				},
-				cli.UintFlag{
-					Name:  "rotateType,r",
-					Usage: "right_sync = 0, left_sync, right_async, left_async",
-				},
-				cli.UintFlag{
-					Name:  "dutyPercent, d",
-					Usage: "Duty percentage 0 - 100",
+					Name:  "angle,a",
+					Usage: "Angle to turn",
 				},
 			},
 			Action: func(c *cli.Context) error {
 				r, err := ctrl.Turn(context.Background(), &pb.TurnReq{
-					Turns:       int32(c.Int("turns")),
-					RotateType:  uint32(c.Uint("rotateType")),
-					DutyPercent: uint32(c.Uint("dutyPercent")),
+					Angle: float32(c.Int("angle")),
 				})
 				if err != nil {
 					return cli.NewExitError(err.Error(), 1)
 				}
-				log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
+				log.Printf("Turn result %v", r)
 				return nil
 			},
 		},
@@ -232,28 +222,23 @@ func main() {
 			Usage:   "Move motor",
 			Flags: []cli.Flag{
 				cli.IntFlag{
-					Name:  "turns,t",
-					Usage: "Number of Turns",
+					Name:  "dist,d",
+					Usage: "Dist in mm",
 				},
-				cli.BoolFlag{
-					Name:  "forward,f",
-					Usage: "Forward or default backward",
-				},
-				cli.UintFlag{
-					Name:  "dutyPercent, d",
-					Usage: "Duty percentage 0 - 100",
+				cli.IntFlag{
+					Name:  "vel,v",
+					Usage: "Velocity in mm/s",
 				},
 			},
 			Action: func(c *cli.Context) error {
 				r, err := ctrl.Move(context.Background(), &pb.MoveReq{
-					Turns:       int32(c.Int("turns")),
-					Fwd:         bool(c.Bool("forward")),
-					DutyPercent: uint32(c.Uint("dutyPercent")),
+					Dist: int32(c.Int("dist")),
+					Vel:  int32(c.Int("vel")),
 				})
 				if err != nil {
 					return cli.NewExitError(err.Error(), 1)
 				}
-				log.Printf("Turns by motor1 %v, motor2 %v", r.M1Turns, r.M2Turns)
+				log.Printf("Moved by %v mm", r)
 				return nil
 			},
 		},

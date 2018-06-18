@@ -52,26 +52,21 @@ message I2CBusEnReq {
 }
 
 message TurnReq {
-	int32 turns = 1;
- 	uint32 rotateType = 2;
-	uint32 dutyPercent = 3;
+	float angle = 1;
 }
 
 message TurnRet {
-	uint32 m1Turns = 1;
-	uint32 m2Turns = 2;
+	float delta = 1;
 }
 
 
 message MoveReq {
-	int32 turns = 1;
-	bool fwd = 2;
-	uint32 dutyPercent = 3;
+	int32 dist = 1;
+	int32 vel = 2;
 }
 
 message MoveRet {
-	uint32 m1Turns = 1;
-	uint32 m2Turns = 2;
+	float dist = 1;
 }
 
 message HeadingRet {

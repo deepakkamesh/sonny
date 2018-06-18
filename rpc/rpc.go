@@ -105,12 +105,21 @@ func (m *Server) ServoRotate(ctx context.Context, in *pb.ServoReq) (*google_pb.E
 
 // Moves moves the motor.
 func (m *Server) Move(ctx context.Context, in *pb.MoveReq) (*pb.MoveRet, error) {
-	return nil, fmt.Errorf("not implemented")
+	r, err := m.sonny.MoveForward(int(in.Dist), int(in.Vel))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.MoveRet{Dist: float32(r)}, nil
 }
 
 // Turn rotates the motor.
 func (m *Server) Turn(ctx context.Context, in *pb.TurnReq) (*pb.TurnRet, error) {
-	return nil, fmt.Errorf("not implemented")
+	a, err := m.sonny.Turn(float64(in.Angle))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TurnRet{Delta: float32(a)}, nil
+
 }
 
 // Heading returns the magnetic heading.

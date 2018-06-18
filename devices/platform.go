@@ -41,4 +41,7 @@ type Platform interface {
 	ControllerInitialized() bool
 	MagnetometerInitialized() bool
 	LidarInitialized() bool
+
+	MoveForward(int, int) (float64, error)
+	Turn(float64) (float64, error)
 }

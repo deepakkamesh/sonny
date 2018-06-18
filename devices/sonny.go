@@ -53,10 +53,10 @@ func NewSonny(
 		c, l, m, a, r, i2cEn, p, le, v, 0, 0, 0, 0,
 		func() error { return nil },
 		func() error { return nil },
-		-2600.00, // min X. Default min/max values for a sane Magnetometer offset.
-		3355.00,  // max X.
+		-2924.00, // min X. Default min/max values for a sane Magnetometer offset.
+		4485.00,  // max X.
 		0.00,     // min Y.
-		6590.00,  // max Y.
+		8180.00,  // max Y.
 	}
 }
 
@@ -306,11 +306,10 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 	}
 	defer f.Close()
 
-	glog.Infof("Calibration in test mode: %v")
+	glog.Infof("Calibration in test mode: %v", test)
 
-	roombaRadius := 117.5 // mm.
-	vel := int16(20)      // 50 mm/s.
-	circum := roombaRadius * 2 * math.Pi
+	vel := int16(20) // 50 mm/s.
+	circum := constants.RoombaRadius * 2 * math.Pi
 	driveTime := float32(circum) / float32(vel) // in secs.
 
 	go func() {
@@ -327,7 +326,7 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 
 	}()
 
-	for i := 0; i < int(driveTime*1000*2/100); i++ {
+	for i := 0; i < int(driveTime*1000*2/50); i++ {
 		x, y, z, err := s.RawHeading()
 		if err != nil {
 			return err
@@ -353,7 +352,7 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 		if y > maxY {
 			maxY = y
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 	f.Sync()
 
@@ -437,11 +436,7 @@ func (s *Sonny) TiltHeading() (float64, error) {
 	xR -= (s.magXmin + s.magXmax) / 2
 	yR -= (s.magYmin + s.magYmax) / 2
 
-	/*	// Apply soft iron offets.
-		// TODO: This skews values.
-		x := float64((xR-s.magXmin)/(s.magXmax-s.magXmin)*2) - 1
-		y := float64((yR-s.magYmin)/(s.magYmax-s.magYmin)*2) - 1
-		z := float64(zR)*/
+	// TODO: Apply soft iron offets.
 
 	x := float64(xR)
 	y := float64(yR)
@@ -476,4 +471,195 @@ func (s *Sonny) TiltHeading() (float64, error) {
 	}
 
 	return heading, nil
+}
+
+// MoveForward moves the bot in mm. Negative vel moves backward. It returns the
+// actual distance moved.
+func (s *Sonny) MoveForward(desiredDist, vel int) (float64, error) {
+
+	if desiredDist == 0 {
+		return 0, nil
+	}
+
+	// Just in case , always shutdown motors.
+	defer s.DirectDrive(0, 0)
+
+	// Get starting readings.
+	encLStart, err := s.getEncoderReading(constants.SENSOR_LEFT_ENCODER)
+	if err != nil {
+		return 0, err
+	}
+	encRStart, err := s.getEncoderReading(constants.SENSOR_RIGHT_ENCODER)
+	if err != nil {
+		return 0, err
+	}
+
+	driveTime := float64(desiredDist) * 1000 / float64(math.Abs(float64(vel))) // # of ms to engage motor.
+	if err := s.DirectDrive(int16(vel), int16(vel)); err != nil {
+		return 0, err
+	}
+	// Goroutine applies correct drive power to motors equalized by
+	// applying differential power.
+	fin := make(chan struct{})
+	go func() {
+		tDelta := 30 // Check every x ms.
+		t := time.NewTicker(time.Duration(tDelta) * time.Millisecond)
+		var encStL, encStR int16 = encLStart, encRStart
+		kP := 0.6 // Constant factor for power differential.
+
+		for {
+			select {
+			case <-t.C:
+				encL, err := s.getEncoderReading(constants.SENSOR_LEFT_ENCODER)
+				if err != nil {
+					glog.Errorf("Failed to get encoder: %v", err)
+				}
+				encR, err := s.getEncoderReading(constants.SENSOR_RIGHT_ENCODER)
+				if err != nil {
+					glog.Errorf("Failed to get encoder: %v", err)
+				}
+
+				dL := getDistFromEncoder(encStL, encL)
+				dR := getDistFromEncoder(encStR, encR)
+
+				// Power differential is difference in dist travelled in mm converted
+				// to speed in mm/s with a constant applied for gradual change.
+				pDiff := (dL - dR) * (1000 / float64(tDelta)) * kP
+				encStL = encL
+				encStR = encR
+
+				lPower := int16(vel)
+				rPower := int16(vel + int(pDiff))
+				if vel < 0 {
+					rPower = int16(vel - int(pDiff))
+				}
+				if err := s.DirectDrive(rPower, lPower); err != nil {
+					glog.Errorf("Failed to set drive power: %v", err)
+				}
+
+			case <-fin:
+				return
+			}
+		}
+	}()
+
+	time.Sleep(time.Duration(driveTime) * time.Millisecond)
+	fin <- struct{}{}
+	if err := s.DirectDrive(0, 0); err != nil {
+		return 0, err
+	}
+	time.Sleep(300 * time.Millisecond)
+
+	// End Encoder readings.
+	encLEnd, err := s.getEncoderReading(constants.SENSOR_LEFT_ENCODER)
+	if err != nil {
+		return 0, err
+	}
+	encREnd, err := s.getEncoderReading(constants.SENSOR_RIGHT_ENCODER)
+	if err != nil {
+		return 0, err
+	}
+
+	distL := getDistFromEncoder(encLStart, encLEnd)
+	distR := getDistFromEncoder(encRStart, encREnd)
+	if math.Abs(distR-distL) > 2 {
+		glog.Warningf("Wheels reporting different distance travelled: R:%0.2f mm, L:%0.2f mm", distR, distL)
+	}
+
+	return distR, nil
+}
+
+// getEncoderReading returns the current encoder reading.
+func (s *Sonny) getEncoderReading(enc byte) (int16, error) {
+	p, err := s.Sensors(enc)
+	if err != nil {
+		return 0, err
+	}
+	return int16(p[0])<<8 | int16(p[1]), nil
+}
+
+// getDistFromEncoder calculates dist travelled in mm from encoder reading.
+func getDistFromEncoder(start, end int16) float64 {
+	delta := math.Abs(float64(end - start))
+
+	// Calculate dist from encoder reading.
+	return float64(delta) * math.Pi * 72.0 / 508.8
+
+}
+
+// Turn rotates the bot by angle in degrees and returns the delta in degrees.
+// positve angle rotates clockwise.
+func (s *Sonny) Turn(angle float64) (float64, error) {
+	if angle == 0 {
+		return 0.0, nil
+	}
+	vel := 50 //speed in mm/s.
+
+	// Get starting encoder reading.
+	encStart, err := s.getEncoderReading(constants.SENSOR_LEFT_ENCODER)
+	if err != nil {
+		return 0.0, err
+	}
+
+	// Calculate cirumference to drive. θ radian = circumfrence/radius.
+	c := constants.RoombaRadius * math.Abs(angle) * math.Pi / 180
+	driveTime := float32(c) / float32(vel)
+
+	glog.V(3).Infof("driveTime(s)%v Circumfrence(mm):%v Angle:%v", driveTime, c, angle)
+
+	rvel := -1 * vel
+	lvel := vel
+	if angle < 0 {
+		rvel = vel
+		lvel = -1 * vel
+	}
+
+	st := make(chan struct{})
+
+	// Get gyro readings when turning.
+	var yaw float64
+	go func() {
+		for {
+			select {
+			case <-st:
+				glog.Infof("Gyroscopc Rotation: %0.2f", yaw)
+				return
+			default:
+				x, y, z, err := s.Gyro()
+				if err != nil {
+					glog.Errorf("%v", err)
+				}
+				rX := float64(x) * 0.00875
+				rY := float64(y) * 0.00875
+				rZ := float64(z) * 0.00875
+				yaw += rZ * 10 / 1000
+				_ = rX
+				_ = rY
+				//	glog.Infof("%0.3f %0.3f %0.3f", rX, rY, rZ)
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+	}()
+
+	// Turn the bot.
+	if err := s.DirectDrive(int16(rvel), int16(lvel)); err != nil {
+		return 0.0, err
+	}
+	time.Sleep(time.Duration(driveTime*1000) * time.Millisecond)
+	if err := s.DirectDrive(0, 0); err != nil {
+		return 0.0, err
+	}
+	time.Sleep(300 * time.Millisecond)
+	st <- struct{}{}
+
+	// Calculate if we overshot or undershot landing and return delta.
+	encEnd, err := s.getEncoderReading(constants.SENSOR_LEFT_ENCODER)
+	if err != nil {
+		return 0.0, err
+	}
+
+	// TODO: need to return the right delta from compass.
+	_ = encStart
+	_ = encEnd
+	return 0.0, nil
 }
