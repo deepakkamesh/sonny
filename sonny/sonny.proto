@@ -109,7 +109,9 @@ message USRet {
 }
 
 message SweepReq {
- int32 angle = 1;
+ int32 min = 1;
+ int32 angle = 2;
+ int32 max = 3;
 }
 
 message SweepRet {

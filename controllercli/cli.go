@@ -264,15 +264,29 @@ func main() {
 					Name:  "angle,a",
 					Usage: "Increment Angle",
 				},
+				cli.IntFlag{
+					Name:  "min,mi",
+					Usage: "Min Angle",
+				},
+				cli.IntFlag{
+					Name:  "max,ma",
+					Usage: "Max Angle",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				d, err := ctrl.ForwardSweep(context.Background(), &pb.SweepReq{
 					Angle: int32(c.Int("angle")),
+					Min:   int32(c.Int("min")),
+					Max:   int32(c.Int("max")),
 				})
 				if err != nil {
 					return cli.NewExitError(err.Error(), 1)
 				}
-				log.Printf("Sweep %v", d.Distance)
+				var out string
+				for _, i := range d.Distance {
+					out += fmt.Sprintf("%v,", i)
+				}
+				log.Printf("Sweep: {%v}", out)
 				return nil
 			},
 		},
