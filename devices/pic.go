@@ -274,6 +274,8 @@ func (m *Controller) ServoRotate(servo byte, angle int) (err error) {
 		cycle float32 = 0.000001 // = Fosc/4 divided by PWM prescaler
 	)
 
+	// So the servo increments clockwise for  horizontal servo and bottom to top for vertical servo.
+	angle = 180 - angle
 	// Ensure maximums are not exceeded.
 	if angle < 0 || angle > 180 {
 		return errors.New("Angle needs to be between 0 to 180 degrees")
