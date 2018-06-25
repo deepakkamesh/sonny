@@ -11,32 +11,32 @@ import (
 	"time"
 )
 
-// size of the cell in centimeters. Cell is cellSz * CellSz square. The smaller the cell
+// size of the cell in centimeters. Cell is mapScale * CellSz square. The smaller the cell
 // the more accurate the space calculation, but takes more memory.
+// Note: Size of house is 640cm x 1676 cm. MaxX, MaxY based on sz/scale + some buffer.
 const (
-	cellSz     = 10
-	maxX       = 1000 // number of grid X coordinates.
-	maxY       = 1000 // number of grid Y coordinates.
-	stOccupied = 1    // occupancy state of cell.
-	stFree     = 0    // occupancy state of cell.
-	stUnknown  = -1   // occupancy state of cell.
-
+	mapScale   = 5
+	maxX       = 150 // number of grid X coordinates.
+	maxY       = 350 // number of grid Y coordinates.
+	stOccupied = 1   // occupancy state of cell.
+	stFree     = 0   // occupancy state of cell.
+	stUnknown  = -1  // occupancy state of cell.
+	DEG2RAD    = math.Pi / 180
 )
 
 // struct cell represents a single cell in the occupancy grid.
 type cell struct {
-	occupied int        // Is the cell occupied 1 = occupied 0 = unoccupied, -1 = unknown
-	lastUpd  time.Time  // Last updated timestamp for cell.
-	obs      uint       // number of observations.
-	posObs   float64    // Number of (positive) observations the cell is occupied.
-	occColor color.RGBA // Color of the point if occupied..
+	occupied int       // Is the cell occupied 1 = occupied 0 = unoccupied, -1 = unknown
+	lastUpd  time.Time // Last updated timestamp for cell.
+	obs      uint      // number of observations.
+	posObs   float64   // Number of (positive) observations the cell is occupied.
 }
 
 // ogrid represents the occupancy grid.
 type Ogrid struct {
 	cells   [maxX][maxY]cell
-	curr_x  int // current x location of bot.
-	curr_y  int // current y location of bot.
+	x       int // current x location of bot.
+	y       int // current y location of bot.
 	imgChan chan chan *bytes.Buffer
 }
 
@@ -44,20 +44,25 @@ type Ogrid struct {
 func NewOgrid() *Ogrid {
 	return &Ogrid{
 		cells:   [maxX][maxY]cell{},
-		curr_x:  500,
-		curr_y:  500,
+		x:       120, // Roughly positioned in the end room.
+		y:       320,
 		imgChan: make(chan chan *bytes.Buffer),
 	}
 }
 
-func (s *Ogrid) SetPos(x, y int) {
-	s.curr_x = x
-	s.curr_y = y
+func (s *Ogrid) GetXY() (int, int) {
+	return s.x, s.y
+}
+
+func (s *Ogrid) SetXY(x, y int) {
+	s.x = x
+	s.y = y
 }
 
 //ResetMap resets the grid
 func (s *Ogrid) ResetMap() {
-
+	s.x = 120
+	s.y = 320
 	for x := 0; x < maxX; x++ {
 		for y := 0; y < maxY; y++ {
 			s.cells[x][y].occupied = stUnknown
@@ -69,12 +74,126 @@ func (s *Ogrid) ResetMap() {
 
 // Placeholder for any goroutines to be started.
 func (s *Ogrid) StartGrid() {
+	s.ResetMap()
 }
 
+// Adapted from https://github.com/encukou/bresenham/blob/master/bresenham.py.
+func bresenham(x0, y0, x1, y1 int) []image.Point {
+	dx := x1 - x0
+	dy := y1 - y0
+
+	xsign := -1
+	ysign := -1
+	if dx > 0 {
+		xsign = 1
+	}
+	if dy > 0 {
+		ysign = 1
+	}
+
+	dx = int(math.Abs(float64(dx)))
+	dy = int(math.Abs(float64(dy)))
+
+	xx, xy, yx, yy := xsign, 0, 0, ysign
+	if dx < dy {
+		dx, dy = dy, dx
+		xx, xy, yx, yy = 0, ysign, xsign, 0
+	}
+
+	D := 2*dy - dx
+	y := 0
+
+	pts := []image.Point{}
+	for x := 0; x < (dx + 1); x++ {
+
+		pts = append(pts, image.Point{x0 + x*xx + y*yx, y0 + x*xy + y*yy})
+		if D >= 0 {
+			y += 1
+			D -= 2 * dx
+		}
+		D += 2 * dy
+	}
+	return pts
+}
+
+// pose is the deviation from x Axis.
+func (s *Ogrid) UpdateMap(rangeReading []int32, startAngle int, deltaAngle int, pose float64) error {
+
+	// From the returned beam update the cell location.
+	for i := 0; i < len(rangeReading); i++ {
+
+		servoAngle := startAngle + i*deltaAngle // relative to the robot body.
+		beamAngle := pose + float64(servoAngle)
+		d := float64(rangeReading[i])
+
+		// X,Y coord of obstacle in the global frame of reference (applying scale).
+		// the sign rotates the grid.
+		X := math.Cos(beamAngle*DEG2RAD) * d
+		Y := math.Sin(beamAngle*DEG2RAD) * d
+		Xocc := int(math.Ceil(X)/mapScale) + s.x
+		Yocc := int(math.Ceil(Y)/mapScale) + s.y
+
+		// Set the free cells along the beam.
+		freePoints := bresenham(s.x, s.y, Xocc, Yocc)
+		for _, pt := range freePoints {
+			s.cells[pt.X][pt.Y].occupied = stFree
+			s.cells[pt.X][pt.Y].obs++
+		}
+
+		// Set the occupied cells.
+		s.cells[Xocc][Yocc].occupied = stOccupied
+		s.cells[Xocc][Yocc].obs += 1
+		s.cells[Xocc][Yocc].posObs += 1
+
+	}
+	return nil
+}
+
+// GenerateMap() returns a png map of the environment.
+func (s *Ogrid) GenerateMap() (*bytes.Buffer, error) {
+
+	m := 1 // Number of pixels per cell. m x m.
+	img := image.NewRGBA(image.Rect(0, 0, maxX*m, maxY*m))
+
+	for x := 0; x < maxX; x++ {
+		for y := 0; y < maxY; y++ {
+
+			// Mark cells.
+			switch s.cells[x][y].occupied {
+			case stOccupied:
+				fillCell(img, x, y, m, color.RGBA{200, 10, 10, 255})
+			case stUnknown:
+				fillCell(img, x, y, m, color.RGBA{0, 0, 0, 90})
+			case stFree:
+				fillCell(img, x, y, m, color.RGBA{0, 255, 0, 255})
+			}
+		}
+	}
+
+	// Set rover location on map.
+	fillCell(img, s.x, s.y, m, color.RGBA{100, 50, 0, 255})
+
+	buff := new(bytes.Buffer)
+	if err := png.Encode(buff, img); err != nil {
+		return nil, err
+	}
+	return buff, nil
+}
+
+// fillCell renders the cell at x, y with a size of scale x scale.
+func fillCell(img *image.RGBA, x int, y int, scale int, c color.RGBA) {
+	for i := 0; i < scale; i++ {
+		for j := 0; j < scale; j++ {
+			img.Set(x*scale+i, y*scale+j, c)
+		}
+	}
+}
+
+/* TODO: Delete below once the new mapping func is confirmed good.
 // UpdateMap updates the occupany grid map based on lidar readings.
 // minAngle is the starting angle (degrees) in reference to the bot.
 // shiftAngle is the angle between readings in degrees.
-func (s *Ogrid) UpdateMap(rangeReading []int32, minAngle int, shiftAngle int, posture float64, c color.RGBA) error {
+func (s *Ogrid) UpdateMap1(rangeReading []int32, minAngle int, shiftAngle int, posture float64, c color.RGBA) error {
 
 	// From the returned beam update the cell location.
 	for i := 0; i < len(rangeReading); i++ {
@@ -90,11 +209,11 @@ func (s *Ogrid) UpdateMap(rangeReading []int32, minAngle int, shiftAngle int, po
 
 		// Get relative X,Y points from line and angle.
 		line := rangeReading[i]
-		x := (math.Cos(effAngle*math.Pi/180) * float64(line))
-		y := (math.Sin(effAngle*math.Pi/180) * float64(line))
+		x := math.Cos(effAngle*math.Pi/180) * float64(line)
+		y := math.Sin(effAngle*math.Pi/180) * float64(line)
 		// Calculate absolute X,Y points on map.
-		xAbs := s.curr_x + int(x)
-		yAbs := s.curr_y + int(y)
+		xAbs := s.x + int(x)
+		yAbs := s.y + int(y)
 
 		s.cells[xAbs][yAbs].occupied = stOccupied
 		s.cells[xAbs][yAbs].obs += 1
@@ -109,17 +228,17 @@ func (s *Ogrid) UpdateMap(rangeReading []int32, minAngle int, shiftAngle int, po
 
 		// Calculate free cells till occupied cell using line equation.
 		// Y = mX + b  where m is slope and b is intercept.
-		if xAbs-s.curr_x == 0 {
+		if xAbs-s.x == 0 {
 			continue
 		}
-		m := float32(yAbs-s.curr_y) / float32(xAbs-s.curr_x)
+		m := float32(yAbs-s.y) / float32(xAbs-s.x)
 		b := float32(yAbs) - m*float32(xAbs)
-		for j := yAbs + 1; j < s.curr_y; j++ {
+		for j := yAbs + 1; j < s.y; j++ {
 			xF := (float32(j) - float32(b)) / m
 			s.cells[int(xF)][j].occupied = stFree
 			s.cells[int(xF)][j].obs += 1
 		}
-		for j := s.curr_y; j < yAbs-1; j++ {
+		for j := s.y; j < yAbs-1; j++ {
 			xF := (float32(j) - float32(b)) / m
 			s.cells[int(xF)][j].occupied = stFree
 			s.cells[int(xF)][j].obs += 1
@@ -131,7 +250,7 @@ func (s *Ogrid) UpdateMap(rangeReading []int32, minAngle int, shiftAngle int, po
 
 // GenerateMap() returns a png map of the environment. It wraps
 // scaledMap or normalMap.
-func (s *Ogrid) GenerateMap() (*bytes.Buffer, error) {
+func (s *Ogrid) GenerateMap2() (*bytes.Buffer, error) {
 	return s.scaledMap()
 }
 
@@ -152,7 +271,7 @@ func (s *Ogrid) normalMap() (*bytes.Buffer, error) {
 			// Mark cells.
 			switch s.cells[x][y].occupied {
 			case stOccupied:
-				fillCell(img, x, yAdj, m, s.cells[x][y].occColor)
+				fillCell(img, x, yAdj, m, color.RGBA{200, 10, 10, 255})
 			case stUnknown:
 				fillCell(img, x, yAdj, m, color.RGBA{20, 20, 20, 10})
 			case stFree:
@@ -160,7 +279,7 @@ func (s *Ogrid) normalMap() (*bytes.Buffer, error) {
 			}
 
 			// Set Grid lines.
-			if x%cellSz == 0 || y%cellSz == 0 {
+			if x%mapScale == 0 || y%mapScale == 0 {
 				fillCell(img, x, yAdj, m, color.RGBA{194, 194, 214, 255})
 			}
 
@@ -168,7 +287,7 @@ func (s *Ogrid) normalMap() (*bytes.Buffer, error) {
 	}
 
 	// Set rover location on map.
-	fillCell(img, s.curr_x, maxY-s.curr_y, m, color.RGBA{100, 50, 0, 255})
+	fillCell(img, s.x, maxY-s.y, m, color.RGBA{100, 50, 0, 255})
 
 	buff := new(bytes.Buffer)
 	if err := png.Encode(buff, img); err != nil {
@@ -179,7 +298,7 @@ func (s *Ogrid) normalMap() (*bytes.Buffer, error) {
 
 func (s *Ogrid) scaledMap() (*bytes.Buffer, error) {
 	m := 1 // Number of pixels per cell. m x m.
-	sz := maxX / cellSz
+	sz := maxX / mapScale
 	img := image.NewRGBA(image.Rect(0, 0, sz*m, sz*m))
 
 	for x := 0; x < sz; x++ {
@@ -202,7 +321,7 @@ func (s *Ogrid) scaledMap() (*bytes.Buffer, error) {
 	}
 
 	// Set rover location on map.
-	fillCell(img, s.curr_x/cellSz, sz-s.curr_y/cellSz, m, color.RGBA{100, 50, 0, 255})
+	fillCell(img, s.x/mapScale, sz-s.y/mapScale, m, color.RGBA{100, 50, 0, 255})
 
 	buff := new(bytes.Buffer)
 	if err := png.Encode(buff, img); err != nil {
@@ -219,8 +338,8 @@ func (s *Ogrid) checkState(x, y int) (int, int, int) {
 	freeCnt := 0
 	totalCnt := 0
 
-	for i := x * cellSz; i < x*cellSz+cellSz; i++ {
-		for j := y * cellSz; j < y*cellSz+cellSz; j++ {
+	for i := x * mapScale; i < x*mapScale+mapScale; i++ {
+		for j := y * mapScale; j < y*mapScale+mapScale; j++ {
 			xi := i
 			yi := j
 			if i >= maxX {
@@ -242,12 +361,4 @@ func (s *Ogrid) checkState(x, y int) (int, int, int) {
 
 	return occCnt, freeCnt, totalCnt
 }
-
-// fillCell renders the cell at x, y with a size of scale x scale.
-func fillCell(img *image.RGBA, x int, y int, scale int, c color.RGBA) {
-	for i := 0; i < scale; i++ {
-		for j := 0; j < scale; j++ {
-			img.Set(x*scale+i, y*scale+j, c)
-		}
-	}
-}
+*/

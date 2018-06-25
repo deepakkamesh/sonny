@@ -564,6 +564,7 @@ func (s *Sonny) MoveForward(desiredDist, vel int) (float64, error) {
 	distR := getDistFromEncoder(encRStart, encREnd)
 	if math.Abs(distR-distL) > 2 {
 		glog.Warningf("Wheels reporting different distance travelled: R:%0.2f mm, L:%0.2f mm", distR, distL)
+		glog.Infof("EncRight st:%v, end:%v | EncLeft st:%v end: %v", encRStart, encREnd, encLStart, encLEnd)
 	}
 
 	return distR, nil

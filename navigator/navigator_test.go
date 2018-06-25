@@ -1,44 +1,12 @@
 package navigator
 
 import (
-	"fmt"
-	"image/color"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/deepakkamesh/sonny/mocks"
 )
-
-/*
-func TestPattern(t *testing.T) {
-
-	// Test data.
-	//	reading := []int32{137, 139, 58, 57, 61, 60, 154, 159, 142, 143, 136, 43, 48, 46, 113, 112, 105, 109, 98, 97, 101, 99, 97, 94, 83, 83, 90, 89, 89, 87, 88, 87, 84, 89, 85, 85, 89, 84, 87, 86, 85, 88, 86, 85, 86, 89, 85, 88, 89, 89, 95, 92, 95, 96, 94, 86, 85, 89, 89, 91, 108, 109, 99, 98, 106, 109, 73, 72, 69, 67, 68}
-
-	reading := []int32{40, 38, 36, 33, 30, 27, 29, 28, 27, 19, 23, 19, 19, 15, 14, 12, 13, 13, 14, 12, 9, 9, 10, 12, 7, 10, 7, 12, 8, 13, 12, 8, 11, 9, 8, 12, 9, 12, 14, 9, 12, 14, 12, 13, 16, 15, 16, 18, 22, 22, 19, 23, 20, 24, 22, 24, 27, 29, 30, 33, 35, 39, 37, 47, 47, 52, 44, 48, 40, 33, 32}
-	//	reading := []int32{43, 28, 20, 16, 10, 10, 8, 13, 11, 17, 22, 27, 35, 51, 70}
-	//	reading := []int32{46, 27, 20, 19, 12, 13, 9, 9, 13, 16, 23, 30, 39, 49, 31}
-	minAngle := 20
-	shiftAngle := 2
-	posture := 300
-	fmt.Println(len(reading))
-	s := NewOgrid()
-	s.ResetMap()
-	if err := s.UpdateMap(reading, minAngle, shiftAngle, float64(posture)); err != nil {
-		t.Errorf("error updating map %v", err)
-	}
-	bytes1, err := s.GenerateMap()
-	bytes2, err := s.GenCompressMap()
-	if err != nil {
-		t.Errorf("Failed %v", err)
-	}
-
-	if err := ioutil.WriteFile("out1.png", bytes1.Bytes(), os.ModePerm); err != nil {
-		t.Errorf("failed %v", err)
-	}
-	if err := ioutil.WriteFile("out2.png", bytes2.Bytes(), os.ModePerm); err != nil {
-		t.Errorf("failed %v", err)
-	}
-} */
 
 type datapt struct {
 	posture float64
@@ -47,61 +15,88 @@ type datapt struct {
 	reading []int32
 }
 
-/*
-func Test360(t *testing.T) {
+func TestMoveForward(t *testing.T) {
+	/*
+		mockPl := &mocks.Platform{}
 
-	reading := map[float64][]int32{
-		182: []int32{59, 61, 68, 72, 67, 71, 71, 78, 306, 289, 174,
-			155, 142, 128, 121, 112, 152, 152, 147, 133, 131, 157, 137, 132, 138, 135,
-			134, 153, 175},
-		135: []int32{337, 167, 150, 129, 127, 155, 154, 153, 134, 132, 158,
-			146, 135, 135, 143, 139, 137, 152, 162, 179, 190, 174, 191, 187, 206, 78, 82, 78, 81},
-		88: []int32{137, 155, 154, 173, 179, 175, 185, 205, 94, 75, 74, 98, 82, 83, 91, 97, 105,
-			110, 112, 116, 123, 143, 96, 208, 195, 189, 183, 172, 107},
+		for _, i := range []struct {
+			d     []byte
+			delta float64
+			req   int
+			act   int
+		}{
+			{[]byte{0x7F, 0xFE, 0x7F, 0xF8, 0x84, 0xB8, 0x84, 0xB8}, 1210, 500, 100},   // 32670, -32560
+			{[]byte{0x7F, 0xFE, 0x7F, 0xF8, 0x84, 0xB8, 0x84, 0xB8}, 1210, 600, 100},   // 32670, -32560
+			{[]byte{0x84, 0xB8, 0x7F, 0xF8, 0x7F, 0xFE, 0x84, 0xB8}, 1210, -500, -100}, // 32670, -32560
+			{[]byte{0x84, 0xB8, 0x7F, 0xF8, 0x7F, 0xFE, 0x84, 0xB8}, 1210, -600, -100}, // 32670, -32560
+			//		{[]byte{0, 200, 0, 200, 0, 250, 0, 240}, 16, -100, 0},
+		} {
+
+			// Starting encoder readings.
+			mockPl.On("Sensors", byte(constants.SENSOR_LEFT_ENCODER)).
+				Return([]byte{i.d[0], i.d[1]}, nil).Once()
+			mockPl.On("Sensors", byte(constants.SENSOR_RIGHT_ENCODER)).
+				Return([]byte{i.d[2], i.d[3]}, nil).Once()
+
+			// Ending encoder readings.
+			mockPl.On("Sensors", byte(constants.SENSOR_LEFT_ENCODER)).
+				Return([]byte{i.d[4], i.d[5]}, nil).Once()
+			mockPl.On("Sensors", byte(constants.SENSOR_RIGHT_ENCODER)).
+				Return([]byte{i.d[6], i.d[7]}, nil).Once()
+
+			mockPl.On("DirectDrive", int16(i.act), int16(i.act)).Return(nil)
+			mockPl.On("DirectDrive", int16(0), int16(0)).Return(nil)
+
+			//drive := NewAutoDrive(mockPl)
+			//d, _ := drive.MoveForward(i.req)
+
+			//t.Logf("Expected %v Got %v", i.delta*math.Pi*72/508.8-float64(math.Abs(float64(i.req))), d-int(math.Abs(float64(i.req))))
+		}
+		t.Log("Test concluded")
+	*/
+
+}
+
+func TestMove(t *testing.T) {
+
+	pf := &mocks.Platform{}
+	driver := NewAutoDrive(pf)
+	X, Y := driver.GetXY() // Default X,Y
+
+	for _, i := range []struct {
+		angle     float64
+		vel       int
+		dist      int
+		distMoved int
+		x         int // delta from X and Y.
+		y         int
+	}{
+		{0, 50, 100, 100, -20, 0},
+		{60, 50, 100, 100, -10, -17},
+		{90, 50, 100, 100, 0, -20},
+		{180, 50, 100, 100, 20, 0},
+		{0, -50, 100, 100, 20, 0},
+		{270, 50, 100, 100, 0, 20},
+		{270, -50, 100, 100, 0, -20},
+		{90, -50, 100, 100, 0, 20},
+	} {
+		pf.On("TiltHeading").Once().Return(float64(i.angle), nil)
+		pf.On("MoveForward", i.dist, i.vel).Once().Return(float64(i.distMoved), nil)
+
+		x0, y0 := driver.GetXY()
+		driver.Move(i.dist, i.vel)
+		x, y := driver.GetXY()
+		t.Logf("Angle: %v Scale: Vel:%v  %v X: %v->%v, Y:%v->%v", i.angle, i.vel, mapScale, x0, x, y0, y)
+		if X-x != i.x || Y-y != i.y {
+			t.Errorf("X expected: %v got: %v Y expected:%v got %v", X-i.x, x, Y-i.y, y)
+		}
+
+		driver.ResetMap()
 	}
-	order := []float64{182, 135, 88}
-	//Posture: 34.33551113931616 Reading:[99 115 119 167 145 174 104 165 163 163 162 161 159 112 169 174 181 188 177 198 153 238 199 241 253 253 263 270 61]
 
+}
 
-	colors := []color.RGBA{
-		color.RGBA{244, 26, 26, 255},
-		color.RGBA{26, 26, 244, 255},
-		color.RGBA{0, 51, 0, 255},
-	}
-
-	minAngle := 20
-	shiftAngle := 5
-	s := NewOgrid()
-	s.ResetMap()
-
-	for i := 0; i < len(order); i++ {
-		ang := order[i]
-		//fmt.Println("Readings", reading[ang], len(reading[ang]))
-		//	if i != 135.40983201669695 {
-		//	continue
-		//	}
-		if err := s.UpdateMap(reading[ang], minAngle, shiftAngle, 360-ang, colors[i]); err != nil {
-			t.Errorf("error updating map %v", err)
-		}
-		bytes1, err := s.GenerateMap()
-		bytes2, err := s.GenCompressMap()
-		if err != nil {
-			t.Errorf("Failed %v", err)
-		}
-		fn1 := fmt.Sprintf("out1-%v.png", ang)
-		fn2 := fmt.Sprintf("out2-%v.png", ang)
-
-		if err := ioutil.WriteFile(fn1, bytes1.Bytes(), os.ModePerm); err != nil {
-			t.Errorf("failed %v", err)
-		}
-		if err := ioutil.WriteFile(fn2, bytes2.Bytes(), os.ModePerm); err != nil {
-			t.Errorf("failed %v", err)
-		}
-
-	}
-}*/
-
-func Test3602(t *testing.T) {
+func TestUpdateMap(t *testing.T) {
 
 	_ = []datapt{
 		datapt{
@@ -166,100 +161,87 @@ func Test3602(t *testing.T) {
 
 	readings := []datapt{
 		datapt{
-			posture: 160.35635040777913,
+			posture: 186.49,
 			x:       500,
 			y:       500,
-			reading: []int32{85, 118, 122, 134, 141, 159, 160, 145, 141, 134, 133, 129, 129, 128, 131, 129, 131, 132, 135, 141, 150, 122, 114, 116, 129, 137, 155, 174, 167},
-		},
-		datapt{
-			posture: 110.31783509795588,
-			x:       500,
-			y:       500,
-			reading: []int32{129, 129, 129, 132, 134, 140, 131, 122, 115, 127, 131, 134, 154, 152, 157, 160, 177, 108, 102, 107, 109, 70, 67, 67, 69, 75, 77, 82, 86},
+			reading: []int32{115, 111, 110, 112, 114, 111, 113, 114, 118, 128, 127, 134, 140, 135, 121, 115, 107, 98, 99, 97, 76},
 		},
 
-		datapt{
-			posture: 79.17347188860884,
-			x:       500,
-			y:       500,
-			reading: []int32{133, 155, 178, 205, 178, 110, 108, 104, 177, 63, 64, 66, 70, 73, 76, 101, 107, 115, 120, 140, 158, 106, 212, 206, 140, 192, 152, 191, 189},
-		},
+		/*		datapt{
+					posture: 160.35635040777913,
+					x:       500,
+					y:       500,
+					reading: []int32{85, 118, 122, 134, 141, 159, 160, 145, 141, 134, 133, 129, 129, 128, 131, 129, 131, 132, 135, 141, 150, 122, 114, 116, 129, 137, 155, 174, 167},
+				},
+				datapt{
+					posture: 110.31783509795588,
+					x:       500,
+					y:       500,
+					reading: []int32{129, 129, 129, 132, 134, 140, 131, 122, 115, 127, 131, 134, 154, 152, 157, 160, 177, 108, 102, 107, 109, 70, 67, 67, 69, 75, 77, 82, 86},
+				},
 
-		datapt{
-			posture: 64.35443304941813,
-			x:       500,
-			y:       500,
-			reading: []int32{110, 105, 70, 62, 66, 67, 68, 76, 78, 84, 107, 120, 141, 163, 111, 116, 205, 200, 191, 159, 189, 185, 104, 187, 185, 140, 198, 207, 220},
-		},
+				datapt{
+					posture: 79.17347188860884,
+					x:       500,
+					y:       500,
+					reading: []int32{133, 155, 178, 205, 178, 110, 108, 104, 177, 63, 64, 66, 70, 73, 76, 101, 107, 115, 120, 140, 158, 106, 212, 206, 140, 192, 152, 191, 189},
+				},
 
-		datapt{
-			posture: 161.04086549421,
-			x:       480,
-			y:       494,
-			reading: []int32{101, 106, 111, 119, 122, 136, 144, 135, 127, 122, 117, 115, 112, 111, 110, 107, 110, 110, 114, 114, 120, 125, 127, 116, 112, 102, 106, 123, 133},
-		},
-		datapt{
-			posture: 114.500741415414,
-			x:       480,
-			y:       494,
-			reading: []int32{112, 109, 109, 112, 114, 114, 120, 124, 131, 113, 108, 101, 104, 119, 130, 140, 150, 154, 147, 167, 166, 106, 104, 107, 117, 199, 79, 81, 90},
-		},
-		datapt{
-			posture: 82.22251645431913,
-			x:       480,
-			y:       494,
-			reading: []int32{112, 105, 123, 129, 151, 204, 155, 161, 172, 105, 103, 107, 165, 194, 183, 93, 100, 101, 112, 119, 129, 142, 167, 126, 131, 225, 170, 212, 210},
-		},
-		datapt{
-			posture: 65.94051755124553,
-			x:       480,
-			y:       494,
-			reading: []int32{206, 195, 193, 107, 104, 105, 194, 73, 74, 95, 107, 115, 120, 125, 139, 166, 182, 126, 176, 202, 201, 203, 200, 129, 132, 206, 169, 218, 223},
-		},
+				datapt{
+					posture: 64.35443304941813,
+					x:       500,
+					y:       500,
+					reading: []int32{110, 105, 70, 62, 66, 67, 68, 76, 78, 84, 107, 120, 141, 163, 111, 116, 205, 200, 191, 159, 189, 185, 104, 187, 185, 140, 198, 207, 220},
+				},
+
+				/*	datapt{
+						posture: 161.04086549421,
+						x:       480,
+						y:       494,
+						reading: []int32{101, 106, 111, 119, 122, 136, 144, 135, 127, 122, 117, 115, 112, 111, 110, 107, 110, 110, 114, 114, 120, 125, 127, 116, 112, 102, 106, 123, 133},
+					},
+					datapt{
+						posture: 114.500741415414,
+						x:       480,
+						y:       494,
+						reading: []int32{112, 109, 109, 112, 114, 114, 120, 124, 131, 113, 108, 101, 104, 119, 130, 140, 150, 154, 147, 167, 166, 106, 104, 107, 117, 199, 79, 81, 90},
+					},
+					datapt{
+						posture: 82.22251645431913,
+						x:       480,
+						y:       494,
+						reading: []int32{112, 105, 123, 129, 151, 204, 155, 161, 172, 105, 103, 107, 165, 194, 183, 93, 100, 101, 112, 119, 129, 142, 167, 126, 131, 225, 170, 212, 210},
+					},
+					datapt{
+						posture: 65.94051755124553,
+						x:       480,
+						y:       494,
+						reading: []int32{206, 195, 193, 107, 104, 105, 194, 73, 74, 95, 107, 115, 120, 125, 139, 166, 182, 126, 176, 202, 201, 203, 200, 129, 132, 206, 169, 218, 223},
+					},*/
 	}
 
-	colors := []color.RGBA{
-		color.RGBA{244, 26, 26, 255},
-		color.RGBA{26, 26, 244, 255},
-		color.RGBA{80, 51, 30, 255},
-		color.RGBA{0, 51, 0, 255},
-		color.RGBA{24, 166, 26, 255},
-		color.RGBA{26, 0, 100, 255},
-		color.RGBA{0, 100, 30, 255},
-		color.RGBA{125, 51, 49, 255},
-	}
-
-	minAngle := 20
+	minAngle := 60
 	shiftAngle := 5
 	s := NewOgrid()
 	s.ResetMap()
 
 	for i := 0; i < len(readings); i++ {
 		pos := readings[i].posture
-		x := readings[i].x
-		y := readings[i].y
+		//x := readings[i].x
+		//y := readings[i].y
 		reading := readings[i].reading
 
-		s.SetPos(x, y)
-		s.SetPos(500, 500)
-
-		if err := s.UpdateMap(reading, minAngle, shiftAngle, 360-pos, colors[i]); err != nil {
+		//	s.SetPos(x, y)
+		//	s.SetPos(500, 500)
+		if err := s.UpdateMap(reading, minAngle, shiftAngle, pos-90); err != nil {
 			t.Errorf("error updating map %v", err)
 		}
 
-		bytes2, err := s.scaledMap()
-		bytes1, err := s.normalMap()
+		bytes1, err := s.GenerateMap()
 		if err != nil {
 			t.Errorf("Failed %v", err)
 		}
-		fn1 := fmt.Sprintf("out1-%v-%v-%v.png", int(pos), x, y)
-		fn2 := fmt.Sprintf("out2-%v-%v-%v.png", int(pos), x, y)
-
-		if err := ioutil.WriteFile(fn1, bytes1.Bytes(), os.ModePerm); err != nil {
-			t.Errorf("failed %v", err)
-		}
-
-		if err := ioutil.WriteFile(fn2, bytes2.Bytes(), os.ModePerm); err != nil {
+		if err := ioutil.WriteFile("updmap.png", bytes1.Bytes(), os.ModePerm); err != nil {
 			t.Errorf("failed %v", err)
 		}
 
