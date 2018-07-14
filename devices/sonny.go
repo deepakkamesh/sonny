@@ -95,7 +95,12 @@ func (s *Sonny) SetAuxPostInit(fOn func() error, fOff func() error) {
 
 // AuxPower enables/disables Auxillary power from main brush motor on Roomba.
 func (s *Sonny) AuxPower(enable bool) error {
+	if s.GetRoombaMode() < 2 {
+		return fmt.Errorf("Roomba mode should be Safe or Full. In Mode %v", s.GetRoombaMode())
+	}
 	if enable {
+		// Power up auxillary battery on main brush.
+		time.Sleep(300 * time.Millisecond) // Not sure why, but a little time is needed.
 		if err := s.MainBrush(true, true); err != nil {
 			return err
 		}
@@ -204,18 +209,22 @@ func (s *Sonny) SetRoombaMode(mode byte) error {
 		if err := s.Roomba.Power(); err != nil {
 			return err
 		}
+		s.roombaMode = 0
 	case constants.OI_MODE_PASSIVE:
 		if err := s.Roomba.Passive(); err != nil {
 			return err
 		}
+		s.roombaMode = 1
 	case constants.OI_MODE_SAFE:
 		if err := s.Roomba.Safe(); err != nil {
 			return err
 		}
+		s.roombaMode = 2
 	case constants.OI_MODE_FULL:
 		if err := s.Roomba.Full(); err != nil {
 			return err
 		}
+		s.roombaMode = 3
 	default:
 		return fmt.Errorf("unknown mode %v requested", mode)
 	}

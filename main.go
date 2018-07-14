@@ -50,6 +50,7 @@ func main() {
 		vidHeight = flag.Uint("vid_height", 120, "Video Height")
 		vidWidth  = flag.Uint("vid_width", 160, "Video Width")
 
+		// Enable feature flags.
 		enCompass    = flag.Bool("en_compass", false, "Enable Compass")
 		enGyro       = flag.Bool("en_gyro", false, "Enable Gyro")
 		enRoomba     = flag.Bool("en_roomba", false, "Enable Roomba")
@@ -86,10 +87,16 @@ func main() {
 		glog.Fatalf("Failed to initialize Adapter:%v", err)
 	}
 
+	// I2C enable control.
+	i2cEn := gpio.NewDirectPinDriver(pi, *enI2CPin)
+	if err := i2cEn.Start(); err != nil {
+		glog.Fatalf("Failed to initialize I2C en pin: %v", err)
+	}
+
 	// Initialize Roomba.
 	var rb *roomba.Roomba
 	if *enRoomba {
-		glog.V(1).Infof("Enabling Roomba...")
+		glog.V(1).Infof("Initializing Roomba...")
 
 		// Setup BRC pin for roomba keep-alive.
 		brcPin := gpio.NewDirectPinDriver(pi, *brc)
@@ -103,17 +110,21 @@ func main() {
 		if err = rb.Start(true); err != nil {
 			glog.Fatalf("Failed to start roomba: %v", err)
 		}
-	}
-
-	// I2C enable control.
-	i2cEn := gpio.NewDirectPinDriver(pi, *enI2CPin)
-	if err := i2cEn.Start(); err != nil {
-		glog.Fatalf("Failed to initialize I2C en pin: %v", err)
+		// Verify we can talk to roomba by querying mode.
+		v, e := rb.QueryList([]byte{35})
+		if e != nil {
+			glog.Fatalf("Failed to initialize Roomba:%v (got %v)", e, v)
+		}
+		if v[0][0] != 1 && v[0][0] != 2 && v[0][0] != 3 {
+			glog.Fatalf("Bad roomba mode: %v ", v[0][0])
+		}
+		glog.V(1).Infof("Roomba ready in mode: %d", v[0][0])
 	}
 
 	// Initialize PIC I2C Controller.
 	var ctrl *devices.Controller
 	if *enPic {
+		glog.V(1).Infof("Initializing PIC Controller...")
 		ctrl = devices.NewController(pi,
 			i2c.WithBus(*picI2CBus),
 			i2c.WithAddress(*picAddr))
@@ -125,6 +136,7 @@ func main() {
 	// Initialize magnetometer.
 	var mag *i2c.QMC5883Driver
 	if *enCompass {
+		glog.V(1).Infof("Initializing Compass...")
 		mag = i2c.NewQMC5883Driver(pi, i2c.WithBus(*magI2CBus))
 		mag.SetConfig(i2c.QMC5883Continuous | i2c.QMC5883ODR200Hz | i2c.QMC5883RNG2G | i2c.QMC5883OSR512)
 	}
@@ -132,6 +144,7 @@ func main() {
 	// Initialize MPU6050.
 	var gyro *i2c.MPU6050Driver
 	if *enGyro {
+		glog.V(1).Infof("Initializing Gyro...")
 		gyro = i2c.NewMPU6050Driver(pi, i2c.WithBus(*gyroI2CBus))
 	}
 
@@ -141,6 +154,7 @@ func main() {
 		lidarEnPin *gpio.DirectPinDriver
 	)
 	if *enLidar {
+		glog.V(1).Infof("Initializing Lidar...")
 		lidar = i2c.NewLIDARLiteDriver(pi,
 			i2c.WithBus(*lidarI2CBus))
 		if err := lidar.Start(); err != nil {
@@ -159,6 +173,7 @@ func main() {
 	// Initialize PIR sensor.
 	var pir *gpio.PIRMotionDriver
 	if *enPir {
+		glog.V(1).Infof("Initializing PIR Sensor...")
 		pir = gpio.NewPIRMotionDriver(pi, *pirPin)
 		if err := pir.Start(); err != nil {
 			glog.Fatalf("Unable to initialize pin %v error %v", *pirPin, err)
@@ -168,6 +183,7 @@ func main() {
 	// Initialize video device.
 	var vid *devices.Video
 	if *enVid {
+		glog.V(1).Infof("Initializing Video...")
 		vid = devices.NewVideo(devices.MJPEG, uint32(*vidWidth), uint32(*vidHeight), 10)
 		vid.StartVideoStream()
 	}
@@ -218,15 +234,14 @@ func main() {
 			glog.Fatalf("Failed to set roomba mode:%v", err)
 		}
 
-		// Power up auxillary battery on main brush.
-		time.Sleep(100 * time.Millisecond) // Not sure why, but a little time is needed.
 		if err := sonny.AuxPower(*enAuxPower); err != nil {
 			glog.Fatalf("Failed to turn on Aux Power: %v ", err)
 		}
 	}
 
 	// Power up sequence complete
-	glog.Info("Sonny device initialization complete")
+	glog.Infof("Sonny device initialization complete")
+	time.Sleep(1000 * time.Millisecond) // Sleep to allow devices to power up.
 
 	// Start up navigation routines.
 	navi := navigator.NewAutoDrive(sonny)
@@ -248,6 +263,9 @@ func main() {
 			}
 			if err := sonny.AuxPower(false); err != nil {
 				glog.Errorf("Failed to disable aux power: %v", err)
+			}
+			if err := rb.Passive(); err != nil { // Reset roomba turns it off.
+				glog.Errorf("Failed to reset Roomba on shutdown")
 			}
 
 			os.Exit(1)

@@ -88,6 +88,7 @@ func (m *Server) Start(hostPort string) error {
 	if m.enDataStream {
 		go m.dataCollector()
 	}
+
 	return http.ListenAndServe(hostPort, nil)
 }
 
@@ -178,7 +179,7 @@ func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
 // gridDisp streams the png image with the grid map.
 func (m *Server) gridDisp(w http.ResponseWriter, r *http.Request) {
 
-	buffer, err := m.navigator.GenerateMap()
+	buffer, err := m.navigator.PrintMap()
 	if err != nil {
 		glog.Errorf("Failed to generate map: %v", err)
 		writeResponse(w, &response{

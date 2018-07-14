@@ -102,7 +102,6 @@ func (m *Server) dataCollector() {
 				m.data.Controller[BATT] = float32(b)
 			}()
 
-		case <-t300.C:
 			// Compass.
 			func() {
 				if m.sonny.GetI2CBusState() != 1 || m.sonny.GetAuxPowerState() != 1 {
@@ -112,6 +111,8 @@ func (m *Server) dataCollector() {
 				if !m.data.Enabled[MAG] {
 					return
 				}
+				// Sleep is needed to prevent contention on I2C bus.
+				time.Sleep(100 * time.Millisecond)
 				h, err := m.sonny.TiltHeading()
 				if err != nil {
 					glog.Warningf("Failed to read Compass: %v", err)
@@ -121,6 +122,7 @@ func (m *Server) dataCollector() {
 				m.data.Controller[MAG] = float32(h)
 			}()
 
+		case <-t300.C:
 			// Roomba data.
 			func() {
 				d, err := m.sonny.GetRoombaTelemetry()
@@ -174,6 +176,6 @@ func (m *Server) dataStream(w http.ResponseWriter, r *http.Request) {
 			glog.Errorf("Failed to write: %v", err)
 			return
 		}
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
