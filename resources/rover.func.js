@@ -401,11 +401,12 @@ $(document).ready(function() {
     }
 
     ws.onmessage = function(evt) {
-
         st = JSON.parse(evt.data);
         if (st.Err != "") {
             console.log(st.Err);
         }
+
+        // Handle Roomba data feed.
         rbData = st.Roomba;
         for (var pktID in rbData) {
             pkt = rbData[pktID];
