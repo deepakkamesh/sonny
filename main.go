@@ -63,7 +63,8 @@ func main() {
 		enDataStream = flag.Bool("en_data_stream", false, "Enable data stream for http")
 	)
 	flag.Parse()
-
+	al := 0
+	_ = al
 	// Print version and exit.
 	if *version {
 		fmt.Printf("Version commit hash %s\n", githash)
@@ -212,11 +213,15 @@ func main() {
 				glog.Warningf("%v", err)
 				return err
 			}
-			if err := mag.Start(); err != nil {
-				glog.Fatalf("Failed to initialize magnetometer:%v", err)
+			if *enCompass {
+				if err := mag.Start(); err != nil {
+					glog.Fatalf("Failed to initialize magnetometer:%v", err)
+				}
 			}
-			if err := gyro.Start(); err != nil {
-				glog.Fatalf("Failed to initialize Gyro:%v", err)
+			if *enGyro {
+				if err := gyro.Start(); err != nil {
+					glog.Fatalf("Failed to initialize Gyro:%v", err)
+				}
 			}
 			return nil
 		},

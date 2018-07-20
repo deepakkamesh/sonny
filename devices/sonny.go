@@ -53,12 +53,20 @@ func NewSonny(
 		c, l, m, a, r, i2cEn, p, le, v, 0, 0, 0, 0,
 		func() error { return nil },
 		func() error { return nil },
-		-2924.00, // min X. Default min/max values for a sane Magnetometer offset.
-		4485.00,  // max X.
-		0.00,     // min Y.
-		8180.00,  // max Y.
+		-4928, // min X. Default min/max values for a sane Magnetometer offset.
+		2460,  // max X.
+		-427,  // min Y.
+		6844,  // max Y.
 	}
 }
+
+// Old calib values
+/*
+	-2586.00, // min X. Default min/max values for a sane Magnetometer offset.
+	4559.00,  // max X.
+	0.00,     // min Y.
+	8070.00,  // max Y.
+*/
 
 // StartRoomba starts up the roomba platform.
 func (s *Sonny) StartRoomba(keepAlive bool) error {
@@ -95,10 +103,10 @@ func (s *Sonny) SetAuxPostInit(fOn func() error, fOff func() error) {
 
 // AuxPower enables/disables Auxillary power from main brush motor on Roomba.
 func (s *Sonny) AuxPower(enable bool) error {
-	if s.GetRoombaMode() < 2 {
-		return fmt.Errorf("Roomba mode should be Safe or Full. In Mode %v", s.GetRoombaMode())
-	}
 	if enable {
+		if s.GetRoombaMode() < 2 {
+			return fmt.Errorf("Roomba mode should be Safe or Full. In Mode %v", s.GetRoombaMode())
+		}
 		// Power up auxillary battery on main brush.
 		time.Sleep(300 * time.Millisecond) // Not sure why, but a little time is needed.
 		if err := s.MainBrush(true, true); err != nil {
@@ -233,9 +241,9 @@ func (s *Sonny) SetRoombaMode(mode byte) error {
 }
 
 func (s *Sonny) ForwardSweep(angle, min, max int) ([]int32, error) {
-	// Lock I2C bus to avoid any contention.
-	s.LockI2CBus()
-	defer s.UnlockI2CBus()
+	// Lock controller to avoid any I2C contention.
+	s.LockController()
+	defer s.UnlockController()
 
 	if s.Controller == nil {
 		return nil, errors.New("controller not initialized")
@@ -304,6 +312,10 @@ func (s *Sonny) GetI2CBusState() int {
 // without storing the calibration values. Useful to see if recalib is needed.
 func (s *Sonny) CalibrateCompass(test bool) error {
 
+	// Lock controller to avoid any I2C contention.
+	s.LockController()
+	defer s.UnlockController()
+
 	if s.QMC5883Driver == nil {
 		return fmt.Errorf("Compass not enabled")
 	}
@@ -317,7 +329,7 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 
 	glog.Infof("Calibration in test mode: %v", test)
 
-	vel := int16(20) // 50 mm/s.
+	vel := int16(50) // vel in mm/s.
 	circum := constants.RoombaRadius * 2 * math.Pi
 	driveTime := float32(circum) / float32(vel) // in secs.
 
@@ -379,6 +391,7 @@ func (s *Sonny) CalibrateCompass(test bool) error {
 
 // Accelerometer returns the X,Y,Z data.
 func (s *Sonny) Accelerometer() (x, y, z int16, err error) {
+
 	if err = s.MPU6050Driver.GetData(); err != nil {
 		return
 	}
@@ -404,6 +417,10 @@ func (s *Sonny) Gyro() (x, y, z int16, err error) {
 // TiltHeading returns tilt compensated compass reading
 // with a low pass filter.
 func (s *Sonny) TiltHeading() (float64, error) {
+
+	// Lock controller to avoid any I2C contention.
+	s.LockController()
+	defer s.UnlockController()
 
 	magLPF := 0.4
 	accLPF := 0.1
@@ -446,6 +463,8 @@ func (s *Sonny) TiltHeading() (float64, error) {
 	yR -= (s.magYmin + s.magYmax) / 2
 
 	// TODO: Apply soft iron offets.
+	//	x := float64((xR-s.magXmin)/(s.magXmax-s.magXmin))*2 - 1
+	//	y := float64((yR-s.magXmin)/(s.magXmax-s.magXmin))*2 - 1
 
 	x := float64(xR)
 	y := float64(yR)

@@ -217,8 +217,8 @@ func (m *Controller) recv(deviceID byte) ([]byte, error) {
 
 }
 
-func (m *Controller) LockI2CBus()   { m.mut.Lock() }
-func (m *Controller) UnlockI2CBus() { m.mut.Unlock() }
+func (m *Controller) LockController()   { m.mut.Lock() }
+func (m *Controller) UnlockController() { m.mut.Unlock() }
 
 // Ping returns nil if the controller is available.
 func (m *Controller) Ping() (err error) {
