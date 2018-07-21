@@ -9,44 +9,54 @@ import (
 	"image/png"
 	"math"
 	"time"
+
+	"github.com/golang/glog"
 )
+
+// Occupancy Grid references:
+// https://github.com/udacity/RoboND-OccupancyGridMappingAlgorithm/
+// https://github.com/markcsie/OccupancyGridMapping/
 
 // size of the cell in centimeters. Cell is mapScale * CellSz square. The smaller the cell
 // the more accurate the space calculation, but takes more memory.
-// Note: Size of house is 640cm x 1676 cm. MaxX, MaxY based on sz/scale + some buffer.
+// Note: Size of house is 700 cm x 1800 cm. MaxX, MaxY based on sz/scale + some buffer.
 const (
-	mapScale   = 5
-	maxX       = 150 // number of grid X coordinates.
-	maxY       = 350 // number of grid Y coordinates.
-	stOccupied = 1   // occupancy state of cell.
-	stFree     = 0   // occupancy state of cell.
-	stUnknown  = -1  // occupancy state of cell.
-	DEG2RAD    = math.Pi / 180
+	mapScale  = 5    // size of each cell is 5x5 cm.
+	maxRealX  = 700  // Size of grid in cm.
+	maxRealY  = 1800 // Siz of Grid in cm.
+	maxX      = maxRealX / mapScale
+	maxY      = maxRealY / mapScale
+	DEG2RAD   = math.Pi / 180
+	MAX_RANGE = 150 // max dist for a lidar beam in cm.
+
+	Zmax  = 4000          // Max range of lidar sensor in cm.
+	Zmin  = 0             // Min Range of lidar sensor.
+	alpha = 20            // Width if obstacle in cm. ~2 ft.
+	beta  = 0.5 * DEG2RAD // width of beam. Lidar ~0.5 degree.
+	l0    = 0             // log odd unknown.
+	locc  = 2             // log odd occupied.
+	lfree = -2            // log off free.
 )
 
 // struct cell represents a single cell in the occupancy grid.
 type cell struct {
-	occupied int       // Is the cell occupied 1 = occupied 0 = unoccupied, -1 = unknown
-	lastUpd  time.Time // Last updated timestamp for cell.
-	obs      uint      // number of observations.
-	posObs   float64   // Number of (positive) observations the cell is occupied.
+	logOdd  float64   // Log Odds of the cell being occupied.
+	lastUpd time.Time // Last updated timestamp for cell.
 }
 
 // ogrid represents the occupancy grid.
 type Ogrid struct {
-	cells   [maxX][maxY]cell
-	x       int // current x location of bot.
-	y       int // current y location of bot.
-	imgChan chan chan *bytes.Buffer
+	cells [maxX][maxY]cell
+	x     int // current x location of bot.
+	y     int // current y location of bot.
+	maxX  int
+	maxY  int
 }
 
 // NewOGrid returns a initialized Ogrid structure.
 func NewOgrid() *Ogrid {
 	return &Ogrid{
-		cells:   [maxX][maxY]cell{},
-		x:       120, // Roughly positioned in the end room.
-		y:       320,
-		imgChan: make(chan chan *bytes.Buffer),
+		cells: [maxX][maxY]cell{},
 	}
 }
 
@@ -61,13 +71,12 @@ func (s *Ogrid) SetXY(x, y int) {
 
 //ResetMap resets the grid
 func (s *Ogrid) ResetMap() {
-	s.x = 120
-	s.y = 320
+	s.x = maxX - 210/mapScale // Roughly positioned in the end room. 200 cm from each axis.
+	s.y = maxY - 210/mapScale // Roughly positioned in the end room. 200 cm from each axis.
+
 	for x := 0; x < maxX; x++ {
 		for y := 0; y < maxY; y++ {
-			s.cells[x][y].occupied = stUnknown
-			s.cells[x][y].obs = 0
-			s.cells[x][y].posObs = 0
+			s.cells[x][y].logOdd = 0.0
 		}
 	}
 }
@@ -75,6 +84,92 @@ func (s *Ogrid) ResetMap() {
 // Placeholder for any goroutines to be started.
 func (s *Ogrid) StartGrid() {
 	s.ResetMap()
+}
+
+// pose is the deviation from x Axis.
+// Older and basic without probabilities.
+func (s *Ogrid) UpdateMap(rangeReading []int32, startAngle int, deltaAngle int, pose float64) error {
+
+	// From the returned beam update the cell location.
+	for i := 0; i < len(rangeReading); i++ {
+		servoAngle := startAngle + i*deltaAngle // relative to the robot body.
+		beamAngle := pose + float64(servoAngle)
+		d := float64(rangeReading[i])
+
+		// If lidar returns value > MAX_RANGE ignore it because we want to be able to
+		// detect objects of 5cm width assuming a angle of 3-5 degrees between beams.
+		// if trunc then dont set locc on the last cell.
+		trunc := false
+		if d > MAX_RANGE {
+			d = MAX_RANGE
+			trunc = true
+		}
+
+		// X,Y coord of obstacle in the global frame of reference (applying scale).
+		// the sign of X,Y rotates the grid.
+		X := math.Cos(beamAngle*DEG2RAD) * d
+		Y := math.Sin(beamAngle*DEG2RAD) * d
+		Xocc := int(math.Ceil(X/mapScale)) + s.x
+		Yocc := int(math.Ceil(Y/mapScale)) + s.y
+
+		// Set the free cells along the beam.
+		freePoints := bresenham(s.x, s.y, Xocc, Yocc)
+		for i, pt := range freePoints {
+			if pt.X >= maxX || pt.Y >= maxY {
+				glog.Warningf("X or Y exceeded grid max limits: x%v y%v got (x,y) = (%v,%v)",
+					maxX, maxY, pt.X, pt.Y)
+				continue
+			}
+			if i == len(freePoints)-1 && !trunc {
+				s.cells[pt.X][pt.Y].logOdd += locc
+				continue
+			}
+			s.cells[pt.X][pt.Y].logOdd += lfree
+		}
+	}
+	return nil
+}
+
+// PrintMap() returns a png map of the environment.
+// Occupany Grid approach.
+func (s *Ogrid) PrintMap() (*bytes.Buffer, error) {
+
+	m := 1 // Number of pixels per cell. m x m.
+	img := image.NewRGBA(image.Rect(0, 0, maxX*m, maxY*m))
+
+	for x := 0; x < maxX; x++ {
+		for y := 0; y < maxY; y++ {
+
+			p := 1 - 1/(1+math.Exp2(s.cells[x][y].logOdd))
+			if p == 0.5 {
+				// Unknown space.
+				fillCell(img, x, y, m, color.RGBA{100, 100, 100, 90})
+				continue
+			}
+			// cells are filled based on probabilty of being occupied.
+			fillCell(img, x, y, m, color.RGBA{200, 10, 10, uint8(255 * p)})
+		}
+	}
+
+	// Set rover location on map.
+	fillCell(img, s.x, s.y, m, color.RGBA{100, 50, 0, 255})
+	buff := new(bytes.Buffer)
+	if err := png.Encode(buff, img); err != nil {
+		return nil, err
+	}
+
+	return buff, nil
+}
+
+/******* Utility Functions ***********/
+
+// fillCell renders the cell at x, y with a size of scale x scale.
+func fillCell(img *image.RGBA, x int, y int, scale int, c color.RGBA) {
+	for i := 0; i < scale; i++ {
+		for j := 0; j < scale; j++ {
+			img.Set(x*scale+i, y*scale+j, c)
+		}
+	}
 }
 
 // Adapted from https://github.com/encukou/bresenham/blob/master/bresenham.py.
@@ -116,80 +211,72 @@ func bresenham(x0, y0, x1, y1 int) []image.Point {
 	return pts
 }
 
-// pose is the deviation from x Axis.
-func (s *Ogrid) UpdateMap(rangeReading []int32, startAngle int, deltaAngle int, pose float64) error {
-
-	// From the returned beam update the cell location.
-	for i := 0; i < len(rangeReading); i++ {
-
-		servoAngle := startAngle + i*deltaAngle // relative to the robot body.
-		beamAngle := pose + float64(servoAngle)
-		d := float64(rangeReading[i])
-
-		// X,Y coord of obstacle in the global frame of reference (applying scale).
-		// the sign rotates the grid.
-		X := math.Cos(beamAngle*DEG2RAD) * d
-		Y := math.Sin(beamAngle*DEG2RAD) * d
-		Xocc := int(math.Ceil(X)/mapScale) + s.x
-		Yocc := int(math.Ceil(Y)/mapScale) + s.y
-
-		// Set the free cells along the beam.
-		freePoints := bresenham(s.x, s.y, Xocc, Yocc)
-		for _, pt := range freePoints {
-			s.cells[pt.X][pt.Y].occupied = stFree
-			s.cells[pt.X][pt.Y].obs++
-		}
-
-		// Set the occupied cells.
-		s.cells[Xocc][Yocc].occupied = stOccupied
-		s.cells[Xocc][Yocc].obs += 1
-		s.cells[Xocc][Yocc].posObs += 1
-
-	}
-	return nil
-}
-
-// GenerateMap() returns a png map of the environment.
-func (s *Ogrid) GenerateMap() (*bytes.Buffer, error) {
-
-	m := 1 // Number of pixels per cell. m x m.
-	img := image.NewRGBA(image.Rect(0, 0, maxX*m, maxY*m))
+/* TODO: Delete below once the new mapping func is confirmed good.
+/*
+// UpdateOgridMap updates the occupancy grid map.
+// robotTheta - Angle in degrees from robot and X axis
+// sensorData - LIDAR range readings.
+// startAngle - Start of LIDAR angle (deg).
+// deltaAngle - Angle between each reading (deg).
+func (s *Ogrid) UpdateOgridMap(sensorData []int32, startAngle int, deltaAngle int, robotTheta float64) error {
 
 	for x := 0; x < maxX; x++ {
 		for y := 0; y < maxY; y++ {
 
-			// Mark cells.
-			switch s.cells[x][y].occupied {
-			case stOccupied:
-				fillCell(img, x, y, m, color.RGBA{200, 10, 10, 255})
-			case stUnknown:
-				fillCell(img, x, y, m, color.RGBA{0, 0, 0, 90})
-			case stFree:
-				fillCell(img, x, y, m, color.RGBA{0, 255, 0, 255})
+			// xi, yi center of mass of robot.
+			//		xi := x*mapScale + mapScale/2 - robotOffSetX
+			//		yi := -(y*mapScale + mapScale/2) + robotOffSetY
+			//		r := math.Sqrt(math.Pow(float64(xi-s.x*mapScale), 2) + math.Pow(float64(yi-s.y*mapScale), 2))
+
+			r := math.Sqrt(math.Pow(float64(x-s.x), 2) + math.Pow(float64(y-s.y), 2))
+
+			if r <= Zmax {
+				lo := s.invSensorModel(r, x, y, robotTheta*DEG2RAD, sensorData, startAngle, deltaAngle)
+				fmt.Println(lo) // TODO: remove
+				s.cells[x][y].logOdd += lo - l0
 			}
 		}
 	}
-
-	// Set rover location on map.
-	fillCell(img, s.x, s.y, m, color.RGBA{100, 50, 0, 255})
-
-	buff := new(bytes.Buffer)
-	if err := png.Encode(buff, img); err != nil {
-		return nil, err
-	}
-	return buff, nil
+	return nil
 }
 
-// fillCell renders the cell at x, y with a size of scale x scale.
-func fillCell(img *image.RGBA, x int, y int, scale int, c color.RGBA) {
-	for i := 0; i < scale; i++ {
-		for j := 0; j < scale; j++ {
-			img.Set(x*scale+i, y*scale+j, c)
+// inverseSensorModel for Lidar sensor.
+// theta in radians.
+func (s *Ogrid) invSensorModel(r float64, xi, yi int, theta float64, sensorData []int32, startAngle, deltaAngle int) float64 {
+
+	phi := math.Atan2(float64(s.y-yi), float64(s.x-xi)) - theta
+
+	var (
+		sensorTheta float64
+		minDelta    float64 = -1
+		Zk          float64
+		thetaK      float64
+	)
+
+	for i := 0; i < len(sensorData); i++ {
+		// Convert scale from -90 to +90.
+		sensorTheta = float64(startAngle+(i*deltaAngle)-90) * DEG2RAD
+		if math.Abs(phi-sensorTheta) < minDelta || minDelta == -1 {
+			Zk = float64(sensorData[i]) / mapScale
+			thetaK = sensorTheta
+			minDelta = math.Abs(phi - sensorTheta)
 		}
 	}
+
+	switch {
+	case r > math.Min(Zmax, Zk+alpha/2) || math.Abs(phi-thetaK) > beta/2 || Zk > Zmax || Zk < Zmin:
+		return l0
+	case Zk < Zmax && math.Abs(r-Zk) < alpha/2:
+		return locc
+	case r <= Zk:
+		return lfree
+	}
+
+	// Should never come here.
+	return 666.66
+
 }
 
-/* TODO: Delete below once the new mapping func is confirmed good.
 // UpdateMap updates the occupany grid map based on lidar readings.
 // minAngle is the starting angle (degrees) in reference to the bot.
 // shiftAngle is the angle between readings in degrees.
