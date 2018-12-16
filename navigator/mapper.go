@@ -33,17 +33,20 @@ func (s *AutoDrive) TestDrive(cmd string, val string) error {
 	switch cmd {
 
 	case "sweep":
-		if err := s.ForwardSweep(3, 60, 120); err != nil {
+		if err := s.ForwardSweep(5, 40, 140); err != nil {
 			return err
 		}
 
 	case "reset":
 		s.Ogrid.ResetMap()
-		s.SetXY(500, 500)
 		glog.Infof("X:%v,Y:%v", s.x, s.y)
 
 	case "fwd":
-		_, _ = strconv.Atoi(val) // dist in cm.
+		d, _ := strconv.Atoi(val) // dist in cm.
+		if e := s.Move(d*10, 50); e != nil {
+			return e
+		}
+
 	case "turn":
 		angle, _ := strconv.Atoi(val) // dist in cm.
 		glog.Infof("turn by :%v", angle)
@@ -64,12 +67,9 @@ func (s *AutoDrive) TestDrive(cmd string, val string) error {
 	return nil
 }
 
-func prettyPrint(x, y int, posture float64, reading []int32) {
-	fmt.Printf("\ndatapt{\nposture:%v,\nx:%v,\ny:%v,\nreading:[]int32{", posture, x, y)
-	for _, i := range reading {
-		fmt.Printf("%v,", i)
-	}
-	fmt.Printf("},\n},\n")
+// Explore navigates the environment and maps the area.
+func (s *AutoDrive) Explore() error {
+	return nil
 }
 
 // Move moves the rover forward or backward and updates the current location on the grid.
@@ -88,6 +88,7 @@ func (s *AutoDrive) Move(distmm, vel int) error {
 	if err != nil {
 		return err
 	}
+	dist /= 10 // Convert to cm from mm.
 	// Some sleep to let rover come to a stop.
 	time.Sleep(500 * time.Millisecond)
 	X := math.Cos(orient*DEG2RAD) * dist
@@ -131,5 +132,13 @@ func (s *AutoDrive) ForwardSweep(deltaAngle, minAngle, maxAngle int) error {
 		return fmt.Errorf("Failed to update map: %v", err)
 	}
 
-	return s.Ogrid.UpdateMap(rangeReading, minAngle, deltaAngle, posture-90)
+	return s.Ogrid.UpdateMap(rangeReading, minAngle, deltaAngle, posture)
+}
+
+func prettyPrint(x, y int, posture float64, reading []int32) {
+	fmt.Printf("\ndatapt{\nposture:%v,\nx:%v,\ny:%v,\nreading:[]int32{", posture, x, y)
+	for _, i := range reading {
+		fmt.Printf("%v,", i)
+	}
+	fmt.Printf("},\n},\n")
 }

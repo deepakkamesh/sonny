@@ -96,11 +96,80 @@ func TestMove(t *testing.T) {
 
 }
 
+// Tests the update of a single sweep of lidar.
+func TestUpdateOgridMap(t *testing.T) {
+	readings := []datapt{
+		/*	datapt{
+			posture: 186.49,
+			x:       500,
+			y:       500,
+			reading: []int32{115, 111, 110, 112, 114, 111, 113, 114, 118, 128, 127, 134, 140, 135, 121, 115, 107, 98, 99, 97, 76},
+		}, */
+		/*	datapt{
+				posture: 150.31703686231944,
+				x:       500,
+				y:       500,
+				reading: []int32{68, 100, 102, 113, 123, 142, 144, 139, 133, 131, 128, 127, 126, 128, 128,
+					132, 134, 140, 142, 150, 156, 140, 133, 128, 144, 157, 177, 228, 200},
+			},
+			datapt{
+
+				posture: 106.1509437176877,
+				x:       500,
+				y:       500,
+				reading: []int32{128, 131, 136, 139, 145, 152, 161, 135, 125, 148, 155, 175, 177, 180,
+					181, 210, 127, 126, 125, 182, 93, 93, 95, 97, 103, 103, 107, 112, 119},
+			},
+			datapt{
+				posture: 73.49941462208987,
+				x:       500,
+				y:       500,
+				reading: []int32{155, 235, 230, 224, 161, 132, 136, 90, 92, 94, 96, 96, 99, 103, 108,
+					120, 148, 127, 123, 231, 217, 206, 194, 193, 186, 186, 182, 186, 133},
+			},
+			datapt{
+				posture: 56.559022197907986,
+				x:       500,
+				y:       500,
+				reading: []int32{135, 92, 92, 96, 95, 100, 102, 105, 111, 121, 124, 233, 220, 217, 202,
+					195, 192, 186, 180, 183, 185, 128, 184, 190, 195, 201, 197, 215, 240},
+			},*/
+		datapt{
+			posture: 0,
+			x:       500,
+			y:       500,
+			reading: []int32{121, 112, 111, 106, 111, 132, 101, 86, 54, 51, 87, 61, 48},
+		},
+	}
+
+	minAngle := 30
+	shiftAngle := 10
+	s := NewOgrid()
+	s.ResetMap()
+
+	for i := 0; i < len(readings); i++ {
+		pos := readings[i].posture
+		reading := readings[i].reading
+
+		//	s.SetPos(x, y)
+		if err := s.UpdateMap(reading, minAngle, shiftAngle, pos-90); err != nil {
+			t.Errorf("error updating map %v", err)
+		}
+
+		bytes1, err := s.PrintMap()
+		if err != nil {
+			t.Errorf("Failed %v", err)
+		}
+		if err := ioutil.WriteFile("/Users/dkg/Downloads/ogrid.png", bytes1.Bytes(), os.ModePerm); err != nil {
+			t.Errorf("failed %v", err)
+		}
+	}
+}
+
 func TestUpdateMap(t *testing.T) {
 
 	_ = []datapt{
 		datapt{
-
 			posture: 150.31703686231944,
 			x:       500,
 			y:       500,
@@ -237,7 +306,7 @@ func TestUpdateMap(t *testing.T) {
 			t.Errorf("error updating map %v", err)
 		}
 
-		bytes1, err := s.GenerateMap()
+		bytes1, err := s.PrintMap()
 		if err != nil {
 			t.Errorf("Failed %v", err)
 		}
