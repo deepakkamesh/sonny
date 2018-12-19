@@ -178,6 +178,10 @@ func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
 
 // gridDisp streams the png image with the grid map.
 func (m *Server) gridDisp(w http.ResponseWriter, r *http.Request) {
+	if m.navigator == nil {
+		glog.Warningf("Navigator not initialized before calling grid display")
+		return
+	}
 
 	buffer, err := m.navigator.PrintMap()
 	if err != nil {

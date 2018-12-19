@@ -15,7 +15,6 @@ import (
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/httphandler"
-	"github.com/deepakkamesh/sonny/navigator"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
@@ -63,8 +62,7 @@ func main() {
 		enDataStream = flag.Bool("en_data_stream", false, "Enable data stream for http")
 	)
 	flag.Parse()
-	al := 0
-	_ = al
+
 	// Print version and exit.
 	if *version {
 		fmt.Printf("Version commit hash %s\n", githash)
@@ -78,7 +76,7 @@ func main() {
 	go func() {
 		for {
 			glog.Flush()
-			time.Sleep(300 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 		}
 	}()
 
@@ -154,6 +152,17 @@ func main() {
 		lidar      *i2c.LIDARLiteDriver
 		lidarEnPin *gpio.DirectPinDriver
 	)
+
+	// TODO: Move inside enLidar loop after replace garmin with ydlidar.
+	// Lidar enable control. Needed so we bring devices online
+	// in a phased manner as to not overload the power.
+	// Pull high to disable.
+	lidarEnPin = gpio.NewDirectPinDriver(pi, *enLidarPin)
+	if err := lidarEnPin.Start(); err != nil {
+		glog.Fatalf("Failed to initialize Lidar enable pin: %v", err)
+	}
+	lidarEnPin.DigitalWrite(0)
+
 	if *enLidar {
 		glog.V(1).Infof("Initializing Lidar...")
 		lidar = i2c.NewLIDARLiteDriver(pi,
@@ -161,14 +170,6 @@ func main() {
 		if err := lidar.Start(); err != nil {
 			glog.Fatalf("Failed to initialize lidar: %v", err)
 		}
-		// Lidar enable control. Needed so we bring devices online
-		// in a phased manner as to not overload the power.
-		// Pull high to disable.
-		lidarEnPin = gpio.NewDirectPinDriver(pi, *enLidarPin)
-		if err := lidarEnPin.Start(); err != nil {
-			glog.Fatalf("Failed to initialize Lidar enable pin: %v", err)
-		}
-		lidarEnPin.DigitalWrite(0)
 	}
 
 	// Initialize PIR sensor.
@@ -207,13 +208,13 @@ func main() {
 	sonny.SetAuxPostInit(
 		// Function is called whenever aux power is turned on.
 		func() error {
-			// Magnetometer needs to be (re)configured after every power up.
 			if sonny.GetI2CBusState() == 0 {
-				err := fmt.Errorf("I2C bus not enabled. Enable I2C bus prior to starting Compass.")
+				err := fmt.Errorf("I2C bus not enabled.")
 				glog.Warningf("%v", err)
 				return err
 			}
 			if *enCompass {
+				// Magnetometer needs to be (re)configured after every power up.
 				if err := mag.Start(); err != nil {
 					glog.Fatalf("Failed to initialize magnetometer:%v", err)
 				}
@@ -247,10 +248,6 @@ func main() {
 	// Power up sequence complete
 	glog.Infof("Sonny device initialization complete")
 	time.Sleep(1000 * time.Millisecond) // Sleep to allow devices to power up.
-
-	// Start up navigation routines.
-	navi := navigator.NewAutoDrive(sonny)
-	navi.Start()
 
 	// Catch interrupts to exit clean.
 	c := make(chan os.Signal)
@@ -287,7 +284,7 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(sonny, navi, false, *res, *enVid, *enDataStream)
+	h := httphandler.New(sonny, nil, false, *res, *enVid, *enDataStream)
 	if err := h.Start(*httpHostPort); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}
