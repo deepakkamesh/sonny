@@ -7,6 +7,11 @@ BUILDTIME="`date '+%Y-%m-%d_%I:%M:%S%p'`"
 GITHASH="`git rev-parse --short=7 HEAD`"
 VER="-X main.buildtime=$BUILDTIME -X main.githash=$GITHASH"
 
+# ROS package path for compiling rosgo. 
+# At minimum needs msg files. 
+ROS_PACKAGE_PATH=/tmp
+
+
 if [ $# -lt 2 ]; then
 #if [ "$1" == "help" ]; then
 	echo "build.sh < arm | noarm > < main | cli | proto > < ip address > <all | res | bin >"

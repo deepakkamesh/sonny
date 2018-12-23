@@ -15,6 +15,7 @@ import (
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/sonny/devices"
 	"github.com/deepakkamesh/sonny/httphandler"
+	"github.com/deepakkamesh/sonny/ros"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
 	"github.com/golang/glog"
@@ -60,6 +61,7 @@ func main() {
 		enAuxPower   = flag.Bool("en_aux_power", false, "Enable Auxillary Power")
 		enVid        = flag.Bool("en_video", false, "Enable video")
 		enDataStream = flag.Bool("en_data_stream", false, "Enable data stream for http")
+		enROS        = flag.Bool("en_ros", false, "Enable ROS connection")
 	)
 	flag.Parse()
 
@@ -153,16 +155,10 @@ func main() {
 		lidarEnPin *gpio.DirectPinDriver
 	)
 
-	// TODO: Move inside enLidar loop after replace garmin with ydlidar.
+	// TODO: Replace garmin with ydlidar.
 	// Lidar enable control. Needed so we bring devices online
 	// in a phased manner as to not overload the power.
 	// Pull high to disable.
-	lidarEnPin = gpio.NewDirectPinDriver(pi, *enLidarPin)
-	if err := lidarEnPin.Start(); err != nil {
-		glog.Fatalf("Failed to initialize Lidar enable pin: %v", err)
-	}
-	lidarEnPin.DigitalWrite(0)
-
 	if *enLidar {
 		glog.V(1).Infof("Initializing Lidar...")
 		lidar = i2c.NewLIDARLiteDriver(pi,
@@ -170,6 +166,11 @@ func main() {
 		if err := lidar.Start(); err != nil {
 			glog.Fatalf("Failed to initialize lidar: %v", err)
 		}
+		lidarEnPin = gpio.NewDirectPinDriver(pi, *enLidarPin)
+		if err := lidarEnPin.Start(); err != nil {
+			glog.Fatalf("Failed to initialize Lidar enable pin: %v", err)
+		}
+		lidarEnPin.DigitalWrite(0)
 	}
 
 	// Initialize PIR sensor.
@@ -231,8 +232,6 @@ func main() {
 			return nil
 		})
 
-	sonny.PIREventLoop()
-
 	// Easier to set roomba mode once the sonny struct is ready since
 	// sonny has a simpler function to set mode.
 	if *enRoomba {
@@ -245,9 +244,12 @@ func main() {
 		}
 	}
 
+	// finally startup Sonny.
+	sonny.Startup()
+
 	// Power up sequence complete
 	glog.Infof("Sonny device initialization complete")
-	time.Sleep(1000 * time.Millisecond) // Sleep to allow devices to power up.
+	time.Sleep(500 * time.Millisecond) // Sleep to allow devices to power up.
 
 	// Catch interrupts to exit clean.
 	c := make(chan os.Signal)
@@ -256,23 +258,22 @@ func main() {
 		select {
 		case sig := <-c:
 			glog.Infof("Got %s signal. Aborting...\n", sig)
-			// TODO: Call cleanup functions for devices.
-			if *enVid {
-				vid.StopVideoStream()
-			}
-			if err := sonny.I2CBusEnable(false); err != nil {
-				glog.Fatalf("Failed to disable I2C Bus: %v", err)
-			}
-			if err := sonny.AuxPower(false); err != nil {
-				glog.Errorf("Failed to disable aux power: %v", err)
-			}
-			if err := rb.Passive(); err != nil { // Reset roomba turns it off.
-				glog.Errorf("Failed to reset Roomba on shutdown")
-			}
-
+			sonny.Shutdown()
 			os.Exit(1)
 		}
 	}()
+
+	/******************** Startup Major Services ********************/
+	// Startup ROS connection.
+	if *enROS {
+		ros := ros.NewRos(sonny)
+		if err := ros.StartNode("rover"); err != nil {
+			glog.Fatalf("Failed to start ROS:%v", err)
+		}
+		ros.ListenCmdVel()
+		ros.Spinup()
+		defer ros.Shutdown()
+	}
 
 	// Startup RPC service.
 	lis, err := net.Listen("tcp", *rpcPort)

@@ -14,6 +14,11 @@ import (
 	"gobot.io/x/gobot/drivers/i2c"
 )
 
+type SensorData struct {
+	data    map[byte]int16
+	lastUpd time.Time
+}
+
 // Sonny is the struct that represents all the devices.
 type Sonny struct {
 	*Controller                                 // PIC controller.
@@ -25,16 +30,18 @@ type Sonny struct {
 	*gpio.PIRMotionDriver                       // PIR driver.
 	lidarEn               *gpio.DirectPinDriver // Lidar enable gpio. Pull high to disable.
 	*Video
-	pirState        int          // State of PIR. 1=enabled, 0=disabled.
-	i2cBusState     int          // State of I2CBus. 1=enabled, 0=disabled.
-	auxPowerState   int          // Start of AuxPower. 1=enabled, 0=disabled.
-	roombaMode      int          // Roomba mode: 1 = passive, 2=safe, 3=full.
-	auxPowerOnInit  func() error // initialization to execute after Aux Power is on.
-	auxPowerOffInit func() error // initialization to execute after Aux Power is off.
-	magXmin         int16        // magnetometer X min value for calibration.
-	magXmax         int16        // magnetometer X max value for calibration.
-	magYmin         int16        // magnetometer Y min value for calibration.
-	magYmax         int16        // magnetometer Y max value for calibration.
+	pirState        int           // State of PIR. 1=enabled, 0=disabled.
+	i2cBusState     int           // State of I2CBus. 1=enabled, 0=disabled.
+	auxPowerState   int           // Start of AuxPower. 1=enabled, 0=disabled.
+	roombaMode      int           // Roomba mode: 1 = passive, 2=safe, 3=full.
+	auxPowerOnInit  func() error  // initialization to execute after Aux Power is on.
+	auxPowerOffInit func() error  // initialization to execute after Aux Power is off.
+	sensorData      SensorData    // Sensor data updated regularly.
+	magXmin         int16         // magnetometer X min value for calibration.
+	magXmax         int16         // magnetometer X max value for calibration.
+	magYmin         int16         // magnetometer Y min value for calibration.
+	magYmax         int16         // magnetometer Y max value for calibration.
+	killSensorData  chan struct{} // shutdown sensor loop.
 }
 
 func NewSonny(
@@ -53,24 +60,43 @@ func NewSonny(
 		c, l, m, a, r, i2cEn, p, le, v, 0, 0, 0, 0,
 		func() error { return nil },
 		func() error { return nil },
+		SensorData{
+			make(map[byte]int16),
+			time.Now(),
+		},
 		-4928, // min X. Default min/max values for a sane Magnetometer offset.
 		2460,  // max X.
 		-427,  // min Y.
 		6844,  // max Y.
+		make(chan struct{}),
 	}
 }
-
-// Old calib values
-/*
-	-2586.00, // min X. Default min/max values for a sane Magnetometer offset.
-	4559.00,  // max X.
-	0.00,     // min Y.
-	8070.00,  // max Y.
-*/
 
 // StartRoomba starts up the roomba platform.
 func (s *Sonny) StartRoomba(keepAlive bool) error {
 	return s.Roomba.Start(keepAlive)
+}
+
+func (s *Sonny) Startup() {
+	s.PIREventLoop()
+	go s.updateRoombaTelemetry()
+}
+
+func (s *Sonny) Shutdown() {
+	s.killSensorData <- struct{}{}
+	if err := s.I2CBusEnable(false); err != nil {
+		glog.Fatalf("Failed to disable I2C Bus: %v", err)
+	}
+	if err := s.AuxPower(false); err != nil {
+		glog.Errorf("Failed to disable aux power: %v", err)
+	}
+	if err := s.SetRoombaMode(constants.OI_MODE_PASSIVE); err != nil { // Reset roomba turns it off.
+		glog.Errorf("Failed to reset Roomba on shutdown")
+	}
+	s.Reset()
+	if s.Video != nil {
+		s.Video.StopVideoStream()
+	}
 }
 
 // RoombaInitialized returns true if Roomba is initialized.
@@ -170,36 +196,50 @@ func (s *Sonny) GetPIRState() int {
 	return s.pirState
 }
 
-// GetRoombaTelemetry returns the current value of the roomba sensors.
-func (s *Sonny) GetRoombaTelemetry() (data map[byte]int16, err error) {
+func (s *Sonny) updateRoombaTelemetry() {
 
 	if s.Roomba == nil {
-		return nil, fmt.Errorf("roomba not initialized")
+		glog.Errorf("Roomba not initialized")
+		return
 	}
 
-	data = make(map[byte]int16)
-	d, e := s.Roomba.QueryList(constants.PACKET_GROUP_100)
-	if e != nil {
-		return nil, e
-	}
+	for {
+		select {
+		case <-s.killSensorData:
+			return
 
-	for i, p := range d {
-		pktID := constants.PACKET_GROUP_100[i]
-		if len(p) == 1 {
-			data[pktID] = int16(p[0])
-			continue
+		default:
+			data := make(map[byte]int16)
+			d, e := s.Roomba.QueryList(constants.PACKET_GROUP_100)
+			if e != nil {
+				glog.Errorf("Failed to read roomba sensors:%v", e)
+			}
+
+			for i, p := range d {
+				pktID := constants.PACKET_GROUP_100[i]
+				if len(p) == 1 {
+					data[pktID] = int16(p[0])
+					continue
+				}
+				data[pktID] = int16(p[0])<<8 | int16(p[1])
+			}
+			s.sensorData.data = data
+			s.sensorData.lastUpd = time.Now()
+
+			// Inspect roomba mode. If different, reset aux power if passive mode.
+			prevMode := s.roombaMode
+			s.roombaMode = int(data[constants.SENSOR_OI_MODE])
+			if s.roombaMode != prevMode && s.roombaMode == 1 {
+				s.AuxPower(false)
+			}
+			time.Sleep(100 * time.Millisecond)
 		}
-		data[pktID] = int16(p[0])<<8 | int16(p[1])
 	}
+}
 
-	// Inspect roomba mode. If different, reset aux power.
-	prevMode := s.roombaMode
-	s.roombaMode = int(data[constants.SENSOR_OI_MODE])
-	// Changed into passive mode.
-	if s.roombaMode != prevMode && s.roombaMode == 1 {
-		s.AuxPower(false)
-	}
-	return
+// GetRoombaTelemetry returns the current value of the roomba sensors.
+func (s *Sonny) GetRoombaTelemetry() (data map[byte]int16, err error) {
+	return s.sensorData.data, nil
 }
 
 // GetRoombaMode returns the current roomba mode from the sensor reading.

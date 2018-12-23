@@ -35,6 +35,8 @@ type Platform interface {
 	GetPIRState() int
 	RoombaInitialized() bool
 	StartRoomba(bool) error
+	Shutdown()
+	Startup()
 	GetVideoStream() *mjpeg.Stream
 	LidarPower(bool) error
 	Distance() (int, error)
