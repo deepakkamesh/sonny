@@ -266,12 +266,11 @@ func main() {
 	/******************** Startup Major Services ********************/
 	// Startup ROS connection.
 	if *enROS {
+		glog.V(1).Info("Starting up ROS...")
 		ros := ros.NewRos(sonny)
 		if err := ros.StartNode("rover"); err != nil {
 			glog.Fatalf("Failed to start ROS:%v", err)
 		}
-		ros.ListenCmdVel()
-		ros.Spinup()
 		defer ros.Shutdown()
 	}
 

@@ -68,7 +68,7 @@ func NewSonny(
 		2460,  // max X.
 		-427,  // min Y.
 		6844,  // max Y.
-		make(chan struct{}),
+		make(chan struct{}, 2),
 	}
 }
 
@@ -83,6 +83,10 @@ func (s *Sonny) Startup() {
 }
 
 func (s *Sonny) Shutdown() {
+	if s == nil {
+		glog.Warningf("Sonny not initialized")
+		return
+	}
 	s.killSensorData <- struct{}{}
 	if err := s.I2CBusEnable(false); err != nil {
 		glog.Fatalf("Failed to disable I2C Bus: %v", err)
@@ -199,7 +203,7 @@ func (s *Sonny) GetPIRState() int {
 func (s *Sonny) updateRoombaTelemetry() {
 
 	if s.Roomba == nil {
-		glog.Errorf("Roomba not initialized")
+		glog.Errorf("Failed to update telemetry because Roomba is not initialized")
 		return
 	}
 
