@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -9,6 +8,7 @@ import (
 
 	roomba "github.com/deepakkamesh/go-roomba"
 	"github.com/deepakkamesh/go-roomba/constants"
+	"github.com/deepakkamesh/ydlidar"
 	"github.com/golang/glog"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/drivers/i2c"
@@ -22,13 +22,12 @@ type SensorData struct {
 // Sonny is the struct that represents all the devices.
 type Sonny struct {
 	*Controller                                 // PIC controller.
-	*i2c.LIDARLiteDriver                        // Lidar Lite.
+	*ydlidar.YDLidar                            // YDLidar.
 	*i2c.QMC5883Driver                          // Magnetometer QMC5883.
 	*i2c.MPU6050Driver                          // MPU 6050 Accelerometer / Gryo.
 	*roomba.Roomba                              // Roomba controller.
 	i2cEn                 *gpio.DirectPinDriver // GPIO port control for I2C Bus.
 	*gpio.PIRMotionDriver                       // PIR driver.
-	lidarEn               *gpio.DirectPinDriver // Lidar enable gpio. Pull high to disable.
 	*Video
 	pirState        int           // State of PIR. 1=enabled, 0=disabled.
 	i2cBusState     int           // State of I2CBus. 1=enabled, 0=disabled.
@@ -46,18 +45,17 @@ type Sonny struct {
 
 func NewSonny(
 	c *Controller,
-	l *i2c.LIDARLiteDriver,
+	l *ydlidar.YDLidar,
 	m *i2c.QMC5883Driver,
 	a *i2c.MPU6050Driver,
 	r *roomba.Roomba,
 	i2cEn *gpio.DirectPinDriver,
 	p *gpio.PIRMotionDriver,
-	le *gpio.DirectPinDriver,
 	v *Video,
 ) *Sonny {
 
 	return &Sonny{
-		c, l, m, a, r, i2cEn, p, le, v, 0, 0, 0, 0,
+		c, l, m, a, r, i2cEn, p, v, 0, 0, 0, 0,
 		func() error { return nil },
 		func() error { return nil },
 		SensorData{
@@ -97,6 +95,9 @@ func (s *Sonny) Shutdown() {
 	if err := s.SetRoombaMode(constants.OI_MODE_PASSIVE); err != nil { // Reset roomba turns it off.
 		glog.Errorf("Failed to reset Roomba on shutdown")
 	}
+	if err := s.LidarPower(false); err != nil {
+		glog.Errorf("Failed to shutdown lidar power")
+	}
 	s.Reset()
 	if s.Video != nil {
 		s.Video.StopVideoStream()
@@ -109,7 +110,7 @@ func (s *Sonny) RoombaInitialized() bool {
 }
 
 func (s *Sonny) LidarInitialized() bool {
-	return (s.LIDARLiteDriver != nil)
+	return (s.YDLidar != nil)
 }
 func (s *Sonny) MagnetometerInitialized() bool {
 	return (s.QMC5883Driver != nil)
@@ -161,22 +162,23 @@ func (s *Sonny) AuxPower(enable bool) error {
 	return nil
 }
 
-// LidarPwrEnable enables the power to Lidar by driving the power enable pin high(on) or low(off).
+// LidarPower starts the lidar motor.
 func (s *Sonny) LidarPower(enable bool) error {
-	if s.lidarEn == nil {
-		return fmt.Errorf("lidar en pin not initialized")
+	if s.YDLidar == nil {
+		return fmt.Errorf("lidar not initialized")
 	}
 
 	if enable {
 		if s.GetAuxPowerState() == 0 {
 			return fmt.Errorf("Aux power not turned on; cannot power on lidar")
 		}
-		// Drive GPIO high to enable LIDAR.
-		return s.lidarEn.DigitalWrite(1)
+		return s.SetDTR(true)
 	}
+	return s.SetDTR(false)
+}
 
-	// Drive GPIO low to disable LIDAR.
-	return s.lidarEn.DigitalWrite(0)
+func (s *Sonny) LidarData() ydlidar.Packet {
+	return <-s.YDLidar.D
 }
 
 // PIREventLoop subscribes to events from the PIR gpio.
@@ -282,54 +284,6 @@ func (s *Sonny) SetRoombaMode(mode byte) error {
 	}
 
 	return nil
-}
-
-func (s *Sonny) ForwardSweep(angle, min, max int) ([]int32, error) {
-	// Lock controller to avoid any I2C contention.
-	s.LockController()
-	defer s.UnlockController()
-
-	if s.Controller == nil {
-		return nil, errors.New("controller not initialized")
-	}
-	val := []int32{}
-
-	if err := s.Controller.ServoRotate(1, min); err != nil {
-		return nil, fmt.Errorf("failed to rotate servo: %v", err)
-
-	}
-	// Sleep to allow servo to move to starting position.
-	// rotation speed 100ms for 60"
-	time.Sleep(300 * time.Millisecond)
-	for i := min; i <= max; i += angle {
-		if err := s.Controller.ServoRotate(1, i); err != nil {
-			return nil, fmt.Errorf("failed to rotate servo: %v", err)
-		}
-
-		if err := s.LidarPower(true); err != nil {
-			return nil, err
-		}
-		// Sleep to finish servo rotation prior to measuring and prevent
-		// contention on I2C bus.
-		time.Sleep(100 * time.Millisecond)
-		// Take 3 distance measurements to eliminate any suprious readings.
-		// TODO: use standard deviation to eliminate bad readings.
-		dist0, err := s.Distance()
-		dist1, err := s.Distance()
-		dist2, err := s.Distance()
-		dist := (dist0 + dist1 + dist2) / 3
-
-		if err := s.LidarPower(false); err != nil {
-			return nil, err
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to read lidar: %v", err)
-		}
-		val = append(val, int32(dist))
-	}
-
-	return val, nil
 }
 
 // I2CBusEnable enables/disables the I2C buffer chip.

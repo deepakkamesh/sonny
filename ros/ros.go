@@ -37,8 +37,9 @@ type Pose struct {
 type Vel = Pose
 
 const (
-	EPS    float64 = 0.0001
-	TWO_PI float64 = 6.28318
+	EPS      float64 = 0.0001
+	TWO_PI   float64 = 6.28318
+	PUB_FREQ int     = 100 // Publish frequency (every x milliseconds).
 )
 
 type ROSConn struct {
@@ -92,7 +93,7 @@ func (n *ROSConn) publishOdom(pubOdom roslib.Publisher, pubTf roslib.Publisher, 
 	// Start update loop.
 	go func() {
 		for n.node.OK() {
-			time.Sleep(100 * time.Millisecond) // 10 Hz.
+			time.Sleep(time.Duration(PUB_FREQ) * time.Millisecond) // 10 Hz.
 
 			n.node.SpinOnce()
 

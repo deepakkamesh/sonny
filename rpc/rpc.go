@@ -136,14 +136,7 @@ func (m *Server) Heading(ctx context.Context, in *google_pb.Empty) (*pb.HeadingR
 
 // Distance returns the forward clearance in cm using the LIDAR.
 func (m *Server) Distance(ctx context.Context, in *google_pb.Empty) (*pb.USRet, error) {
-	if !m.sonny.LidarInitialized() {
-		return nil, errors.New("controller not enabled")
-	}
-	d, err := m.sonny.Distance()
-	if err != nil {
-		return nil, err
-	}
-	return &pb.USRet{Distance: int32(d)}, nil
+	return nil, errors.New("Not implemented")
 }
 
 // Accelerometer returns the dynamic and static acceleration from the accelerometer.
@@ -158,12 +151,7 @@ func (m *Server) Accelerometer(ctx context.Context, in *google_pb.Empty) (*pb.Ac
 
 // ForwardSweep returns the distance to the nearest object sweeping angle degrees at a time.
 func (m *Server) ForwardSweep(ctx context.Context, in *pb.SweepReq) (*pb.SweepRet, error) {
-	v, err := m.sonny.ForwardSweep(int(in.Angle), int(in.Min), int(in.Max))
-
-	if err != nil {
-		return nil, err
-	}
-	return &pb.SweepRet{Distance: v}, nil
+	return nil, errors.New("Not implemented")
 }
 
 // PIRDetect retuns true if infrared signal is detected.

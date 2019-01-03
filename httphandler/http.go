@@ -9,13 +9,11 @@ import (
 	"time"
 
 	"github.com/deepakkamesh/sonny/devices"
-	"github.com/deepakkamesh/sonny/navigator"
 	"github.com/golang/glog"
 )
 
 type Server struct {
 	sonny        devices.Platform
-	navigator    *navigator.AutoDrive
 	ssl          bool
 	resources    string
 	servoAngle   map[byte]int // Map to hold state of each servo.
@@ -34,13 +32,12 @@ type response struct {
 	Data interface{}
 }
 
-func New(d devices.Platform, n *navigator.AutoDrive, ssl bool, resources string, enVid, enDataStream bool) *Server {
+func New(d devices.Platform, ssl bool, resources string, enVid, enDataStream bool) *Server {
 	t := time.NewTimer(500 * time.Millisecond)
 	t.Stop()
 
 	return &Server{
 		sonny:        d,
-		navigator:    n,
 		ssl:          ssl,
 		resources:    resources,
 		servoAngle:   map[byte]int{1: 90, 2: 90},
@@ -70,8 +67,6 @@ func (m *Server) Start(hostPort string) error {
 	http.HandleFunc("/api/roomba_cmd/", m.RoombaCmd)
 	http.HandleFunc("/api/i2c_en/", m.I2CEn)
 	http.HandleFunc("/datastream", m.dataStream)
-	http.HandleFunc("/gridDisp", m.gridDisp)
-	http.HandleFunc("/api/navi/", m.Navi)
 
 	if m.enVid {
 		http.Handle("/videostream", m.sonny.GetVideoStream())
@@ -134,69 +129,6 @@ func (m *Server) I2CEn(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, &response{
 		Data: "OK",
 	})
-
-}
-
-// Navi is a test function for navigation.
-func (m *Server) Navi(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		fmt.Fprintf(w, "Error: %v", err)
-		return
-	}
-
-	v := r.Form.Get("cmd")
-	val := r.Form.Get("val")
-
-	if err := m.navigator.TestDrive(v, val); err != nil {
-		glog.Errorf("Navi failure: %v", err)
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: update map failed %v", err),
-		})
-		return
-	}
-
-	/*
-		delta, err := m.navigator.Turn(float64(cells))
-		if err != nil {
-			glog.Errorf("Failed Navi %v", err)
-		}
-		glog.Infof("Movement delta %v", delta)
-
-		/*
-			glog.Info("Navi button pressed")
-			if err := m.navigator.UpdateMap(); err != nil {
-				glog.Errorf("Navi failure: %v", err)
-				writeResponse(w, &response{
-					Err: fmt.Sprintf("Error: update map failed %v", err),
-				})
-				return
-			}*/
-	writeResponse(w, &response{
-		Data: "OK",
-	})
-}
-
-// gridDisp streams the png image with the grid map.
-func (m *Server) gridDisp(w http.ResponseWriter, r *http.Request) {
-	if m.navigator == nil {
-		glog.Warningf("Navigator not initialized before calling grid display")
-		return
-	}
-
-	buffer, err := m.navigator.PrintMap()
-	if err != nil {
-		glog.Errorf("Failed to generate map: %v", err)
-		writeResponse(w, &response{
-			Err: fmt.Sprintf("Error: Failed to generate map: %v", err),
-		})
-		return
-	}
-
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-	if _, err := w.Write(buffer.Bytes()); err != nil {
-		glog.Errorf("Unable to write image: %v", err)
-	}
 
 }
 

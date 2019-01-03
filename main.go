@@ -18,6 +18,7 @@ import (
 	"github.com/deepakkamesh/sonny/ros"
 	"github.com/deepakkamesh/sonny/rpc"
 	pb "github.com/deepakkamesh/sonny/sonny"
+	"github.com/deepakkamesh/ydlidar"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 )
@@ -32,12 +33,11 @@ func main() {
 	var (
 		brc          = flag.String("brc", "7", "GPIO port for roomba BRC for keepalive")
 		picAddr      = flag.Int("pic_addr", 0x55, "I2C address of PIC controller")
-		tty          = flag.String("tty", "/dev/ttyS0", "tty port")
+		roombaTTY    = flag.String("tty_roomba", "/dev/ttyS0", "tty port of roomba")
+		lidarTTY     = flag.String("tty_lidar", "/dev/ttyUSB0", "tty port of LIDAR")
 		res          = flag.String("resources", "./resources", "resources directory")
 		pirPin       = flag.String("pir_pin", "22", "PIR gpio pin")
 		enI2CPin     = flag.String("i2c_en_pin", "11", "I2C enable pin (high to enable I2C chip)")
-		enLidarPin   = flag.String("lidar_en_pin", "24", "LIDAR power enable pin (high to enable lidar)")
-		lidarI2CBus  = flag.Int("lidar_i2c_bus", 1, "I2C bus Lidar")
 		magI2CBus    = flag.Int("mag_i2c_bus", 0, "I2C bus magnetometer")
 		gyroI2CBus   = flag.Int("gyro_i2c_bus", 0, "I2C gyro bus")
 		picI2CBus    = flag.Int("pic_i2c_bus", 0, "I2C bus pic")
@@ -105,7 +105,7 @@ func main() {
 			glog.Fatalf("Failed to setup BRC pin: %v", err)
 		}
 		var err error
-		if rb, err = roomba.MakeRoomba(*tty, brcPin); err != nil {
+		if rb, err = roomba.MakeRoomba(*roombaTTY, brcPin); err != nil {
 			glog.Fatalf("Failed to initialize roomba: %v", err)
 		}
 		if err = rb.Start(true); err != nil {
@@ -151,26 +151,17 @@ func main() {
 
 	// Initialize Lidar and related systems.
 	var (
-		lidar      *i2c.LIDARLiteDriver
-		lidarEnPin *gpio.DirectPinDriver
+		lidar *ydlidar.YDLidar
 	)
 
-	// TODO: Replace garmin with ydlidar.
-	// Lidar enable control. Needed so we bring devices online
-	// in a phased manner as to not overload the power.
-	// Pull high to disable.
 	if *enLidar {
 		glog.V(1).Infof("Initializing Lidar...")
-		lidar = i2c.NewLIDARLiteDriver(pi,
-			i2c.WithBus(*lidarI2CBus))
-		if err := lidar.Start(); err != nil {
-			glog.Fatalf("Failed to initialize lidar: %v", err)
+		lidar = ydlidar.NewLidar()
+		ser, err := ydlidar.GetSerialPort(*lidarTTY)
+		if err != nil {
+			glog.Fatalf("Failed to initialize LIDAR: %v", err)
 		}
-		lidarEnPin = gpio.NewDirectPinDriver(pi, *enLidarPin)
-		if err := lidarEnPin.Start(); err != nil {
-			glog.Fatalf("Failed to initialize Lidar enable pin: %v", err)
-		}
-		lidarEnPin.DigitalWrite(0)
+		lidar.SetSerial(ser)
 	}
 
 	// Initialize PIR sensor.
@@ -192,7 +183,7 @@ func main() {
 	}
 
 	// Build Devices.
-	sonny := devices.NewSonny(ctrl, lidar, mag, gyro, rb, i2cEn, pir, lidarEnPin, vid)
+	sonny := devices.NewSonny(ctrl, lidar, mag, gyro, rb, i2cEn, pir, vid)
 
 	// Enable I2C Bus if flag is set.
 	// Explicit disable is needed as the gpio may be high from prior run.
@@ -284,7 +275,7 @@ func main() {
 	go s.Serve(lis)
 
 	// Startup HTTP service.
-	h := httphandler.New(sonny, nil, false, *res, *enVid, *enDataStream)
+	h := httphandler.New(sonny, false, *res, *enVid, *enDataStream)
 	if err := h.Start(*httpHostPort); err != nil {
 		glog.Fatalf("Failed to listen: %v", err)
 	}

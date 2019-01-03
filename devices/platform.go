@@ -1,13 +1,15 @@
 package devices
 
-import "github.com/saljam/mjpeg"
+import (
+	"github.com/deepakkamesh/ydlidar"
+	"github.com/saljam/mjpeg"
+)
 
 // Platform defines the interface for the platform.
 type Platform interface {
 	Sensors(byte) ([]byte, error)
 	TiltHeading() (float64, error)
 	CalibrateCompass(bool) error
-	ForwardSweep(int, int, int) ([]int32, error)
 	DirectDrive(int16, int16) error
 	Gyro() (int16, int16, int16, error)
 	Accelerometer() (int16, int16, int16, error)
@@ -39,7 +41,7 @@ type Platform interface {
 	Startup()
 	GetVideoStream() *mjpeg.Stream
 	LidarPower(bool) error
-	Distance() (int, error)
+	LidarData() ydlidar.Packet
 	ControllerInitialized() bool
 	MagnetometerInitialized() bool
 	LidarInitialized() bool
