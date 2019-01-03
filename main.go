@@ -153,7 +153,6 @@ func main() {
 	var (
 		lidar *ydlidar.YDLidar
 	)
-
 	if *enLidar {
 		glog.V(1).Infof("Initializing Lidar...")
 		lidar = ydlidar.NewLidar()
@@ -162,6 +161,9 @@ func main() {
 			glog.Fatalf("Failed to initialize LIDAR: %v", err)
 		}
 		lidar.SetSerial(ser)
+		if err := lidar.SetDTR(false); err != nil {
+			glog.Fatalf("Failed to set DTR during initialization: %v", err)
+		}
 	}
 
 	// Initialize PIR sensor.

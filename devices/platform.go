@@ -15,7 +15,6 @@ type Platform interface {
 	Accelerometer() (int16, int16, int16, error)
 	GetAuxPowerState() int
 	AuxPower(enable bool) error
-	GetRoombaTelemetry() (map[byte]int16, error)
 	GetI2CBusState() int
 	BattState() (float32, error)
 	LDR() (uint16, error)
@@ -23,9 +22,13 @@ type Platform interface {
 	ServoRotate(byte, int) error
 	I2CBusEnable(bool) error
 	Ping() error
-	Drive(int16, int16) error
 	LEDOn(bool) error
 	LEDBlink(uint16, byte) error
+	GetPIRState() int
+	GetVideoStream() *mjpeg.Stream
+	/* Roomba Functions */
+	GetRoombaTelemetry() (map[byte]int16, error)
+	Drive(int16, int16) error
 	Full() error
 	Reset() error
 	Safe() error
@@ -34,18 +37,18 @@ type Platform interface {
 	SeekDock() error
 	GetRoombaMode() int
 	SetRoombaMode(byte) error
-	GetPIRState() int
 	RoombaInitialized() bool
 	StartRoomba(bool) error
-	Shutdown()
-	Startup()
-	GetVideoStream() *mjpeg.Stream
+	/* Lidar Functions */
 	LidarPower(bool) error
 	LidarData() ydlidar.Packet
+	StartScan()
+	/* Utility functions */
+	Shutdown()
+	Startup()
 	ControllerInitialized() bool
 	MagnetometerInitialized() bool
 	LidarInitialized() bool
-
 	MoveForward(int, int) (float64, error)
 	Turn(float64) (float64, error)
 }

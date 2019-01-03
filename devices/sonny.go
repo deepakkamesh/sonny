@@ -168,13 +168,7 @@ func (s *Sonny) LidarPower(enable bool) error {
 		return fmt.Errorf("lidar not initialized")
 	}
 
-	if enable {
-		if s.GetAuxPowerState() == 0 {
-			return fmt.Errorf("Aux power not turned on; cannot power on lidar")
-		}
-		return s.SetDTR(true)
-	}
-	return s.SetDTR(false)
+	return s.SetDTR(enable)
 }
 
 func (s *Sonny) LidarData() ydlidar.Packet {

@@ -73,9 +73,24 @@ func (n *ROSConn) StartNode(name string) error {
 	pubOdom := node.NewPublisher("/odom", nav_msgs.MsgOdometry)
 	pubTf := node.NewPublisher("/tf", tf2_msgs.MsgTFMessage)
 	pubTest := node.NewPublisher("/chatter", std_msgs.MsgString)
+	// Start Publishers.
 	n.publishOdom(pubOdom, pubTf, pubTest)
+	n.publishLaserScan(nil)
 	return nil
 
+}
+
+func (n *ROSConn) publishLaserScan(pub roslib.Publisher) {
+	if err := n.rover.LidarPower(true); err != nil {
+		glog.Errorf("Failed to turn on lidar: %v", err)
+	}
+	n.rover.StartScan()
+	go func() {
+		for {
+			d := n.rover.LidarData()
+			fmt.Printf("LIDAR: %+v\n", d)
+		}
+	}()
 }
 
 func (n *ROSConn) publishOdom(pubOdom roslib.Publisher, pubTf roslib.Publisher, pubTest roslib.Publisher) {
